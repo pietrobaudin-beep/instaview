@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { getGrowthSeries, getRecentChanges, getSummary, type Period } from "@/lib/analytics";
+import {
+  getCurrentFollowers,
+  getGrowthSeries,
+  getRecentChanges,
+  getSummary,
+  type Period,
+} from "@/lib/analytics";
 
 const PERIODS: Period[] = ["24h", "7d", "30d", "90d"];
 
@@ -19,12 +25,15 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   const periodParam = url.searchParams.get("period") as Period | null;
   const period: Period = periodParam && PERIODS.includes(periodParam) ? periodParam : "7d";
   const typeParam = url.searchParams.get("type");
-  const type = typeParam === "UNFOLLOW" ? "UNFOLLOW" : typeParam === "FOLLOW" ? "FOLLOW" : undefined;
+  const view =
+    typeParam === "UNFOLLOW" ? "UNFOLLOW" : typeParam === "CURRENT" ? "CURRENT" : "FOLLOW";
 
   const [summary, series, changes] = await Promise.all([
     getSummary(profile.id),
     getGrowthSeries(profile.id, period),
-    getRecentChanges(profile.id, { type: type ?? "FOLLOW", period, limit: 100 }),
+    view === "CURRENT"
+      ? getCurrentFollowers(profile.id, 100)
+      : getRecentChanges(profile.id, { type: view, period, limit: 100 }),
   ]);
 
   // Paywall: FREE users see the data blurred and must upgrade to reveal it.

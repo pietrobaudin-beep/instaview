@@ -52,6 +52,8 @@ interface DashboardData {
   changes: ChangeItem[];
 }
 
+type Tab = "FOLLOW" | "UNFOLLOW" | "CURRENT";
+
 const PERIODS: { key: Period; label: string }[] = [
   { key: "24h", label: "24 hours" },
   { key: "7d", label: "7 days" },
@@ -62,12 +64,12 @@ const PERIODS: { key: Period; label: string }[] = [
 export function Dashboard({ initial }: { initial: DashboardData }) {
   const [data, setData] = React.useState<DashboardData>(initial);
   const [period, setPeriod] = React.useState<Period>(initial.period);
-  const [tab, setTab] = React.useState<"FOLLOW" | "UNFOLLOW">("FOLLOW");
+  const [tab, setTab] = React.useState<Tab>("CURRENT");
   const [loading, setLoading] = React.useState(false);
   const [refreshing, setRefreshing] = React.useState(false);
 
   const load = React.useCallback(
-    async (p: Period, t: "FOLLOW" | "UNFOLLOW") => {
+    async (p: Period, t: Tab) => {
       setLoading(true);
       try {
         const res = await fetch(`/api/profiles/${initial.profile.id}?period=${p}&type=${t}`);
@@ -83,7 +85,7 @@ export function Dashboard({ initial }: { initial: DashboardData }) {
     setPeriod(p);
     load(p, tab);
   }
-  function changeTab(t: "FOLLOW" | "UNFOLLOW") {
+  function changeTab(t: Tab) {
     setTab(t);
     load(period, t);
   }
@@ -208,13 +210,20 @@ export function Dashboard({ initial }: { initial: DashboardData }) {
 
           <Card>
             <CardContent className="p-6">
-              <div className="mb-4 flex items-center justify-between">
+              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <h2 className="font-semibold">
-                  {tab === "FOLLOW" ? "New Followers" : "Unfollows"}
+                  {tab === "FOLLOW"
+                    ? "New Followers"
+                    : tab === "UNFOLLOW"
+                      ? "Unfollows"
+                      : "Current followers"}
                 </h2>
-                <div className="flex gap-1 rounded-lg bg-muted p-1 text-xs">
+                <div className="flex gap-1 self-start rounded-lg bg-muted p-1 text-xs">
+                  <TabBtn active={tab === "CURRENT"} onClick={() => changeTab("CURRENT")}>
+                    Current
+                  </TabBtn>
                   <TabBtn active={tab === "FOLLOW"} onClick={() => changeTab("FOLLOW")}>
-                    New followers
+                    New
                   </TabBtn>
                   <TabBtn active={tab === "UNFOLLOW"} onClick={() => changeTab("UNFOLLOW")}>
                     Unfollows
@@ -366,7 +375,7 @@ const PLACEHOLDER_ROWS: ChangeItem[] = Array.from({ length: 6 }, (_, i) => ({
   detectedAt: new Date(Date.now() - (i + 1) * 17 * 60_000).toISOString(),
 }));
 
-function Row({ c }: { c: ChangeItem }) {
+function Row({ c, showEvent = true }: { c: ChangeItem; showEvent?: boolean }) {
   return (
     <li className="flex items-center gap-3 py-3">
       <Avatar src={c.avatarUrl} name={c.displayName ?? c.followerUsername} size={40} />
@@ -377,14 +386,16 @@ function Row({ c }: { c: ChangeItem }) {
         </div>
         {c.displayName && <p className="truncate text-sm text-muted-foreground">{c.displayName}</p>}
       </div>
-      <div className="shrink-0 text-right">
-        <Badge variant={c.type === "FOLLOW" ? "success" : "destructive"}>
-          {c.type === "FOLLOW" ? "Followed" : "Unfollowed"}
-        </Badge>
-        <p className="mt-1 text-xs text-muted-foreground">
-          {formatDistanceToNow(new Date(c.detectedAt), { addSuffix: true })}
-        </p>
-      </div>
+      {showEvent && (
+        <div className="shrink-0 text-right">
+          <Badge variant={c.type === "FOLLOW" ? "success" : "destructive"}>
+            {c.type === "FOLLOW" ? "Followed" : "Unfollowed"}
+          </Badge>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {formatDistanceToNow(new Date(c.detectedAt), { addSuffix: true })}
+          </p>
+        </div>
+      )}
     </li>
   );
 }
@@ -395,9 +406,11 @@ function ChangeList({
   locked,
 }: {
   changes: ChangeItem[];
-  tab: "FOLLOW" | "UNFOLLOW";
+  tab: Tab;
   locked: boolean;
 }) {
+  const showEvent = tab !== "CURRENT";
+
   // Paywall: blur the identities and gate them behind an upgrade CTA.
   if (locked) {
     const rows = changes.length > 0 ? changes.slice(0, 8) : PLACEHOLDER_ROWS;
@@ -405,7 +418,7 @@ function ChangeList({
       <div className="relative">
         <ul className="divide-y divide-border select-none blur-[6px]" aria-hidden>
           {rows.map((c) => (
-            <Row key={c.id} c={c} />
+            <Row key={c.id} c={c} showEvent={showEvent} />
           ))}
         </ul>
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-background/40 to-background/90 p-6 text-center">
@@ -437,16 +450,20 @@ function ChangeList({
   if (changes.length === 0) {
     return (
       <div className="flex flex-col items-center gap-2 py-12 text-center text-sm text-muted-foreground">
-        {tab === "FOLLOW" ? <UserPlus className="h-6 w-6" /> : <UserMinus className="h-6 w-6" />}
+        {tab === "UNFOLLOW" ? <UserMinus className="h-6 w-6" /> : <UserPlus className="h-6 w-6" />}
         <p>
           {tab === "FOLLOW"
             ? "No new followers detected in this range yet."
-            : "No unfollows detected in this range."}
+            : tab === "UNFOLLOW"
+              ? "No unfollows detected in this range."
+              : "No followers captured yet — run a collection."}
         </p>
-        <p className="max-w-xs text-xs">
-          The first collection sets a baseline. New changes appear after the next check (or hit
-          “Refresh now”).
-        </p>
+        {tab !== "CURRENT" && (
+          <p className="max-w-xs text-xs">
+            The first collection sets a baseline. New changes appear after the next check (or hit
+            “Refresh now”).
+          </p>
+        )}
       </div>
     );
   }
@@ -454,7 +471,7 @@ function ChangeList({
   return (
     <ul className="divide-y divide-border">
       {changes.map((c) => (
-        <Row key={c.id} c={c} />
+        <Row key={c.id} c={c} showEvent={showEvent} />
       ))}
     </ul>
   );

@@ -108,6 +108,35 @@ export interface ChangeItem {
   detectedAt: string;
 }
 
+/**
+ * The followers captured in the latest snapshot — i.e. the profile's existing
+ * followers (the "head" of the list). Lets the dashboard show real followers
+ * immediately, before any FOLLOW/UNFOLLOW events accumulate over time.
+ */
+export async function getCurrentFollowers(profileId: string, limit = 100): Promise<ChangeItem[]> {
+  const snap = await prisma.followerSnapshot.findFirst({
+    where: { profileId, status: { in: ["SUCCESS", "PARTIAL"] } },
+    orderBy: { startedAt: "desc" },
+    select: { id: true },
+  });
+  if (!snap) return [];
+
+  const rows = await prisma.follower.findMany({
+    where: { snapshotId: snap.id },
+    orderBy: { position: "asc" },
+    take: limit,
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    followerUsername: r.username,
+    displayName: r.displayName,
+    avatarUrl: r.avatarUrl,
+    isVerified: r.isVerified,
+    type: "FOLLOW" as const,
+    detectedAt: r.observedAt.toISOString(),
+  }));
+}
+
 export async function getRecentChanges(
   profileId: string,
   opts: { type?: "FOLLOW" | "UNFOLLOW"; period?: Period; limit?: number } = {},

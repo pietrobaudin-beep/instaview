@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { Dashboard } from "@/components/dashboard/dashboard";
-import { getGrowthSeries, getRecentChanges, getSummary } from "@/lib/analytics";
+import { getCurrentFollowers, getGrowthSeries, getSummary } from "@/lib/analytics";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
@@ -20,7 +20,9 @@ export default async function ProfileDashboardPage({ params }: { params: { id: s
   const [summary, series, changes] = await Promise.all([
     getSummary(profile.id),
     getGrowthSeries(profile.id, period),
-    getRecentChanges(profile.id, { type: "FOLLOW", period, limit: 100 }),
+    // Default view = current followers, so the dashboard shows real people
+    // immediately (new-follower events accumulate over time).
+    getCurrentFollowers(profile.id, 100),
   ]);
 
   const initial = {
