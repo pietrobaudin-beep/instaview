@@ -24,6 +24,8 @@ model User {
   id            String   @id @default(cuid())
   email         String   @unique
   name          String?
+  // Credentials auth (email + password). Null for demo/seed or SSO users.
+  passwordHash  String?
   plan          Plan     @default(FREE)
   // Stripe billing (scaffold — see lib/plans.ts)
   stripeCustomerId     String? @unique

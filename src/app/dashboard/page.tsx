@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Activity, ChevronRight, CircleDot } from "lucide-react";
 import { TrackForm } from "@/components/track-form";
+import { LogoutButton } from "@/components/logout-button";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,7 +14,8 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardHome() {
   const user = await getCurrentUser();
-  const profiles = user ? await getUserProfiles(user.id) : [];
+  if (!user) redirect("/login");
+  const profiles = await getUserProfiles(user.id);
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-10">
@@ -20,7 +23,10 @@ export default async function DashboardHome() {
         <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
           <Activity className="h-5 w-5 text-accent" /> InstaView
         </Link>
-        {user && <span className="text-sm text-muted-foreground">{user.email}</span>}
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-muted-foreground">{user.email}</span>
+          <LogoutButton />
+        </div>
       </div>
 
       <h1 className="text-2xl font-semibold tracking-tight">Tracked profiles</h1>

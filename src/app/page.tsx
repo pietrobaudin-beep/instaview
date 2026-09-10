@@ -31,9 +31,17 @@ export default function Home() {
           <Activity className="h-5 w-5 text-accent" />
           InstaView
         </div>
-        <Link href="/dashboard" className="text-sm text-muted-foreground hover:text-foreground">
-          Dashboard →
-        </Link>
+        <nav className="flex items-center gap-4 text-sm">
+          <Link href="/login" className="text-muted-foreground hover:text-foreground">
+            Log in
+          </Link>
+          <Link
+            href="/signup"
+            className="rounded-lg bg-primary px-3 py-1.5 font-medium text-primary-foreground hover:opacity-90"
+          >
+            Sign up
+          </Link>
+        </nav>
       </header>
 
       {/* Hero */}

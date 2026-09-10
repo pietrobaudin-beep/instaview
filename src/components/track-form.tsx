@@ -7,24 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { normalizeUsername } from "@/lib/utils";
 
-const DEMO_EMAIL = "demo@instaview.local";
-
 export function TrackForm({ autoFocus = true }: { autoFocus?: boolean }) {
   const router = useRouter();
   const [value, setValue] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-
-  async function ensureSession() {
-    // Dev auth: silently provision/reuse a demo session so the hero flow works
-    // with a single field. In production (AUTH_MODE=supabase) this is replaced
-    // by a real sign-in screen.
-    await fetch("/api/auth/dev", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email: DEMO_EMAIL, name: "Demo" }),
-    });
-  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -36,12 +23,17 @@ export function TrackForm({ autoFocus = true }: { autoFocus?: boolean }) {
     }
     setLoading(true);
     try {
-      await ensureSession();
       const res = await fetch("/api/track", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ username }),
       });
+      // Not logged in → send them to sign up, carrying the handle so we can
+      // track it automatically right after they create their account.
+      if (res.status === 401) {
+        router.push(`/signup?username=${encodeURIComponent(username)}`);
+        return;
+      }
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? "Something went wrong.");

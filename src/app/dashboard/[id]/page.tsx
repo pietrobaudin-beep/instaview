@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export default async function ProfileDashboardPage({ params }: { params: { id: string } }) {
   const user = await getCurrentUser();
-  if (!user) redirect("/");
+  if (!user) redirect("/login");
 
   const profile = await prisma.trackedProfile.findFirst({
     where: { id: params.id, userId: user.id },
