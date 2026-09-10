@@ -1,15 +1,22 @@
 /**
  * HikerApiProvider — real third-party adapter (provider-dependent).
  *
- * HikerAPI (https://hikerapi.com) is a paid scraping API that DOES expose
- * follower lists. Using it means you (the operator) accept HikerAPI's terms and
- * the Instagram ToS risk that comes with scraped data — see README §Legal.
+ * HikerAPI (https://hikerapi.com) is a paid API that exposes real Instagram
+ * data, including follower lists. Using it means you (the operator) accept
+ * HikerAPI's terms and the Instagram ToS risk that comes with scraped data.
  *
- * ⚠️ ENDPOINT PATHS / RESPONSE SHAPES BELOW MUST BE VERIFIED against the live
- * HikerAPI documentation before production use — they version their API and the
- * exact routes change. This adapter is written defensively (tolerant parsing +
- * typed errors) precisely so that only THIS file changes when they do. The rest
- * of InstaView depends solely on the InstagramDataProvider interface.
+ * Verified against HikerAPI docs (hiker-doc.readthedocs.io):
+ *   - Auth: header `x-access-key: <API_KEY>`
+ *   - Profile:  GET /v1/user/by/username?username=<u>
+ *               -> { pk, username, full_name, follower_count, following_count,
+ *                    media_count, profile_pic_url, is_verified, is_private }
+ *   - Followers: GET /v1/user/followers/chunk?user_id=<pk>&max_id=<cursor>
+ *               -> { users: [{ username, full_name, pk, profile_pic_url,
+ *                    is_verified }], next_max_id }
+ *   - Following: GET /v1/user/following/chunk?user_id=<pk>&max_id=<cursor>
+ *
+ * The followers endpoint needs the numeric user_id, so we resolve it from the
+ * username first (cached per instance).
  */
 import { logger } from "@/lib/logger";
 import {
@@ -29,73 +36,82 @@ interface HikerConfig {
   defaultPageSize: number;
 }
 
+interface HikerUser {
+  pk: string | number;
+  username: string;
+  full_name?: string;
+  follower_count?: number;
+  following_count?: number;
+  media_count?: number;
+  profile_pic_url?: string;
+  profile_pic_url_hd?: string;
+  is_verified?: boolean;
+  is_private?: boolean;
+}
+
 export class HikerApiProvider implements InstagramDataProvider {
   readonly name = "hikerapi";
   readonly supportsFollowerList = true;
 
+  private userCache = new Map<string, HikerUser>();
+
   constructor(private cfg: HikerConfig) {
-    if (!cfg.apiKey) {
-      throw new ProviderError("HIKERAPI_KEY is not set", "AUTH");
-    }
+    if (!cfg.apiKey) throw new ProviderError("HIKERAPI_KEY is not set", "AUTH");
   }
 
   private async request<T>(path: string, params: Record<string, string>): Promise<T> {
     const url = new URL(path, this.cfg.baseUrl);
-    for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
+    for (const [k, v] of Object.entries(params)) if (v) url.searchParams.set(k, v);
 
     let res: Response;
     try {
       res = await fetch(url, {
         headers: { "x-access-key": this.cfg.apiKey, accept: "application/json" },
-        // Collections run server-side in a job; keep a bounded timeout.
-        signal: AbortSignal.timeout(20_000),
+        signal: AbortSignal.timeout(25_000),
       });
     } catch (e) {
       throw new ProviderError(`Network error calling HikerAPI: ${(e as Error).message}`, "UNAVAILABLE", true);
     }
 
-    if (res.status === 401 || res.status === 403) {
-      throw new ProviderError("HikerAPI rejected the API key", "AUTH");
-    }
-    if (res.status === 404) {
-      throw new ProviderError("Profile not found", "NOT_FOUND");
-    }
-    if (res.status === 429) {
-      throw new ProviderError("HikerAPI rate limit hit", "RATE_LIMIT", true);
-    }
-    if (!res.ok) {
-      throw new ProviderError(`HikerAPI returned ${res.status}`, "UNKNOWN", res.status >= 500);
-    }
+    if (res.status === 401 || res.status === 403) throw new ProviderError("HikerAPI rejected the API key", "AUTH");
+    if (res.status === 404) throw new ProviderError("Profile not found", "NOT_FOUND");
+    if (res.status === 429) throw new ProviderError("HikerAPI rate limit hit", "RATE_LIMIT", true);
+    if (!res.ok) throw new ProviderError(`HikerAPI returned ${res.status}`, "UNKNOWN", res.status >= 500);
     return (await res.json()) as T;
   }
 
-  async getProfile(username: string): Promise<ProfileData> {
-    // VERIFY endpoint against HikerAPI docs (e.g. /v1/user/by/username).
+  private async resolveUser(username: string): Promise<HikerUser> {
+    const key = username.toLowerCase();
+    const cached = this.userCache.get(key);
+    if (cached) return cached;
     const data = await this.request<any>("/v1/user/by/username", { username });
-    const u = data?.user ?? data ?? {};
-    if (u.is_private) {
-      // Private accounts' follower lists are not retrievable.
-      log.warn("profile is private", { username });
-    }
+    const user: HikerUser = data?.user ?? data ?? {};
+    if (!user.pk) throw new ProviderError("HikerAPI returned no user id", "UNKNOWN");
+    this.userCache.set(key, user);
+    return user;
+  }
+
+  async getProfile(username: string): Promise<ProfileData> {
+    const u = await this.resolveUser(username);
     return {
-      username,
+      username: u.username ?? username,
       displayName: u.full_name ?? null,
       avatarUrl: u.profile_pic_url_hd ?? u.profile_pic_url ?? null,
-      bio: u.biography ?? null,
+      bio: null,
       isPrivate: Boolean(u.is_private),
       isVerified: Boolean(u.is_verified),
-      followersCount: Number(u.follower_count ?? u.edge_followed_by?.count ?? 0),
-      followingCount: Number(u.following_count ?? u.edge_follow?.count ?? 0),
+      followersCount: Number(u.follower_count ?? 0),
+      followingCount: Number(u.following_count ?? 0),
       postsCount: Number(u.media_count ?? 0),
     };
   }
 
   async getFollowers(username: string, opts: GetFollowersOptions = {}): Promise<GetFollowersResult> {
-    return this.paginate("/v2/user/followers", username, opts);
+    return this.paginate("/v1/user/followers/chunk", username, opts);
   }
 
   async getFollowing(username: string, opts: GetFollowersOptions = {}): Promise<GetFollowersResult> {
-    return this.paginate("/v2/user/following", username, opts);
+    return this.paginate("/v1/user/following/chunk", username, opts);
   }
 
   private async paginate(
@@ -103,6 +119,11 @@ export class HikerApiProvider implements InstagramDataProvider {
     username: string,
     opts: GetFollowersOptions,
   ): Promise<GetFollowersResult> {
+    const user = await this.resolveUser(username);
+    if (user.is_private) {
+      throw new ProviderError("Account is private — follower list not available", "PRIVATE");
+    }
+
     const maxPages = opts.maxPages ?? 5;
     const followers: FollowerEntry[] = [];
     let cursor = opts.cursor ?? "";
@@ -110,11 +131,8 @@ export class HikerApiProvider implements InstagramDataProvider {
     let hadMore = false;
 
     while (pages < maxPages) {
-      const params: Record<string, string> = { username };
-      if (cursor) params.page_id = cursor;
-      // VERIFY response shape (users[] + next_page_id) against HikerAPI docs.
-      const data = await this.request<any>(path, params);
-      const users: any[] = data?.users ?? data?.response?.users ?? [];
+      const data = await this.request<any>(path, { user_id: String(user.pk), max_id: cursor });
+      const users: HikerUser[] = data?.users ?? [];
       for (const u of users) {
         followers.push({
           username: u.username,
@@ -123,12 +141,13 @@ export class HikerApiProvider implements InstagramDataProvider {
           isVerified: Boolean(u.is_verified),
         });
       }
-      cursor = data?.next_page_id ?? data?.next_cursor ?? "";
+      cursor = data?.next_max_id ? String(data.next_max_id) : "";
       pages++;
       if (!cursor) break;
       if (pages >= maxPages) hadMore = true;
     }
 
+    log.debug("fetched followers", { username, count: followers.length, truncated: hadMore });
     return { followers, mode: hadMore ? "head" : "full", truncated: hadMore };
   }
 }
