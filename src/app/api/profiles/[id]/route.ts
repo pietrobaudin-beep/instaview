@@ -27,7 +27,11 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     getRecentChanges(profile.id, { type: type ?? "FOLLOW", period, limit: 100 }),
   ]);
 
+  // Paywall: FREE users see the data blurred and must upgrade to reveal it.
+  const locked = user.plan === "FREE";
+
   return NextResponse.json({
+    locked,
     profile: {
       id: profile.id,
       username: profile.username,

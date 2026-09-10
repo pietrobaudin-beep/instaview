@@ -9,9 +9,11 @@ import {
   BadgeCheck,
   CircleDot,
   Loader2,
+  Lock,
   Pause,
   Play,
   RefreshCw,
+  Sparkles,
   TrendingUp,
   UserMinus,
   UserPlus,
@@ -26,6 +28,7 @@ import type { ChangeItem, DashboardSummary, Period, SeriesPoint } from "@/lib/an
 import { cn, formatNumber } from "@/lib/utils";
 
 interface DashboardData {
+  locked: boolean;
   profile: {
     id: string;
     username: string;
@@ -218,7 +221,7 @@ export function Dashboard({ initial }: { initial: DashboardData }) {
                   </TabBtn>
                 </div>
               </div>
-              <ChangeList changes={data.changes} tab={tab} />
+              <ChangeList changes={data.changes} tab={tab} locked={data.locked} />
             </CardContent>
           </Card>
         </div>
@@ -351,15 +354,90 @@ function TabBtn({
   );
 }
 
-function ChangeList({ changes, tab }: { changes: ChangeItem[]; tab: "FOLLOW" | "UNFOLLOW" }) {
+// Synthetic rows so the paywall always has something to blur (e.g. a freshly
+// tracked profile whose only snapshot is the baseline).
+const PLACEHOLDER_ROWS: ChangeItem[] = Array.from({ length: 6 }, (_, i) => ({
+  id: `ph-${i}`,
+  followerUsername: ["lucas.silva", "amanda.souza", "joao_pedro", "marina.costa", "rafael.dev", "bia.santos"][i],
+  displayName: ["Lucas Silva", "Amanda Souza", "João Pedro", "Marina Costa", "Rafael Alves", "Beatriz Santos"][i],
+  avatarUrl: null,
+  isVerified: i % 3 === 0,
+  type: "FOLLOW",
+  detectedAt: new Date(Date.now() - (i + 1) * 17 * 60_000).toISOString(),
+}));
+
+function Row({ c }: { c: ChangeItem }) {
+  return (
+    <li className="flex items-center gap-3 py-3">
+      <Avatar src={c.avatarUrl} name={c.displayName ?? c.followerUsername} size={40} />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
+          <span className="truncate font-medium">@{c.followerUsername}</span>
+          {c.isVerified && <BadgeCheck className="h-4 w-4 shrink-0 text-accent" />}
+        </div>
+        {c.displayName && <p className="truncate text-sm text-muted-foreground">{c.displayName}</p>}
+      </div>
+      <div className="shrink-0 text-right">
+        <Badge variant={c.type === "FOLLOW" ? "success" : "destructive"}>
+          {c.type === "FOLLOW" ? "Followed" : "Unfollowed"}
+        </Badge>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {formatDistanceToNow(new Date(c.detectedAt), { addSuffix: true })}
+        </p>
+      </div>
+    </li>
+  );
+}
+
+function ChangeList({
+  changes,
+  tab,
+  locked,
+}: {
+  changes: ChangeItem[];
+  tab: "FOLLOW" | "UNFOLLOW";
+  locked: boolean;
+}) {
+  // Paywall: blur the identities and gate them behind an upgrade CTA.
+  if (locked) {
+    const rows = changes.length > 0 ? changes.slice(0, 8) : PLACEHOLDER_ROWS;
+    return (
+      <div className="relative">
+        <ul className="divide-y divide-border select-none blur-[6px]" aria-hidden>
+          {rows.map((c) => (
+            <Row key={c.id} c={c} />
+          ))}
+        </ul>
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-background/40 to-background/90 p-6 text-center">
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-accent/15 text-accent">
+            <Lock className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="font-semibold">
+              {changes.length > 0
+                ? `${changes.length} new follower${changes.length > 1 ? "s" : ""} in this range`
+                : "New followers detected"}
+            </p>
+            <p className="mt-1 max-w-xs text-sm text-muted-foreground">
+              Unlock to reveal exactly <span className="text-foreground">who</span> started following
+              — with names, photos and timestamps.
+            </p>
+          </div>
+          <Link href="/pricing">
+            <Button variant="accent" size="sm">
+              <Sparkles className="h-4 w-4" /> Unlock — Upgrade to Pro
+            </Button>
+          </Link>
+          <p className="text-[11px] text-muted-foreground">Cancel anytime · from $19/mo</p>
+        </div>
+      </div>
+    );
+  }
+
   if (changes.length === 0) {
     return (
       <div className="flex flex-col items-center gap-2 py-12 text-center text-sm text-muted-foreground">
-        {tab === "FOLLOW" ? (
-          <UserPlus className="h-6 w-6" />
-        ) : (
-          <UserMinus className="h-6 w-6" />
-        )}
+        {tab === "FOLLOW" ? <UserPlus className="h-6 w-6" /> : <UserMinus className="h-6 w-6" />}
         <p>
           {tab === "FOLLOW"
             ? "No new followers detected in this range yet."
@@ -376,26 +454,7 @@ function ChangeList({ changes, tab }: { changes: ChangeItem[]; tab: "FOLLOW" | "
   return (
     <ul className="divide-y divide-border">
       {changes.map((c) => (
-        <li key={c.id} className="flex items-center gap-3 py-3">
-          <Avatar src={c.avatarUrl} name={c.displayName ?? c.followerUsername} size={40} />
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5">
-              <span className="truncate font-medium">@{c.followerUsername}</span>
-              {c.isVerified && <BadgeCheck className="h-4 w-4 shrink-0 text-accent" />}
-            </div>
-            {c.displayName && (
-              <p className="truncate text-sm text-muted-foreground">{c.displayName}</p>
-            )}
-          </div>
-          <div className="shrink-0 text-right">
-            <Badge variant={c.type === "FOLLOW" ? "success" : "destructive"}>
-              {c.type === "FOLLOW" ? "Followed" : "Unfollowed"}
-            </Badge>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {formatDistanceToNow(new Date(c.detectedAt), { addSuffix: true })}
-            </p>
-          </div>
-        </li>
+        <Row key={c.id} c={c} />
       ))}
     </ul>
   );

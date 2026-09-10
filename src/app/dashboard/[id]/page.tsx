@@ -24,6 +24,7 @@ export default async function ProfileDashboardPage({ params }: { params: { id: s
   ]);
 
   const initial = {
+    locked: user.plan === "FREE",
     profile: {
       id: profile.id,
       username: profile.username,
