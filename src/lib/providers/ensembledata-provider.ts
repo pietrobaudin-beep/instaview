@@ -107,12 +107,12 @@ export class EnsembleDataProvider implements InstagramDataProvider {
   // EnsembleData's Instagram followers endpoint returns only a COUNT, not the
   // list of follower usernames. We surface the count via getProfile; there is
   // no follower list to return here.
-  async getFollowers(): Promise<GetFollowersResult> {
+  async getFollowers(_username: string, _opts?: GetFollowersOptions): Promise<GetFollowersResult> {
     log.warn("EnsembleData does not provide follower lists (count only)");
     return { followers: [] as FollowerEntry[], mode: "head", truncated: true };
   }
 
-  async getFollowing(): Promise<GetFollowersResult> {
+  async getFollowing(_username: string, _opts?: GetFollowersOptions): Promise<GetFollowersResult> {
     return { followers: [] as FollowerEntry[], mode: "head", truncated: true };
   }
 }
