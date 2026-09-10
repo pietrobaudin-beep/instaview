@@ -1,0 +1,296 @@
+// InstaView — Prisma schema
+// Detect who started following any Instagram profile via snapshot diffing.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Auth / accounts
+// ---------------------------------------------------------------------------
+
+enum Plan {
+  FREE
+  PRO
+  AGENCY
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String?
+  plan          Plan     @default(FREE)
+  // Stripe billing (scaffold — see lib/plans.ts)
+  stripeCustomerId     String? @unique
+  stripeSubscriptionId String? @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  trackedProfiles TrackedProfile[]
+  memberships     Membership[]
+
+  @@map("users")
+}
+
+// Agencies / teams: many users can access many profiles (AGENCY plan).
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  plan      Plan     @default(FREE)
+  createdAt DateTime @default(now())
+
+  members         Membership[]
+  trackedProfiles TrackedProfile[]
+
+  @@map("organizations")
+}
+
+enum MemberRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model Membership {
+  id             String       @id @default(cuid())
+  userId         String
+  organizationId String
+  role           MemberRole   @default(MEMBER)
+  createdAt      DateTime     @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@map("memberships")
+}
+
+// ---------------------------------------------------------------------------
+// Tracked profiles + collection pipeline
+// ---------------------------------------------------------------------------
+
+enum MonitoringStatus {
+  ACTIVE
+  PAUSED
+  ERROR
+}
+
+model TrackedProfile {
+  id       String @id @default(cuid())
+  // The Instagram handle being monitored (normalized, no leading @).
+  username String
+
+  // Cached profile metadata (refreshed on each collection).
+  displayName    String?
+  avatarUrl      String?
+  bio            String?
+  isPrivate      Boolean @default(false)
+  isVerified     Boolean @default(false)
+  followersCount Int     @default(0)
+  followingCount Int     @default(0)
+  postsCount     Int     @default(0)
+
+  status            MonitoringStatus @default(ACTIVE)
+  monitoringStartedAt DateTime       @default(now())
+  lastCollectedAt   DateTime?
+  lastError         String?
+
+  // Ownership: a profile belongs to a user, optionally scoped to an org.
+  userId         String
+  organizationId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  snapshots FollowerSnapshot[]
+  followers Follower[]
+  changes   FollowerChange[]
+  job       MonitoringJob?
+  alertRules AlertRule[]
+
+  // A given user cannot track the same handle twice.
+  @@unique([userId, username])
+  @@index([status])
+  @@index([username])
+  @@map("tracked_profiles")
+}
+
+enum SnapshotStatus {
+  PENDING
+  SUCCESS
+  PARTIAL
+  FAILED
+}
+
+// One collection of (the head of) the follower list at a moment in time.
+model FollowerSnapshot {
+  id        String         @id @default(cuid())
+  profileId String
+  status    SnapshotStatus @default(PENDING)
+
+  // Whether the provider returned the FULL list or only the recent head.
+  // "head" mode reliably detects FOLLOWs but not UNFOLLOWs of old accounts.
+  mode        String  @default("head") // "head" | "full"
+  capturedCount Int   @default(0)      // followers seen in this snapshot
+  followersCount Int  @default(0)      // profile-reported total at capture time
+
+  // Diff results, denormalized for fast reads.
+  newFollowerCount  Int @default(0)
+  lostFollowerCount Int @default(0)
+
+  error       String?
+  startedAt   DateTime @default(now())
+  completedAt DateTime?
+
+  profile   TrackedProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  followers Follower[]
+  changes   FollowerChange[]
+
+  @@index([profileId, startedAt])
+  @@map("follower_snapshots")
+}
+
+// A follower observed in a specific snapshot.
+model Follower {
+  id         String @id @default(cuid())
+  profileId  String
+  snapshotId String
+
+  username    String
+  displayName String?
+  avatarUrl   String?
+  isVerified  Boolean @default(false)
+  position    Int     @default(0) // index within the returned list (0 = most recent)
+
+  observedAt DateTime @default(now())
+
+  profile  TrackedProfile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  snapshot FollowerSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, username])
+  @@index([snapshotId])
+  @@map("followers")
+}
+
+enum ChangeType {
+  FOLLOW
+  UNFOLLOW
+}
+
+// The headline event: a follower started (or stopped) following the profile.
+model FollowerChange {
+  id              String     @id @default(cuid())
+  profileId       String
+  snapshotId      String
+  followerUsername String
+  type            ChangeType
+
+  // Follower metadata captured at detection time.
+  displayName String?
+  avatarUrl   String?
+  isVerified  Boolean @default(false)
+
+  detectedAt DateTime @default(now())
+
+  profile  TrackedProfile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  snapshot FollowerSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+
+  // Fast queries for the dashboard: "new followers in last 24h/7d/30d".
+  @@index([profileId, type, detectedAt])
+  @@index([profileId, detectedAt])
+  @@index([snapshotId])
+  @@map("follower_changes")
+}
+
+// ---------------------------------------------------------------------------
+// Monitoring jobs (cron scheduling per profile)
+// ---------------------------------------------------------------------------
+
+model MonitoringJob {
+  id        String @id @default(cuid())
+  profileId String @unique
+
+  enabled          Boolean @default(true)
+  intervalMinutes  Int     @default(120)
+  nextRunAt        DateTime @default(now())
+  lastRunAt        DateTime?
+  lastRunStatus    String?  // "success" | "partial" | "failed"
+  consecutiveFailures Int   @default(0)
+  runCount         Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  profile TrackedProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  // The cron endpoint claims due jobs with: WHERE enabled AND nextRunAt <= now()
+  @@index([enabled, nextRunAt])
+  @@map("monitoring_jobs")
+}
+
+// ---------------------------------------------------------------------------
+// Alerts (architecture prepared; only console/log channel active in MVP)
+// ---------------------------------------------------------------------------
+
+enum AlertChannel {
+  EMAIL
+  WEBHOOK
+  TELEGRAM
+  DISCORD
+}
+
+enum AlertTrigger {
+  NEW_FOLLOWER          // fire per detected new follower
+  FOLLOWER_MILESTONE    // fire when gained N followers in a window
+}
+
+model AlertRule {
+  id        String       @id @default(cuid())
+  profileId String
+  channel   AlertChannel
+  trigger   AlertTrigger @default(NEW_FOLLOWER)
+  enabled   Boolean      @default(true)
+
+  // Channel target: email address, webhook URL, chat id, etc.
+  target       String
+  // For FOLLOWER_MILESTONE: threshold + window in hours.
+  threshold    Int?
+  windowHours  Int?
+
+  createdAt DateTime @default(now())
+
+  profile        TrackedProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  deliveries     AlertDelivery[]
+
+  @@index([profileId, enabled])
+  @@map("alert_rules")
+}
+
+enum DeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+model AlertDelivery {
+  id        String         @id @default(cuid())
+  ruleId    String
+  status    DeliveryStatus @default(PENDING)
+  payload   Json
+  error     String?
+  createdAt DateTime       @default(now())
+  sentAt    DateTime?
+
+  rule AlertRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+
+  @@index([ruleId, status])
+  @@map("alert_deliveries")
+}

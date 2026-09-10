@@ -1,0 +1,23 @@
+# Local Postgres for development.
+# Usage: docker compose up -d
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: instaview-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: instaview
+      POSTGRES_PASSWORD: instaview
+      POSTGRES_DB: instaview
+    ports:
+      - "5432:5432"
+    volumes:
+      - instaview_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U instaview"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  instaview_pgdata:
