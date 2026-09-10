@@ -35,6 +35,10 @@ const schema = z.object({
   AUTH_MODE: z.enum(["dev", "supabase"]).default("dev"),
 
   STRIPE_SECRET_KEY: z.string().default(""),
+
+  // Admin panel access.
+  ADMIN_EMAILS: z.string().default(""), // comma-separated list of admin emails
+  ADMIN_TOKEN: z.string().default(""), // shared secret required to log in as admin
 });
 
 const raw = {
@@ -51,6 +55,8 @@ const raw = {
   DEFAULT_COLLECTION_INTERVAL_MINUTES: clean(process.env.DEFAULT_COLLECTION_INTERVAL_MINUTES),
   AUTH_MODE: clean(process.env.AUTH_MODE),
   STRIPE_SECRET_KEY: clean(process.env.STRIPE_SECRET_KEY),
+  ADMIN_EMAILS: clean(process.env.ADMIN_EMAILS),
+  ADMIN_TOKEN: clean(process.env.ADMIN_TOKEN),
 };
 
 const parsed = schema.safeParse(raw);
