@@ -132,7 +132,11 @@ export class HikerApiProvider implements InstagramDataProvider {
 
     while (pages < maxPages) {
       const data = await this.request<any>(path, { user_id: String(user.pk), max_id: cursor });
-      const users: HikerUser[] = data?.users ?? [];
+      // HikerAPI /chunk endpoints return a tuple: [ users[], next_max_id ].
+      // Some endpoints/versions return { users, next_max_id } — handle both.
+      const isTuple = Array.isArray(data);
+      const users: HikerUser[] = isTuple ? data[0] ?? [] : data?.users ?? [];
+      const nextMaxId = isTuple ? data[1] : (data?.next_max_id ?? data?.next_cursor);
       for (const u of users) {
         followers.push({
           username: u.username,
@@ -141,7 +145,7 @@ export class HikerApiProvider implements InstagramDataProvider {
           isVerified: Boolean(u.is_verified),
         });
       }
-      cursor = data?.next_max_id ? String(data.next_max_id) : "";
+      cursor = nextMaxId ? String(nextMaxId) : "";
       pages++;
       if (!cursor) break;
       if (pages >= maxPages) hadMore = true;
