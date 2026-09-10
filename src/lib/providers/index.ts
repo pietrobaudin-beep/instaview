@@ -5,6 +5,7 @@
  */
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
+import { EnsembleDataProvider } from "./ensembledata-provider";
 import { HikerApiProvider } from "./hiker-provider";
 import { MockProvider } from "./mock-provider";
 import type { InstagramDataProvider } from "./types";
@@ -20,6 +21,12 @@ export function getProvider(): InstagramDataProvider {
         apiKey: env.HIKERAPI_KEY,
         baseUrl: env.HIKERAPI_BASE_URL,
         defaultPageSize: env.PROVIDER_PAGE_SIZE,
+      });
+      break;
+    case "ensembledata":
+      cached = new EnsembleDataProvider({
+        token: env.ENSEMBLEDATA_TOKEN,
+        baseUrl: env.ENSEMBLEDATA_BASE_URL,
       });
       break;
     case "mock":
