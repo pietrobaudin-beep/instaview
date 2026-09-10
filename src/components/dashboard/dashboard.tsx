@@ -13,6 +13,7 @@ import {
   Pause,
   Play,
   RefreshCw,
+  ScanSearch,
   Sparkles,
   TrendingUp,
   UserMinus,
@@ -40,6 +41,7 @@ interface DashboardData {
     followingCount: number;
     postsCount: number;
     status: "ACTIVE" | "PAUSED" | "ERROR";
+    captureFull: boolean;
     monitoringStartedAt: string;
     lastCollectedAt: string | null;
     lastError: string | null;
@@ -110,6 +112,26 @@ export function Dashboard({ initial }: { initial: DashboardData }) {
     await load(period, tab);
   }
 
+  async function toggleFullCapture() {
+    const enabled = !data.profile.captureFull;
+    if (
+      enabled &&
+      !confirm(
+        "Full capture fetches the ENTIRE follower list on each collection to detect unfollows. " +
+          "This uses many more provider requests (roughly followers ÷ 100 per collection) and is " +
+          "meant for small/medium accounts. Enable it for this profile?",
+      )
+    ) {
+      return;
+    }
+    await fetch(`/api/profiles/${initial.profile.id}/full-capture`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ enabled }),
+    });
+    await load(period, tab);
+  }
+
   const p = data.profile;
   const s = data.summary;
 
@@ -153,7 +175,16 @@ export function Dashboard({ initial }: { initial: DashboardData }) {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant={p.captureFull ? "accent" : "outline"}
+              size="sm"
+              onClick={toggleFullCapture}
+              title="Fetch the full follower list to detect unfollows (uses more requests)"
+            >
+              <ScanSearch className="h-4 w-4" />
+              Full capture: {p.captureFull ? "On" : "Off"}
+            </Button>
             <Button variant="outline" size="sm" onClick={refresh} disabled={refreshing}>
               {refreshing ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -231,6 +262,13 @@ export function Dashboard({ initial }: { initial: DashboardData }) {
                 </div>
               </div>
               <ChangeList changes={data.changes} tab={tab} locked={data.locked} />
+              {tab === "UNFOLLOW" && !p.captureFull && (
+                <p className="mt-3 rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
+                  Unfollow detection needs the full follower list. Turn on{" "}
+                  <span className="font-medium text-foreground">Full capture</span> (top right) to
+                  enable it for @{p.username}.
+                </p>
+              )}
             </CardContent>
           </Card>
         </div>

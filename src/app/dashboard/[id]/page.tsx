@@ -38,6 +38,7 @@ export default async function ProfileDashboardPage({ params }: { params: { id: s
       followingCount: profile.followingCount,
       postsCount: profile.postsCount,
       status: profile.status,
+      captureFull: profile.captureFull,
       monitoringStartedAt: profile.monitoringStartedAt.toISOString(),
       lastCollectedAt: profile.lastCollectedAt?.toISOString() ?? null,
       lastError: profile.lastError,

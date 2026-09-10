@@ -44,7 +44,9 @@ export async function collectProfile(profileId: string): Promise<CollectionSumma
     const [profileData, followersResult] = await Promise.all([
       provider.getProfile(profile.username),
       provider.getFollowers(profile.username, {
-        maxPages: env.PROVIDER_FOLLOWER_PAGES,
+        // Full-capture profiles paginate the whole list (up to a safety cap of
+        // ~100k) so UNFOLLOWs can be trusted; others fetch only the recent head.
+        maxPages: profile.captureFull ? 1000 : env.PROVIDER_FOLLOWER_PAGES,
         pageSize: env.PROVIDER_PAGE_SIZE,
       }),
     ]);

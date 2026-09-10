@@ -102,6 +102,11 @@ model TrackedProfile {
   lastCollectedAt   DateTime?
   lastError         String?
 
+  // When true, each collection fetches the ENTIRE follower list (not just the
+  // recent head), which enables reliable UNFOLLOW detection. Costs more
+  // provider requests, so it's opt-in per profile.
+  captureFull       Boolean @default(false)
+
   // Ownership: a profile belongs to a user, optionally scoped to an org.
   userId         String
   organizationId String?

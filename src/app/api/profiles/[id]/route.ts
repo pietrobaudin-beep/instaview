@@ -52,6 +52,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       followingCount: profile.followingCount,
       postsCount: profile.postsCount,
       status: profile.status,
+      captureFull: profile.captureFull,
       monitoringStartedAt: profile.monitoringStartedAt.toISOString(),
       lastCollectedAt: profile.lastCollectedAt?.toISOString() ?? null,
       lastError: profile.lastError,
