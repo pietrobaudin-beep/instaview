@@ -43,7 +43,9 @@ function pick(obj: any, keys: string[]): any {
 
 export class EnsembleDataProvider implements InstagramDataProvider {
   readonly name = "ensembledata";
-  readonly supportsFollowerList = true;
+  // EnsembleData's Instagram API returns follower COUNTS only, not the list of
+  // follower usernames — so this provider cannot power "who started following".
+  readonly supportsFollowerList = false;
 
   private userCache = new Map<string, any>();
 
@@ -52,7 +54,9 @@ export class EnsembleDataProvider implements InstagramDataProvider {
   }
 
   private async request(path: string, params: Record<string, string>): Promise<any> {
-    const url = new URL(path, this.cfg.baseUrl);
+    // Base URL includes a path ("/apis"), so concatenate rather than use
+    // `new URL(path, base)` (an absolute path would drop "/apis").
+    const url = new URL(this.cfg.baseUrl.replace(/\/+$/, "") + path);
     for (const [k, v] of Object.entries(params)) if (v) url.searchParams.set(k, v);
     url.searchParams.set("token", this.cfg.token);
 
@@ -77,11 +81,9 @@ export class EnsembleDataProvider implements InstagramDataProvider {
     const key = username.toLowerCase();
     const cached = this.userCache.get(key);
     if (cached) return cached;
-    const data = await this.request("/instagram/user/info", { username });
-    // The user object may be `data` itself or nested under `user`.
-    const user = data?.user ?? data ?? {};
-    const pk = pick(user, ["pk", "id", "user_id"]);
-    if (!pk) throw new ProviderError("EnsembleData returned no user id", "UNKNOWN");
+    // detailed-info carries the follower/following/media counts (GraphQL edges).
+    const user = await this.request("/instagram/user/detailed-info", { username });
+    if (!pick(user, ["pk", "id"])) throw new ProviderError("EnsembleData returned no user id", "UNKNOWN");
     this.userCache.set(key, user);
     return user;
   }
@@ -90,54 +92,27 @@ export class EnsembleDataProvider implements InstagramDataProvider {
     const u = await this.resolveUser(username);
     return {
       username: pick(u, ["username"]) ?? username,
-      displayName: pick(u, ["full_name", "fullname"]) ?? null,
-      avatarUrl: pick(u, ["profile_pic_url_hd", "profile_pic_url", "profile_picture"]) ?? null,
-      bio: pick(u, ["biography", "bio"]) ?? null,
+      displayName: pick(u, ["full_name"]) ?? null,
+      avatarUrl: pick(u, ["profile_pic_url_hd", "profile_pic_url"]) ?? null,
+      bio: pick(u, ["biography"]) ?? null,
       isPrivate: Boolean(pick(u, ["is_private"])),
       isVerified: Boolean(pick(u, ["is_verified"])),
-      followersCount: num(pick(u, ["follower_count", "followers", "edge_followed_by"])?.count ?? pick(u, ["follower_count", "followers"])),
-      followingCount: num(pick(u, ["following_count", "following"])?.count ?? pick(u, ["following_count", "following"])),
-      postsCount: num(pick(u, ["media_count", "posts_count", "media"])),
+      // GraphQL-style edge counts.
+      followersCount: num(u?.edge_followed_by?.count ?? pick(u, ["follower_count"])),
+      followingCount: num(u?.edge_follow?.count ?? pick(u, ["following_count"])),
+      postsCount: num(u?.edge_owner_to_timeline_media?.count ?? pick(u, ["media_count"])),
     };
   }
 
-  async getFollowers(username: string, opts: GetFollowersOptions = {}): Promise<GetFollowersResult> {
-    return this.paginate("/instagram/user/followers", username, opts);
+  // EnsembleData's Instagram followers endpoint returns only a COUNT, not the
+  // list of follower usernames. We surface the count via getProfile; there is
+  // no follower list to return here.
+  async getFollowers(): Promise<GetFollowersResult> {
+    log.warn("EnsembleData does not provide follower lists (count only)");
+    return { followers: [] as FollowerEntry[], mode: "head", truncated: true };
   }
 
-  async getFollowing(username: string, opts: GetFollowersOptions = {}): Promise<GetFollowersResult> {
-    return this.paginate("/instagram/user/following", username, opts);
-  }
-
-  private async paginate(path: string, username: string, opts: GetFollowersOptions): Promise<GetFollowersResult> {
-    const user = await this.resolveUser(username);
-    if (user.is_private) throw new ProviderError("Account is private — follower list not available", "PRIVATE");
-    const userId = String(pick(user, ["pk", "id", "user_id"]));
-
-    const maxPages = opts.maxPages ?? 5;
-    const followers: FollowerEntry[] = [];
-    let cursor = opts.cursor ?? "";
-    let pages = 0;
-    let hadMore = false;
-
-    while (pages < maxPages) {
-      const data = await this.request(path, { user_id: userId, cursor });
-      const list: any[] = pick(data, ["users", "followers", "following"]) ?? (Array.isArray(data) ? data : []);
-      for (const u of list) {
-        followers.push({
-          username: pick(u, ["username"]),
-          displayName: pick(u, ["full_name", "fullname"]) ?? null,
-          avatarUrl: pick(u, ["profile_pic_url", "profile_picture"]) ?? null,
-          isVerified: Boolean(pick(u, ["is_verified"])),
-        });
-      }
-      cursor = String(pick(data, ["next_cursor", "cursor", "next_max_id", "end_cursor"]) ?? "");
-      pages++;
-      if (!cursor || cursor === "null") break;
-      if (pages >= maxPages) hadMore = true;
-    }
-
-    log.debug("fetched followers", { username, count: followers.length, truncated: hadMore });
-    return { followers, mode: hadMore ? "head" : "full", truncated: hadMore };
+  async getFollowing(): Promise<GetFollowersResult> {
+    return { followers: [] as FollowerEntry[], mode: "head", truncated: true };
   }
 }
