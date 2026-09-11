@@ -21,20 +21,44 @@ const TEASER = ["lucas.silva", "amanda_souza", "joao.pedro", "marina.costa", "ra
 
 export function ProfileView({ username }: { username: string }) {
   const [state, setState] = React.useState<
-    { kind: "loading" } | { kind: "ok"; data: Preview } | { kind: "error"; code: string }
+    { kind: "loading" } | { kind: "ok"; data: Preview; note?: string } | { kind: "error"; code: string }
   >({ kind: "loading" });
 
   React.useEffect(() => {
     let alive = true;
     setState({ kind: "loading" });
+    const minimal: Preview = {
+      username,
+      displayName: null,
+      avatarUrl: null,
+      isVerified: false,
+      isPrivate: false,
+      followersCount: 0,
+    };
     (async () => {
       try {
         const res = await fetch(`/api/profile-preview?username=${encodeURIComponent(username)}`);
         if (!alive) return;
-        if (res.ok) setState({ kind: "ok", data: await res.json() });
-        else setState({ kind: "error", code: res.status === 404 ? "not_found" : "unavailable" });
+        if (res.ok) {
+          setState({ kind: "ok", data: await res.json() });
+        } else if (res.status === 404) {
+          setState({ kind: "error", code: "not_found" });
+        } else if (res.status === 429) {
+          // Free provider quota reached — still let people start tracking.
+          setState({
+            kind: "ok",
+            data: minimal,
+            note: "Free data limit reached for today — the photo will show after it resets (00:00 UTC).",
+          });
+        } else {
+          setState({
+            kind: "ok",
+            data: minimal,
+            note: "Couldn't load the profile photo right now — you can still start tracking.",
+          });
+        }
       } catch {
-        if (alive) setState({ kind: "error", code: "unavailable" });
+        if (alive) setState({ kind: "ok", data: minimal, note: "Couldn't load the profile photo right now." });
       }
     })();
     return () => {
@@ -96,15 +120,18 @@ export function ProfileView({ username }: { username: string }) {
                 {state.data.displayName && (
                   <p className="truncate text-sm text-muted-foreground">{state.data.displayName}</p>
                 )}
-                <p className="mt-1 text-sm">
-                  <b>{formatNumber(state.data.followersCount)}</b>{" "}
-                  <span className="text-muted-foreground">followers</span>
-                  {state.data.isPrivate && (
-                    <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-                      Private
-                    </span>
-                  )}
-                </p>
+                {state.data.followersCount > 0 && (
+                  <p className="mt-1 text-sm">
+                    <b>{formatNumber(state.data.followersCount)}</b>{" "}
+                    <span className="text-muted-foreground">followers</span>
+                    {state.data.isPrivate && (
+                      <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+                        Private
+                      </span>
+                    )}
+                  </p>
+                )}
+                {state.note && <p className="mt-1 text-xs text-muted-foreground">{state.note}</p>}
               </div>
             </CardContent>
           </Card>

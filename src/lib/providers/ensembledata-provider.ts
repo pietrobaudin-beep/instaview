@@ -69,7 +69,9 @@ export class EnsembleDataProvider implements InstagramDataProvider {
 
     if (res.status === 401 || res.status === 403) throw new ProviderError("EnsembleData rejected the token", "AUTH");
     if (res.status === 404) throw new ProviderError("Profile not found", "NOT_FOUND");
-    if (res.status === 429) throw new ProviderError("EnsembleData quota/rate limit hit", "RATE_LIMIT", true);
+    // 429 and 495 both signal the free daily unit limit was reached.
+    if (res.status === 429 || res.status === 495)
+      throw new ProviderError("EnsembleData daily free limit reached (resets 00:00 UTC)", "RATE_LIMIT", true);
     if (!res.ok) throw new ProviderError(`EnsembleData returned ${res.status}`, "UNKNOWN", res.status >= 500);
 
     const json = await res.json();

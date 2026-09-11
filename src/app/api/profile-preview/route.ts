@@ -44,8 +44,8 @@ export async function GET(req: Request) {
   } catch (e) {
     const code = e instanceof ProviderError ? e.code : "UNKNOWN";
     if (code !== "NOT_FOUND") log.warn("preview failed", { username, code });
-    return NextResponse.json({ error: code === "NOT_FOUND" ? "not_found" : "unavailable" }, {
-      status: code === "NOT_FOUND" ? 404 : 502,
-    });
+    if (code === "NOT_FOUND") return NextResponse.json({ error: "not_found" }, { status: 404 });
+    if (code === "RATE_LIMIT") return NextResponse.json({ error: "quota" }, { status: 429 });
+    return NextResponse.json({ error: "unavailable" }, { status: 502 });
   }
 }
