@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "InstaView — My Unfollowers",
+  "version": "1.0.0",
+  "description": "See who doesn't follow you back and track new unfollowers over time. Runs in your own Instagram session, in your browser. Read-only.",
+  "permissions": ["storage", "scripting", "tabs", "unlimitedStorage"],
+  "host_permissions": ["https://www.instagram.com/*"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "InstaView Unfollowers"
+  }
+}

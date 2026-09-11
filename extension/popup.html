@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="popup.css" />
+    <title>InstaView Unfollowers</title>
+  </head>
+  <body>
+    <header>
+      <div class="brand">
+        <span class="dot"></span> InstaView
+      </div>
+      <span id="lastScan" class="muted"></span>
+    </header>
+
+    <div id="notInstagram" class="notice" hidden>
+      Open <b>instagram.com</b> and log in, then click scan.
+      <button id="openIg" class="btn ghost sm">Open Instagram</button>
+    </div>
+
+    <button id="scanBtn" class="btn primary">Scan my account</button>
+    <div id="progress" class="progress" hidden></div>
+    <div id="error" class="notice error" hidden></div>
+
+    <section id="summary" class="summary" hidden>
+      <div class="stat"><span id="statNotBack" class="num">0</span><span class="lbl">Don't follow back</span></div>
+      <div class="stat"><span id="statUnfollowers" class="num">0</span><span class="lbl">New unfollowers</span></div>
+      <div class="stat"><span id="statNewFollowers" class="num">0</span><span class="lbl">New followers</span></div>
+    </section>
+
+    <nav id="tabs" class="tabs" hidden>
+      <button class="tab active" data-tab="notback">Don't follow back</button>
+      <button class="tab" data-tab="unfollowers">New unfollowers</button>
+      <button class="tab" data-tab="newfollowers">New followers</button>
+    </nav>
+
+    <ul id="list" class="list"></ul>
+
+    <footer class="foot muted">
+      Runs in your own session · read-only · data stored locally in your browser.
+    </footer>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
