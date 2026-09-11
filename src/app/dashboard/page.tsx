@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Activity, ChevronRight, CircleDot } from "lucide-react";
+import { Activity, ChevronRight, CircleDot, UserMinus } from "lucide-react";
 import { TrackForm } from "@/components/track-form";
 import { LogoutButton } from "@/components/logout-button";
 import { Avatar } from "@/components/ui/avatar";
@@ -29,9 +29,26 @@ export default async function DashboardHome() {
         </div>
       </div>
 
+      <Link href="/connect">
+        <Card className="mb-6 border-accent/40 bg-accent/5 transition-colors hover:border-accent/70">
+          <CardContent className="flex items-center gap-4 p-5">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent">
+              <UserMinus className="h-5 w-5" />
+            </div>
+            <div className="flex-1">
+              <p className="font-medium">See who unfollowed you — free</p>
+              <p className="text-sm text-muted-foreground">
+                Connect your own Instagram (in your browser) to track your unfollowers over time.
+              </p>
+            </div>
+            <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
+          </CardContent>
+        </Card>
+      </Link>
+
       <h1 className="text-2xl font-semibold tracking-tight">Tracked profiles</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Add an Instagram @username to start detecting new followers.
+        Your synced account and any @username you track for new followers.
       </p>
 
       <div className="mt-5">
