@@ -17,7 +17,14 @@ interface Preview {
   followersCount: number;
 }
 
-export function TrackForm({ autoFocus = true }: { autoFocus?: boolean }) {
+export function TrackForm({
+  autoFocus = true,
+  mode = "preview",
+}: {
+  autoFocus?: boolean;
+  /** "preview" → public result page (no login). "track" → add to your account. */
+  mode?: "preview" | "track";
+}) {
   const router = useRouter();
   const [value, setValue] = React.useState("");
   const [loading, setLoading] = React.useState(false);
@@ -63,6 +70,13 @@ export function TrackForm({ autoFocus = true }: { autoFocus?: boolean }) {
       return;
     }
     setLoading(true);
+
+    // Public preview flow: no login needed — go straight to the result page.
+    if (mode === "preview") {
+      router.push(`/p/${encodeURIComponent(username)}`);
+      return;
+    }
+
     try {
       const res = await fetch("/api/track", {
         method: "POST",

@@ -52,7 +52,7 @@ export default async function DashboardHome() {
       </p>
 
       <div className="mt-5">
-        <TrackForm autoFocus={false} />
+        <TrackForm autoFocus={false} mode="track" />
       </div>
 
       <div className="mt-8 space-y-3">
