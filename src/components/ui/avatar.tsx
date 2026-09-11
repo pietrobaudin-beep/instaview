@@ -42,6 +42,7 @@ export function Avatar({
           className="h-full w-full object-cover"
           onError={() => setFailed(true)}
           loading="lazy"
+          referrerPolicy="no-referrer"
         />
       ) : (
         <span>{initials(name)}</span>
