@@ -6,8 +6,8 @@ import { Activity, Bookmark, Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
-/** Builds the self-contained bookmarklet, embedding this site's real origin. */
-function buildBookmarklet(origin: string): string {
+/** Builds the self-contained sync script, embedding this site's real origin. */
+function buildScript(origin: string): string {
   const code = `(async()=>{try{
 var S=${JSON.stringify(origin)},A="936619743392459";
 var gc=function(n){var v="; "+document.cookie,p=v.split("; "+n+"=");return p.length===2?p.pop().split(";").shift():null};
@@ -25,25 +25,25 @@ var send=function(){try{if(w&&!w.closed)w.postMessage({type:"instaview:data",pay
 window.addEventListener("message",function(e){if(e.source===w&&e.data==="instaview:ready")send()});
 send();
 }catch(err){alert("Erro: "+(err&&err.message||err))}})();`;
-  return "javascript:" + code.replace(/\n/g, "");
+  return code.replace(/\n/g, "");
 }
 
 export function ConnectClient() {
   const linkRef = React.useRef<HTMLAnchorElement>(null);
-  const [code, setCode] = React.useState("");
+  const [raw, setRaw] = React.useState("");
   const [copied, setCopied] = React.useState(false);
 
   React.useEffect(() => {
-    const bm = buildBookmarklet(window.location.origin);
-    setCode(bm);
+    const script = buildScript(window.location.origin);
+    setRaw(script);
     // Set the javascript: href via the DOM to bypass React URL sanitization,
     // so the link is draggable to the bookmarks bar.
-    if (linkRef.current) linkRef.current.setAttribute("href", bm);
+    if (linkRef.current) linkRef.current.setAttribute("href", "javascript:" + script);
   }, []);
 
   async function copy() {
     try {
-      await navigator.clipboard.writeText(code);
+      await navigator.clipboard.writeText(raw);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -68,9 +68,42 @@ export function ConnectClient() {
 
       <Card className="mt-6">
         <CardContent className="p-6">
-          <p className="text-sm font-medium">1. Add the sync button to your bookmarks bar</p>
+          <span className="inline-block rounded-full bg-success/15 px-2 py-0.5 text-[11px] font-medium text-success">
+            Recommended · always works
+          </span>
+          <p className="mt-2 text-sm font-medium">Method 1 — Console</p>
+          <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-sm text-muted-foreground">
+            <li>
+              <Button variant="outline" size="sm" onClick={copy}>
+                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {copied ? "Copied!" : "Copy sync code"}
+              </Button>
+            </li>
+            <li>
+              Open{" "}
+              <a
+                href="https://www.instagram.com/"
+                target="_blank"
+                rel="noreferrer"
+                className="text-accent hover:underline"
+              >
+                instagram.com
+              </a>{" "}
+              (logged in) and open the developer console:
+              <br />
+              <span className="text-xs">Mac: ⌘ + ⌥ + J · Windows: Ctrl + Shift + J</span>
+            </li>
+            <li>Paste the code, press Enter, and keep both tabs open (~1 min).</li>
+            <li>A window opens and syncs; then come back to your dashboard.</li>
+          </ol>
+        </CardContent>
+      </Card>
+
+      <Card className="mt-4">
+        <CardContent className="p-6">
+          <p className="text-sm font-medium">Method 2 — Bookmark (quick, but Instagram may block it)</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Drag this button to your bookmarks bar (⌘/Ctrl+Shift+B to show it):
+            Drag this to your bookmarks bar (⌘/Ctrl+Shift+B), then click it while on instagram.com:
           </p>
           <div className="mt-3">
             {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
@@ -84,40 +117,6 @@ export function ConnectClient() {
               <Bookmark className="h-4 w-4" /> Sync InstaView
             </a>
           </div>
-          <div className="mt-3">
-            <Button variant="outline" size="sm" onClick={copy}>
-              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              {copied ? "Copied" : "Can't drag? Copy the code"}
-            </Button>
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              Then create a new bookmark and paste this as its URL/address.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="mt-4">
-        <CardContent className="p-6">
-          <p className="text-sm font-medium">2. Go to Instagram and click it</p>
-          <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
-            <li>
-              Open{" "}
-              <a
-                href="https://www.instagram.com/"
-                target="_blank"
-                rel="noreferrer"
-                className="text-accent hover:underline"
-              >
-                instagram.com
-              </a>{" "}
-              and make sure you&apos;re logged in.
-            </li>
-            <li>
-              Click the <b>Sync InstaView</b> bookmark. A small window opens and it syncs (~1 min —
-              keep both tabs open).
-            </li>
-            <li>Come back to your dashboard — your unfollowers will be there.</li>
-          </ol>
         </CardContent>
       </Card>
 
