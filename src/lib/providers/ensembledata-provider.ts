@@ -106,6 +106,24 @@ export class EnsembleDataProvider implements InstagramDataProvider {
     };
   }
 
+  /** Cheap preview lookup (~3 units): photo + name, no follower counts. */
+  async getProfileBasic(username: string): Promise<ProfileData> {
+    const data = await this.request("/instagram/user/info", { username });
+    const u = data?.user ?? data ?? {};
+    if (!pick(u, ["pk", "id"])) throw new ProviderError("EnsembleData returned no user", "UNKNOWN");
+    return {
+      username: pick(u, ["username"]) ?? username,
+      displayName: pick(u, ["full_name"]) ?? null,
+      avatarUrl: pick(u, ["profile_pic_url_hd", "profile_pic_url"]) ?? null,
+      bio: null,
+      isPrivate: Boolean(pick(u, ["is_private"])),
+      isVerified: Boolean(pick(u, ["is_verified"])),
+      followersCount: num(pick(u, ["follower_count"])),
+      followingCount: 0,
+      postsCount: 0,
+    };
+  }
+
   // EnsembleData's Instagram followers endpoint returns only a COUNT, not the
   // list of follower usernames. We surface the count via getProfile; there is
   // no follower list to return here.

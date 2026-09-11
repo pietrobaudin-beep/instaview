@@ -72,6 +72,11 @@ export interface InstagramDataProvider {
   readonly supportsFollowerList: boolean;
 
   getProfile(username: string): Promise<ProfileData>;
+  /**
+   * Optional cheaper lookup for previews (photo + name), when a provider bills
+   * less for a basic call than a full profile. Callers fall back to getProfile.
+   */
+  getProfileBasic?(username: string): Promise<ProfileData>;
   getFollowers(username: string, opts?: GetFollowersOptions): Promise<GetFollowersResult>;
   getFollowing(username: string, opts?: GetFollowersOptions): Promise<GetFollowersResult>;
 }

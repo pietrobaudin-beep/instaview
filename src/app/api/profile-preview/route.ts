@@ -30,7 +30,11 @@ export async function GET(req: Request) {
   }
 
   try {
-    const p = await getProvider().getProfile(username);
+    const provider = getProvider();
+    // Prefer the cheaper basic lookup for previews when the provider offers it.
+    const p = provider.getProfileBasic
+      ? await provider.getProfileBasic(username)
+      : await provider.getProfile(username);
     const data = {
       username: p.username,
       displayName: p.displayName,
