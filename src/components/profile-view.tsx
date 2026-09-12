@@ -38,6 +38,15 @@ const FAKE: FollowUser[] = [
   { username: "duda.lima", displayName: "Eduarda Lima", avatarUrl: null, isVerified: false },
 ];
 
+const STEPS = [
+  "Conectando ao servidor seguro…",
+  "Analisando dados do perfil…",
+  "Configurando rotas com o Instagram…",
+  "Verificando atividade recente…",
+  "Processando seguidores…",
+  "Finalizando análise…",
+];
+
 function Row({ u }: { u: FollowUser }) {
   return (
     <li className="flex items-center gap-3 py-2.5">
@@ -80,6 +89,26 @@ export function ProfileView({ username }: { username: string }) {
   const [following, setFollowing] = React.useState<
     { kind: "loading" } | { kind: "ready"; locked: boolean; users: FollowUser[] }
   >({ kind: "loading" });
+  const [step, setStep] = React.useState(0);
+  const [analyzing, setAnalyzing] = React.useState(true);
+
+  // Staged "analysis" animation shown before the result (~5s).
+  React.useEffect(() => {
+    setStep(0);
+    setAnalyzing(true);
+    let i = 0;
+    const id = setInterval(() => {
+      i += 1;
+      if (i >= STEPS.length) {
+        clearInterval(id);
+        setStep(STEPS.length - 1);
+        setAnalyzing(false);
+      } else {
+        setStep(i);
+      }
+    }, 850);
+    return () => clearInterval(id);
+  }, [username]);
 
   React.useEffect(() => {
     let alive = true;
@@ -133,24 +162,48 @@ export function ProfileView({ username }: { username: string }) {
         </div>
       </div>
 
-      {state.kind === "loading" && (
-        <div className="flex flex-col items-center gap-4 py-16 text-center">
+      {(analyzing || state.kind === "loading") && (
+        <div className="flex flex-col items-center gap-6 py-14">
           <div className="relative">
-            <div className="h-20 w-20 animate-pulse rounded-full bg-muted" />
-            <Loader2 className="absolute inset-0 m-auto h-7 w-7 animate-spin text-accent" />
+            <div className="h-16 w-16 animate-spin rounded-full border-4 border-muted border-t-accent" />
+            <Activity className="absolute inset-0 m-auto h-6 w-6 text-accent" />
           </div>
-          <p className="text-sm text-muted-foreground">Loading @{username}&apos;s profile…</p>
+          <div className="w-full max-w-xs text-center">
+            <p className="text-sm font-medium">{STEPS[step]}</p>
+            <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-accent transition-all duration-500"
+                style={{ width: `${((step + 1) / STEPS.length) * 100}%` }}
+              />
+            </div>
+          </div>
+          <ul className="w-full max-w-xs space-y-2">
+            {STEPS.map((s, i) => (
+              <li key={s} className="flex items-center gap-2 text-xs">
+                {i < step ? (
+                  <Check className="h-3.5 w-3.5 shrink-0 text-success" />
+                ) : i === step ? (
+                  <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-accent" />
+                ) : (
+                  <span className="h-3.5 w-3.5 shrink-0 rounded-full border border-border" />
+                )}
+                <span className={i <= step ? "text-muted-foreground" : "text-muted-foreground/40"}>
+                  {s}
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
-      {state.kind === "error" && (
+      {!analyzing && state.kind === "error" && (
         <div className="flex flex-col items-center gap-3 py-16 text-center">
           <p className="font-medium">@{username} not found</p>
           <Link href="/"><Button variant="outline" size="sm">Try another @</Button></Link>
         </div>
       )}
 
-      {state.kind === "ok" && (
+      {!analyzing && state.kind === "ok" && (
         <>
           <Card>
             <CardContent className="flex items-center gap-4 p-6">
