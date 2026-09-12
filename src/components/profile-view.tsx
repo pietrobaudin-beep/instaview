@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Activity, ArrowLeft, BadgeCheck, Lock, Loader2, Sparkles, UserMinus } from "lucide-react";
+import { Activity, ArrowLeft, BadgeCheck, Lock, Loader2, Sparkles, UserPlus } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,53 +17,87 @@ interface Preview {
   followersCount: number;
 }
 
-const TEASER = ["lucas.silva", "amanda_souza", "joao.pedro", "marina.costa", "rafa.dev", "bia.santos"];
+interface FollowUser {
+  username: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+  isVerified: boolean;
+}
+
+// Fake but realistic-looking rows for the blurred (free) teaser.
+const FAKE: FollowUser[] = [
+  { username: "lucas.silva", displayName: "Lucas Silva", avatarUrl: null, isVerified: false },
+  { username: "amanda_souza", displayName: "Amanda Souza", avatarUrl: null, isVerified: true },
+  { username: "joao.pedro", displayName: "João Pedro", avatarUrl: null, isVerified: false },
+  { username: "marina.costa", displayName: "Marina Costa", avatarUrl: null, isVerified: false },
+  { username: "rafa.dev", displayName: "Rafael Alves", avatarUrl: null, isVerified: false },
+  { username: "bia.santos", displayName: "Beatriz Santos", avatarUrl: null, isVerified: true },
+  { username: "th.ferreira", displayName: "Thiago Ferreira", avatarUrl: null, isVerified: false },
+  { username: "carol.m", displayName: "Carolina Melo", avatarUrl: null, isVerified: false },
+  { username: "gab.rocha", displayName: "Gabriel Rocha", avatarUrl: null, isVerified: false },
+  { username: "duda.lima", displayName: "Eduarda Lima", avatarUrl: null, isVerified: false },
+];
+
+function Row({ u }: { u: FollowUser }) {
+  return (
+    <li className="flex items-center gap-3 py-2.5">
+      <Avatar src={u.avatarUrl} name={u.displayName ?? u.username} size={40} />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
+          <span className="truncate font-medium">@{u.username}</span>
+          {u.isVerified && <BadgeCheck className="h-4 w-4 shrink-0 text-accent" />}
+        </div>
+        {u.displayName && <p className="truncate text-sm text-muted-foreground">{u.displayName}</p>}
+      </div>
+    </li>
+  );
+}
 
 export function ProfileView({ username }: { username: string }) {
   const [state, setState] = React.useState<
     { kind: "loading" } | { kind: "ok"; data: Preview; note?: string } | { kind: "error"; code: string }
+  >({ kind: "loading" });
+  const [following, setFollowing] = React.useState<
+    { kind: "loading" } | { kind: "locked" } | { kind: "list"; users: FollowUser[] }
   >({ kind: "loading" });
 
   React.useEffect(() => {
     let alive = true;
     setState({ kind: "loading" });
     const minimal: Preview = {
-      username,
-      displayName: null,
-      avatarUrl: null,
-      isVerified: false,
-      isPrivate: false,
-      followersCount: 0,
+      username, displayName: null, avatarUrl: null, isVerified: false, isPrivate: false, followersCount: 0,
     };
     (async () => {
       try {
         const res = await fetch(`/api/profile-preview?username=${encodeURIComponent(username)}`);
         if (!alive) return;
-        if (res.ok) {
-          setState({ kind: "ok", data: await res.json() });
-        } else if (res.status === 404) {
-          setState({ kind: "error", code: "not_found" });
-        } else if (res.status === 429) {
-          // Free provider quota reached — still let people start tracking.
-          setState({
-            kind: "ok",
-            data: minimal,
-            note: "Free data limit reached for today — the photo will show after it resets (00:00 UTC).",
-          });
-        } else {
-          setState({
-            kind: "ok",
-            data: minimal,
-            note: "Couldn't load the profile photo right now — you can still start tracking.",
-          });
-        }
+        if (res.ok) setState({ kind: "ok", data: await res.json() });
+        else if (res.status === 404) setState({ kind: "error", code: "not_found" });
+        else if (res.status === 429)
+          setState({ kind: "ok", data: minimal, note: "Free data limit reached today (resets 00:00 UTC)." });
+        else setState({ kind: "ok", data: minimal, note: "Couldn't load the photo right now." });
       } catch {
-        if (alive) setState({ kind: "ok", data: minimal, note: "Couldn't load the profile photo right now." });
+        if (alive) setState({ kind: "ok", data: minimal, note: "Couldn't load the photo right now." });
       }
     })();
-    return () => {
-      alive = false;
-    };
+    return () => { alive = false; };
+  }, [username]);
+
+  React.useEffect(() => {
+    let alive = true;
+    setFollowing({ kind: "loading" });
+    (async () => {
+      try {
+        const res = await fetch(`/api/following-preview?username=${encodeURIComponent(username)}`);
+        if (!alive) return;
+        const body = await res.json();
+        if (body.locked || !body.following?.length) setFollowing({ kind: "locked" });
+        else setFollowing({ kind: "list", users: body.following });
+      } catch {
+        if (alive) setFollowing({ kind: "locked" });
+      }
+    })();
+    return () => { alive = false; };
   }, [username]);
 
   return (
@@ -89,17 +123,8 @@ export function ProfileView({ username }: { username: string }) {
 
       {state.kind === "error" && (
         <div className="flex flex-col items-center gap-3 py-16 text-center">
-          <p className="font-medium">
-            {state.code === "not_found" ? `@${username} not found` : "Couldn't load this profile"}
-          </p>
-          <p className="max-w-xs text-sm text-muted-foreground">
-            {state.code === "not_found"
-              ? "Check the username and try again."
-              : "The data provider is unavailable right now. Try again in a moment."}
-          </p>
-          <Link href="/">
-            <Button variant="outline" size="sm">Try another @</Button>
-          </Link>
+          <p className="font-medium">@{username} not found</p>
+          <Link href="/"><Button variant="outline" size="sm">Try another @</Button></Link>
         </div>
       )}
 
@@ -107,11 +132,7 @@ export function ProfileView({ username }: { username: string }) {
         <>
           <Card>
             <CardContent className="flex items-center gap-4 p-6">
-              <Avatar
-                src={state.data.avatarUrl}
-                name={state.data.displayName ?? state.data.username}
-                size={72}
-              />
+              <Avatar src={state.data.avatarUrl} name={state.data.displayName ?? state.data.username} size={72} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
                   <h1 className="truncate text-xl font-semibold">@{state.data.username}</h1>
@@ -124,11 +145,6 @@ export function ProfileView({ username }: { username: string }) {
                   <p className="mt-1 text-sm">
                     <b>{formatNumber(state.data.followersCount)}</b>{" "}
                     <span className="text-muted-foreground">followers</span>
-                    {state.data.isPrivate && (
-                      <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-                        Private
-                      </span>
-                    )}
                   </p>
                 )}
                 {state.note && <p className="mt-1 text-xs text-muted-foreground">{state.note}</p>}
@@ -138,46 +154,47 @@ export function ProfileView({ username }: { username: string }) {
 
           <Card className="mt-4">
             <CardContent className="p-6">
-              <div className="mb-4 flex items-center gap-2">
-                <UserMinus className="h-4 w-4 text-accent" />
-                <h2 className="font-semibold">Who unfollowed @{state.data.username}</h2>
+              <div className="mb-3 flex items-center gap-2">
+                <UserPlus className="h-4 w-4 text-accent" />
+                <h2 className="font-semibold">Recently followed by @{state.data.username}</h2>
               </div>
 
-              <div className="relative">
-                <ul className="divide-y divide-border select-none blur-[6px]" aria-hidden>
-                  {TEASER.map((u, i) => (
-                    <li key={u} className="flex items-center gap-3 py-3">
-                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">
-                        {u.slice(0, 2).toUpperCase()}
-                      </span>
-                      <div className="flex-1">
-                        <div className="font-medium">@{u}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {["Lucas Silva", "Amanda Souza", "João Pedro", "Marina Costa", "Rafael", "Beatriz"][i]}
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-background/40 to-background/95 p-6 text-center">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-accent/15 text-accent">
-                    <Lock className="h-5 w-5" />
-                  </div>
-                  <p className="font-semibold">Track this account over time</p>
-                  <p className="max-w-xs text-sm text-muted-foreground">
-                    Create a free account to start detecting who follows and unfollows — and reveal
-                    the names.
-                  </p>
-                  <Link href={`/signup?username=${encodeURIComponent(state.data.username)}`}>
-                    <Button variant="accent" size="sm">
-                      <Sparkles className="h-4 w-4" /> Create free account
-                    </Button>
-                  </Link>
-                  <Link href="/login" className="text-xs text-muted-foreground hover:text-foreground">
-                    or log in
-                  </Link>
+              {following.kind === "loading" && (
+                <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Checking…
                 </div>
-              </div>
+              )}
+
+              {following.kind === "list" && (
+                <ul className="divide-y divide-border">
+                  {following.users.map((u) => <Row key={u.username} u={u} />)}
+                </ul>
+              )}
+
+              {following.kind === "locked" && (
+                <div className="relative">
+                  <ul className="divide-y divide-border select-none blur-[6px]" aria-hidden>
+                    {FAKE.map((u) => <Row key={u.username} u={u} />)}
+                  </ul>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-background/40 to-background/95 p-6 text-center">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-accent/15 text-accent">
+                      <Lock className="h-5 w-5" />
+                    </div>
+                    <p className="font-semibold">See the last 10 accounts they followed</p>
+                    <p className="max-w-xs text-sm text-muted-foreground">
+                      Unlock to reveal exactly who @{state.data.username} recently started following.
+                    </p>
+                    <Link href="/pricing">
+                      <Button variant="accent" size="sm">
+                        <Sparkles className="h-4 w-4" /> Unlock
+                      </Button>
+                    </Link>
+                    <Link href="/login" className="text-xs text-muted-foreground hover:text-foreground">
+                      already paid? log in
+                    </Link>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </>
