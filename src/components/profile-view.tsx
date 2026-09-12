@@ -78,7 +78,7 @@ export function ProfileView({ username }: { username: string }) {
     { kind: "loading" } | { kind: "ok"; data: Preview; note?: string } | { kind: "error"; code: string }
   >({ kind: "loading" });
   const [following, setFollowing] = React.useState<
-    { kind: "loading" } | { kind: "locked" } | { kind: "list"; users: FollowUser[] }
+    { kind: "loading" } | { kind: "ready"; locked: boolean; users: FollowUser[] }
   >({ kind: "loading" });
 
   React.useEffect(() => {
@@ -111,10 +111,12 @@ export function ProfileView({ username }: { username: string }) {
         const res = await fetch(`/api/following-preview?username=${encodeURIComponent(username)}`);
         if (!alive) return;
         const body = await res.json();
-        if (body.locked || !body.following?.length) setFollowing({ kind: "locked" });
-        else setFollowing({ kind: "list", users: body.following });
+        // Real accounts (blurred when locked); fall back to placeholders if the
+        // provider can't return following (e.g. not on HikerAPI yet).
+        const users: FollowUser[] = body.following?.length ? body.following : FAKE;
+        setFollowing({ kind: "ready", locked: !!body.locked || !body.real, users });
       } catch {
-        if (alive) setFollowing({ kind: "locked" });
+        if (alive) setFollowing({ kind: "ready", locked: true, users: FAKE });
       }
     })();
     return () => { alive = false; };
@@ -185,13 +187,13 @@ export function ProfileView({ username }: { username: string }) {
                 </div>
               )}
 
-              {following.kind === "list" && (
+              {following.kind === "ready" && !following.locked && (
                 <ul className="divide-y divide-border">
                   {following.users.map((u) => <Row key={u.username} u={u} />)}
                 </ul>
               )}
 
-              {following.kind === "locked" && (
+              {following.kind === "ready" && following.locked && (
                 <>
                   {/* Category chips — counts hidden (not fabricated) until unlock. */}
                   <div className="mb-4 grid grid-cols-2 gap-3">
@@ -201,7 +203,7 @@ export function ProfileView({ username }: { username: string }) {
 
                   <div className="relative">
                     <ul className="divide-y divide-border select-none blur-[6px]" aria-hidden>
-                      {FAKE.map((u) => <Row key={u.username} u={u} />)}
+                      {following.users.map((u, i) => <Row key={u.username + i} u={u} />)}
                     </ul>
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-background/30 to-background/95 p-6 text-center">
                       <div className="flex h-11 w-11 items-center justify-center rounded-full bg-accent/15 text-accent">
