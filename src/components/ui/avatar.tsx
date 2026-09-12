@@ -22,7 +22,12 @@ export function Avatar({
   className?: string;
 }) {
   const [failed, setFailed] = React.useState(false);
-  const showImg = src && !failed;
+  // Instagram CDN blocks hotlinking, so route those images through our proxy.
+  const proxied =
+    src && /(?:\.fbcdn\.net|\.cdninstagram\.com)/i.test(src)
+      ? `/api/img?url=${encodeURIComponent(src)}`
+      : src;
+  const showImg = proxied && !failed;
 
   return (
     <div
@@ -35,7 +40,7 @@ export function Avatar({
       {showImg ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={src!}
+          src={proxied!}
           alt={name}
           width={size}
           height={size}
