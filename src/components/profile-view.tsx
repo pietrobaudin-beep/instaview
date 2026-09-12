@@ -40,15 +40,9 @@ const FAKE: FollowUser[] = [
 
 const STEPS = [
   "Conectando ao servidor seguro…",
-  "Autenticando acesso…",
   "Analisando dados do perfil…",
   "Configurando rotas com o Instagram…",
-  "Coletando lista de seguindo…",
-  "Verificando atividade recente…",
-  "Cruzando informações…",
-  "Identificando novos seguidores…",
-  "Processando resultados…",
-  "Organizando dados…",
+  "Processando seguidores…",
   "Finalizando análise…",
 ];
 
@@ -111,7 +105,7 @@ export function ProfileView({ username }: { username: string }) {
       } else {
         setStep(i);
       }
-    }, 1550);
+    }, 3300);
     return () => clearInterval(id);
   }, [username]);
 
