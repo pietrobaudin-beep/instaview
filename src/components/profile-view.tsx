@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Activity, ArrowLeft, BadgeCheck, Lock, Loader2, Sparkles, UserPlus } from "lucide-react";
+import { Activity, ArrowLeft, BadgeCheck, Check, Lock, Loader2, UserPlus } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -50,6 +50,26 @@ function Row({ u }: { u: FollowUser }) {
         {u.displayName && <p className="truncate text-sm text-muted-foreground">{u.displayName}</p>}
       </div>
     </li>
+  );
+}
+
+function CategoryChip({ tone, emoji, label }: { tone: "pink" | "blue"; emoji: string; label: string }) {
+  const bg = tone === "pink" ? "bg-pink-500/15 border-pink-500/30" : "bg-blue-500/15 border-blue-500/30";
+  return (
+    <div className={`flex items-center gap-2.5 rounded-xl border p-3 ${bg}`}>
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-background text-lg">
+        {emoji}
+      </span>
+      <span className="flex-1 font-semibold">{label}</span>
+      <div className="flex items-center">
+        <div className="flex -space-x-2 blur-[3px]" aria-hidden>
+          {[0, 1, 2].map((i) => (
+            <span key={i} className="h-5 w-5 rounded-full border border-background bg-muted" />
+          ))}
+        </div>
+        <Lock className="ml-1.5 h-3.5 w-3.5 text-muted-foreground" />
+      </div>
+    </div>
   );
 }
 
@@ -154,14 +174,14 @@ export function ProfileView({ username }: { username: string }) {
 
           <Card className="mt-4">
             <CardContent className="p-6">
-              <div className="mb-3 flex items-center gap-2">
+              <div className="mb-4 flex items-center gap-2">
                 <UserPlus className="h-4 w-4 text-accent" />
-                <h2 className="font-semibold">Recently followed by @{state.data.username}</h2>
+                <h2 className="font-semibold">Contas que @{state.data.username} seguiu recentemente</h2>
               </div>
 
               {following.kind === "loading" && (
                 <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" /> Checking…
+                  <Loader2 className="h-4 w-4 animate-spin" /> Analisando…
                 </div>
               )}
 
@@ -172,28 +192,45 @@ export function ProfileView({ username }: { username: string }) {
               )}
 
               {following.kind === "locked" && (
-                <div className="relative">
-                  <ul className="divide-y divide-border select-none blur-[6px]" aria-hidden>
-                    {FAKE.map((u) => <Row key={u.username} u={u} />)}
-                  </ul>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-background/40 to-background/95 p-6 text-center">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-accent/15 text-accent">
-                      <Lock className="h-5 w-5" />
-                    </div>
-                    <p className="font-semibold">See the last 10 accounts they followed</p>
-                    <p className="max-w-xs text-sm text-muted-foreground">
-                      Unlock to reveal exactly who @{state.data.username} recently started following.
-                    </p>
-                    <Link href="/pricing">
-                      <Button variant="accent" size="sm">
-                        <Sparkles className="h-4 w-4" /> Unlock
-                      </Button>
-                    </Link>
-                    <Link href="/login" className="text-xs text-muted-foreground hover:text-foreground">
-                      already paid? log in
-                    </Link>
+                <>
+                  {/* Category chips — counts hidden (not fabricated) until unlock. */}
+                  <div className="mb-4 grid grid-cols-2 gap-3">
+                    <CategoryChip tone="pink" emoji="👩" label="Minas" />
+                    <CategoryChip tone="blue" emoji="👨" label="Garotos" />
                   </div>
-                </div>
+
+                  <div className="relative">
+                    <ul className="divide-y divide-border select-none blur-[6px]" aria-hidden>
+                      {FAKE.map((u) => <Row key={u.username} u={u} />)}
+                    </ul>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-background/30 to-background/95 p-6 text-center">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-accent/15 text-accent">
+                        <Lock className="h-5 w-5" />
+                      </div>
+                      <p className="font-semibold">Veja quem @{state.data.username} anda seguindo</p>
+                      <ul className="space-y-1.5 text-left text-sm">
+                        {[
+                          "Descubra em segundos",
+                          "Cancele quando quiser, sem compromisso",
+                          "Alertas quando seguir alguém novo",
+                        ].map((b) => (
+                          <li key={b} className="flex items-center gap-2">
+                            <Check className="h-4 w-4 shrink-0 text-success" />
+                            <span className="text-muted-foreground">{b}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <Link href="/pricing" className="w-full max-w-[240px]">
+                        <Button variant="accent" className="w-full">
+                          <Lock className="h-4 w-4" /> Desbloquear agora
+                        </Button>
+                      </Link>
+                      <Link href="/login" className="text-xs text-muted-foreground hover:text-foreground">
+                        já é assinante? entrar
+                      </Link>
+                    </div>
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>
