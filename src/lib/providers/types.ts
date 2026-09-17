@@ -54,6 +54,14 @@ export interface GetFollowersResult {
   truncated: boolean;
 }
 
+/** A recent post, reduced to the interaction signals we care about. */
+export interface MediaPost {
+  id: string;
+  caption: string | null;
+  /** Accounts tagged in the photo or credited as co-authors. */
+  tagged: FollowerEntry[];
+}
+
 /** Raised by adapters so callers can react to auth/rate/unavailable distinctly. */
 export class ProviderError extends Error {
   constructor(
@@ -77,6 +85,12 @@ export interface InstagramDataProvider {
    * less for a basic call than a full profile. Callers fall back to getProfile.
    */
   getProfileBasic?(username: string): Promise<ProfileData>;
+  /** Recent posts, when the provider exposes them (used for interactions). */
+  getRecentMedia?(username: string): Promise<MediaPost[]>;
+  /** Who liked a given post. */
+  getMediaLikers?(mediaId: string): Promise<FollowerEntry[]>;
+  /** Who commented on a given post (one entry per commenter). */
+  getMediaCommenters?(mediaId: string): Promise<FollowerEntry[]>;
   getFollowers(username: string, opts?: GetFollowersOptions): Promise<GetFollowersResult>;
   getFollowing(username: string, opts?: GetFollowersOptions): Promise<GetFollowersResult>;
 }

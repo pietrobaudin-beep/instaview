@@ -2,7 +2,10 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Activity, ArrowLeft, BadgeCheck, Check, Lock, Loader2, UserMinus, UserPlus } from "lucide-react";
+import {
+  Activity, ArrowLeft, BadgeCheck, Check, Heart, Lock, Loader2, MessageCircle, Sparkles,
+  Trash2, UserMinus, UserPlus,
+} from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Avatar } from "@/components/ui/avatar";
@@ -164,6 +167,170 @@ function RecentSection({
   );
 }
 
+interface Interaction extends FollowUser {
+  count: number;
+}
+
+/** Premium section: who the profile interacts with most (PRO). */
+function InteractionSection({
+  items,
+  fallback,
+  locked,
+}: {
+  items: Interaction[];
+  fallback: FollowUser[];
+  locked: boolean;
+}) {
+  const rows: (FollowUser & { count?: number })[] = locked ? fallback.slice(0, 5) : items;
+  if (!rows.length) return null;
+  const max = Math.max(...rows.map((r) => r.count ?? 1), 1);
+
+  return (
+    <Card className="mt-4 overflow-hidden">
+      <div className="h-1 w-full bg-gradient-to-r from-pink-500 via-accent to-blue-500" />
+      <CardContent className="p-6">
+        <div className="mb-1 flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-accent" />
+          <h2 className="font-semibold">Com quem mais interage</h2>
+          <span className="ml-auto rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-bold tracking-wide text-accent">
+            PRO
+          </span>
+        </div>
+        <p className="mb-4 text-[11px] text-muted-foreground">
+          Com base em marcações, coautorias e menções nos posts recentes.
+        </p>
+        <ol className="space-y-2.5">
+          {rows.map((u, i) => (
+            <li
+              key={u.username + i}
+              className={`flex items-center gap-3 rounded-xl border p-2.5 ${
+                !locked && i === 0 ? "border-accent/50 bg-accent/5" : "border-border bg-muted/20"
+              }`}
+            >
+              <span className="w-5 shrink-0 text-center text-sm font-bold text-muted-foreground">
+                {i + 1}
+              </span>
+              <div className={locked ? "shrink-0 blur-[5px]" : "shrink-0"}>
+                <Avatar src={u.avatarUrl} name={u.displayName ?? u.username} size={40} />
+              </div>
+              <div className="min-w-0 flex-1">
+                {locked ? (
+                  <div className="space-y-1.5" aria-hidden>
+                    <div className="h-3 w-24 max-w-full rounded bg-muted" />
+                    <div className="h-2.5 w-16 max-w-full rounded bg-muted/60" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-1.5">
+                      <span className="truncate font-medium">@{u.username}</span>
+                      {u.isVerified && <BadgeCheck className="h-4 w-4 shrink-0 text-accent" />}
+                    </div>
+                    {u.displayName && (
+                      <p className="truncate text-xs text-muted-foreground">{u.displayName}</p>
+                    )}
+                    <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-muted">
+                      <div
+                        className="h-full rounded-full bg-accent"
+                        style={{ width: `${Math.round(((u.count ?? 1) / max) * 100)}%` }}
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+              <GenderBadge gender={u.gender} />
+            </li>
+          ))}
+        </ol>
+      </CardContent>
+    </Card>
+  );
+}
+
+interface ActivityItem {
+  username: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+  isVerified: boolean;
+  detectedAt: string;
+}
+
+interface PostActivity {
+  liked: ActivityItem[];
+  unliked: ActivityItem[];
+  commented: ActivityItem[];
+  deletedComment: ActivityItem[];
+}
+
+function MiniList({
+  title,
+  icon: Icon,
+  tone,
+  items,
+}: {
+  title: string;
+  icon: React.ElementType;
+  tone: string;
+  items: ActivityItem[];
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-muted/20 p-3">
+      <div className="mb-2 flex items-center gap-1.5">
+        <Icon className={`h-3.5 w-3.5 ${tone}`} />
+        <span className="text-xs font-semibold">{title}</span>
+        <span className="ml-auto text-[11px] text-muted-foreground">{items.length}</span>
+      </div>
+      {items.length === 0 ? (
+        <p className="py-2 text-center text-[11px] text-muted-foreground">Nada ainda</p>
+      ) : (
+        <ul className="space-y-2">
+          {items.map((u, i) => (
+            <li key={u.username + i} className="flex items-center gap-2">
+              <Avatar src={u.avatarUrl} name={u.displayName ?? u.username} size={26} />
+              <span className="min-w-0 flex-1 truncate text-xs font-medium">@{u.username}</span>
+              <span className="shrink-0 text-[10px] text-muted-foreground">{ago(u.detectedAt)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/** PRO-only: likes/unlikes and comments/deletions on the newest posts. */
+function ActivityCard({ activity }: { activity: PostActivity }) {
+  const total =
+    activity.liked.length + activity.unliked.length +
+    activity.commented.length + activity.deletedComment.length;
+  return (
+    <Card className="mt-4 overflow-hidden">
+      <div className="h-1 w-full bg-gradient-to-r from-pink-500 via-accent to-blue-500" />
+      <CardContent className="p-6">
+        <div className="mb-1 flex items-center gap-2">
+          <Heart className="h-4 w-4 text-accent" />
+          <h2 className="font-semibold">Atividade nos posts</h2>
+          <span className="ml-auto rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-bold text-accent">
+            PRO
+          </span>
+        </div>
+        <p className="mb-4 text-[11px] text-muted-foreground">
+          Curtidas e comentários nos 3 posts mais recentes, comparados com a leitura anterior.
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <MiniList title="Curtiram" icon={Heart} tone="text-success" items={activity.liked} />
+          <MiniList title="Descurtiram" icon={Heart} tone="text-destructive" items={activity.unliked} />
+          <MiniList title="Comentaram" icon={MessageCircle} tone="text-accent" items={activity.commented} />
+          <MiniList title="Apagaram comentário" icon={Trash2} tone="text-destructive" items={activity.deletedComment} />
+        </div>
+        {total === 0 && (
+          <p className="mt-3 text-center text-[11px] text-muted-foreground">
+            Primeira leitura salva. As mudanças aparecem na próxima checagem.
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function StatChip({
   tone,
   emoji,
@@ -205,6 +372,14 @@ export function ProfileView({ username }: { username: string }) {
         recent?: { started: RecentItem[]; stopped: RecentItem[] };
       }
   >({ kind: "loading" });
+  const [interactions, setInteractions] = React.useState<{ locked: boolean; items: Interaction[] }>({
+    locked: true,
+    items: [],
+  });
+  const [activity, setActivity] = React.useState<{ locked: boolean; data: PostActivity }>({
+    locked: true,
+    data: { liked: [], unliked: [], commented: [], deletedComment: [] },
+  });
   const [step, setStep] = React.useState(0);
   const [analyzing, setAnalyzing] = React.useState(true);
 
@@ -244,6 +419,34 @@ export function ProfileView({ username }: { username: string }) {
         else setState({ kind: "ok", data: minimal, note: "Couldn't load the photo right now." });
       } catch {
         if (alive) setState({ kind: "ok", data: minimal, note: "Couldn't load the photo right now." });
+      }
+    })();
+    return () => { alive = false; };
+  }, [username]);
+
+  React.useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const r = await fetch(`/api/post-activity?username=${encodeURIComponent(username)}`);
+        const b = await r.json();
+        if (alive && b.activity) setActivity({ locked: !!b.locked, data: b.activity });
+      } catch {
+        /* keep locked */
+      }
+    })();
+    return () => { alive = false; };
+  }, [username]);
+
+  React.useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const r = await fetch(`/api/interactions?username=${encodeURIComponent(username)}`);
+        const b = await r.json();
+        if (alive) setInteractions({ locked: !!b.locked, items: b.items ?? [] });
+      } catch {
+        /* keep locked */
       }
     })();
     return () => { alive = false; };
@@ -333,13 +536,21 @@ export function ProfileView({ username }: { username: string }) {
 
       {!analyzing && state.kind === "ok" && (
         <>
-          <Card>
+          <Card className="overflow-hidden">
+            {following.kind === "ready" && !following.locked && (
+              <div className="h-1.5 w-full bg-gradient-to-r from-pink-500 via-accent to-blue-500" />
+            )}
             <CardContent className="flex items-center gap-4 p-6">
               <Avatar src={state.data.avatarUrl} name={state.data.displayName ?? state.data.username} size={72} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
                   <h1 className="truncate text-xl font-semibold">@{state.data.username}</h1>
                   {state.data.isVerified && <BadgeCheck className="h-5 w-5 shrink-0 text-accent" />}
+                  {following.kind === "ready" && !following.locked && (
+                    <span className="ml-1 rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-bold text-accent">
+                      PRO
+                    </span>
+                  )}
                 </div>
                 {state.data.displayName && (
                   <p className="truncate text-sm text-muted-foreground">{state.data.displayName}</p>
@@ -353,6 +564,21 @@ export function ProfileView({ username }: { username: string }) {
                 {state.note && <p className="mt-1 text-xs text-muted-foreground">{state.note}</p>}
               </div>
             </CardContent>
+            {following.kind === "ready" && !following.locked && following.counts && (
+              <div className="grid grid-cols-4 divide-x divide-border border-t border-border text-center">
+                {[
+                  { label: "Seguidores", value: formatNumber(state.data.followersCount) },
+                  { label: "Seguindo", value: formatNumber(state.data.followingCount) },
+                  { label: "Meninas", value: String(following.counts.girls) },
+                  { label: "Meninos", value: String(following.counts.boys) },
+                ].map((s2) => (
+                  <div key={s2.label} className="px-2 py-3">
+                    <div className="text-base font-bold tabular-nums">{s2.value}</div>
+                    <div className="text-[10px] text-muted-foreground">{s2.label}</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </Card>
 
           <Card className="mt-4">
@@ -444,6 +670,16 @@ export function ProfileView({ username }: { username: string }) {
               )}
             </CardContent>
           </Card>
+
+          {following.kind === "ready" && (
+            <InteractionSection
+              items={interactions.items}
+              fallback={following.users}
+              locked={interactions.locked || following.locked}
+            />
+          )}
+
+          {!activity.locked && <ActivityCard activity={activity.data} />}
 
           {following.kind === "ready" && following.recent && (
             <>

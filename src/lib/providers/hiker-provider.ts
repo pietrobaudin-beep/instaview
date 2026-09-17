@@ -24,11 +24,19 @@ import {
   GetFollowersOptions,
   GetFollowersResult,
   InstagramDataProvider,
+  MediaPost,
   ProfileData,
   ProviderError,
 } from "./types";
 
 const log = logger.scope("hikerapi");
+
+const toEntry = (u: any): FollowerEntry => ({
+  username: String(u.username),
+  displayName: u.full_name ?? null,
+  avatarUrl: u.profile_pic_url ?? null,
+  isVerified: Boolean(u.is_verified),
+});
 
 interface HikerConfig {
   apiKey: string;
@@ -104,6 +112,46 @@ export class HikerApiProvider implements InstagramDataProvider {
       followingCount: Number(u.following_count ?? 0),
       postsCount: Number(u.media_count ?? 0),
     };
+  }
+
+  /** One page of recent posts (~12-20) — a single request. */
+  async getRecentMedia(username: string): Promise<MediaPost[]> {
+    const user = await this.resolveUser(username);
+    const data = await this.request<any>("/v1/user/medias/chunk", { user_id: String(user.pk) });
+    const items: any[] = Array.isArray(data) ? data[0] ?? [] : (data?.items ?? []);
+    return items.map((m) => ({
+      id: String(m.pk ?? m.id ?? ""),
+      caption: m.caption_text ?? null,
+      tagged: [...(m.usertags ?? []), ...(m.coauthor_producers ?? [])]
+        .map((t: any) => t?.user ?? t)
+        .filter((u: any) => u?.username)
+        .map((u: any) => ({
+          username: String(u.username),
+          displayName: u.full_name ?? null,
+          avatarUrl: u.profile_pic_url ?? null,
+          isVerified: Boolean(u.is_verified),
+        })),
+    }));
+  }
+
+  /** Who liked a post — one request. */
+  async getMediaLikers(mediaId: string): Promise<FollowerEntry[]> {
+    const data = await this.request<any>("/v1/media/likers", { id: mediaId });
+    const users: any[] = Array.isArray(data) ? data : (data?.users ?? []);
+    return users.filter((u) => u?.username).map(toEntry);
+  }
+
+  /** Who commented on a post — one request, de-duplicated per account. */
+  async getMediaCommenters(mediaId: string): Promise<FollowerEntry[]> {
+    const data = await this.request<any>("/v1/media/comments", { id: mediaId });
+    const items: any[] = Array.isArray(data) ? (Array.isArray(data[0]) ? data[0] : data) : (data?.comments ?? []);
+    const seen = new Map<string, FollowerEntry>();
+    for (const c of items) {
+      const u = c?.user ?? c?.owner;
+      if (!u?.username || seen.has(u.username)) continue;
+      seen.set(u.username, toEntry(u));
+    }
+    return [...seen.values()];
   }
 
   async getFollowers(username: string, opts: GetFollowersOptions = {}): Promise<GetFollowersResult> {

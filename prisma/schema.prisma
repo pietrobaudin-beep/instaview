@@ -144,6 +144,8 @@ model FollowerSnapshot {
   status    SnapshotStatus @default(PENDING)
   // Which list this snapshot is of: "followers" or "following".
   kind      String         @default("followers")
+  // For post-level snapshots (likes/comments): which media this refers to.
+  mediaId   String?
 
   // Whether the provider returned the FULL list or only the recent head.
   // "head" mode reliably detects FOLLOWs but not UNFOLLOWs of old accounts.
@@ -203,6 +205,7 @@ model FollowerChange {
   type            ChangeType
   // "followers" = who follows the profile; "following" = who the profile follows.
   kind            String     @default("followers")
+  mediaId         String?
 
   // Follower metadata captured at detection time.
   displayName String?
