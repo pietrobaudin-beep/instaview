@@ -10,14 +10,15 @@
 import { prisma } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { getProvider } from "@/lib/providers";
+import { getRecentMediaCached } from "@/lib/media-cache";
 import type { FollowerEntry } from "@/lib/providers/types";
 
 const log = logger.scope("post-activity");
 
 export const LIKES_KIND = "likes";
 export const COMMENTS_KIND = "comments";
-/** Newest posts to watch. Each one costs ~2 requests per check. */
-export const WATCHED_POSTS = 3;
+/** Newest posts to watch. Each one costs ~2 requests per check — keep it low. */
+export const WATCHED_POSTS = 1;
 
 export interface ActivityItem {
   username: string;
@@ -109,7 +110,7 @@ export async function syncPostActivity(profileId: string, username: string): Pro
   const provider = getProvider();
   if (!provider.getRecentMedia || !provider.getMediaLikers || !provider.getMediaCommenters) return;
 
-  const posts = (await provider.getRecentMedia(username)).filter((p) => p.id).slice(0, WATCHED_POSTS);
+  const posts = (await getRecentMediaCached(username)).filter((p) => p.id).slice(0, WATCHED_POSTS);
   for (const post of posts) {
     try {
       const [likers, commenters] = await Promise.all([

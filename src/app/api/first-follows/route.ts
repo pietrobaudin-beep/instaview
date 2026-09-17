@@ -18,7 +18,7 @@ export const maxDuration = 60;
  */
 const cache = new Map<string, { at: number; items: (FollowerEntry & { gender: string })[] }>();
 const TTL = 24 * 60 * 60 * 1000;
-const MAX_PAGES = 12; // ~600 accounts; bounds the cost per profile
+const MAX_PAGES = 4; // ~200 accounts; keeps the cost per profile small
 
 export async function GET(req: Request) {
   const username = normalizeUsername(new URL(req.url).searchParams.get("username") || "");

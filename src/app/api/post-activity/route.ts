@@ -12,7 +12,7 @@ export const maxDuration = 60;
 
 // Re-reading every post costs ~2 requests each, so only re-sync occasionally.
 const lastSync = new Map<string, number>();
-const SYNC_EVERY = 3 * 60 * 60 * 1000; // 3 hours
+const SYNC_EVERY = 12 * 60 * 60 * 1000; // 12 hours
 
 /**
  * Likes/unlikes and comments/deletions on the profile's newest posts.

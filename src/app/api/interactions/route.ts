@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { getProvider } from "@/lib/providers";
+import { getRecentMediaCached } from "@/lib/media-cache";
 import { rankInteractions, type Interaction } from "@/lib/interactions";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
 import { logger } from "@/lib/logger";
@@ -29,12 +29,13 @@ export async function GET(req: Request) {
     return NextResponse.json({ locked: false, items: hit.items });
   }
 
-  const provider = getProvider();
-  if (!provider.getRecentMedia) return NextResponse.json({ locked: false, items: [] });
-
   try {
-    const posts = await provider.getRecentMedia(username);
-    const items = rankInteractions(posts, username, 5).filter((i) => !i.isVerified);
+    const posts = await getRecentMediaCached(username);
+    // Filter famous accounts first, then take the top 5 — otherwise a
+    // celebrity-heavy top 5 would leave nothing behind.
+    const items = rankInteractions(posts, username, 60)
+      .filter((i) => !i.isVerified)
+      .slice(0, 5);
     cache.set(username, { at: Date.now(), items });
     return NextResponse.json({ locked: false, items });
   } catch (e) {

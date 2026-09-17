@@ -9,6 +9,7 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Avatar } from "@/components/ui/avatar";
+import { ProDashboard } from "@/components/pro-dashboard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatNumber } from "@/lib/utils";
@@ -428,33 +429,7 @@ export function ProfileView({ username }: { username: string }) {
     return () => { alive = false; };
   }, [username]);
 
-  React.useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const r = await fetch(`/api/first-follows?username=${encodeURIComponent(username)}`);
-        const b = await r.json();
-        if (alive) setFirstFollows({ locked: !!b.locked, items: b.items ?? [] });
-      } catch {
-        /* keep locked */
-      }
-    })();
-    return () => { alive = false; };
-  }, [username]);
 
-  React.useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const r = await fetch(`/api/post-activity?username=${encodeURIComponent(username)}`);
-        const b = await r.json();
-        if (alive && b.activity) setActivity({ locked: !!b.locked, data: b.activity });
-      } catch {
-        /* keep locked */
-      }
-    })();
-    return () => { alive = false; };
-  }, [username]);
 
   React.useEffect(() => {
     let alive = true;
@@ -582,23 +557,23 @@ export function ProfileView({ username }: { username: string }) {
                 {state.note && <p className="mt-1 text-xs text-muted-foreground">{state.note}</p>}
               </div>
             </CardContent>
-            {following.kind === "ready" && !following.locked && following.counts && (
-              <div className="grid grid-cols-4 divide-x divide-border border-t border-border text-center">
-                {[
-                  { label: "Seguidores", value: formatNumber(state.data.followersCount) },
-                  { label: "Seguindo", value: formatNumber(state.data.followingCount) },
-                  { label: "Meninas", value: String(following.counts.girls) },
-                  { label: "Meninos", value: String(following.counts.boys) },
-                ].map((s2) => (
-                  <div key={s2.label} className="px-2 py-3">
-                    <div className="text-base font-bold tabular-nums">{s2.value}</div>
-                    <div className="text-[10px] text-muted-foreground">{s2.label}</div>
-                  </div>
-                ))}
-              </div>
-            )}
           </Card>
 
+          {following.kind === "ready" && !following.locked && (
+            <ProDashboard
+              username={state.data.username}
+              displayName={state.data.displayName}
+              avatarUrl={state.data.avatarUrl}
+              followersCount={state.data.followersCount}
+              followingCount={state.data.followingCount}
+              counts={following.counts}
+              interactions={interactions.items}
+              following={following.users}
+              recent={following.recent}
+            />
+          )}
+
+          {(following.kind !== "ready" || following.locked) && (
           <Card className="mt-4">
             <CardContent className="p-6">
               <div className="mb-4 flex items-center gap-2">
@@ -691,8 +666,9 @@ export function ProfileView({ username }: { username: string }) {
               )}
             </CardContent>
           </Card>
+          )}
 
-          {following.kind === "ready" && (
+          {following.kind === "ready" && following.locked && (
             <InteractionSection
               items={interactions.items}
               fallback={following.users}
@@ -700,32 +676,9 @@ export function ProfileView({ username }: { username: string }) {
             />
           )}
 
-          {!activity.locked && <ActivityCard activity={activity.data} />}
 
-          {!firstFollows.locked && firstFollows.items.length > 0 && (
-            <Card className="mt-4 overflow-hidden">
-              <div className="h-1 w-full bg-gradient-to-r from-pink-500 via-accent to-blue-500" />
-              <CardContent className="p-6">
-                <div className="mb-1 flex items-center gap-2">
-                  <UserPlus className="h-4 w-4 text-accent" />
-                  <h2 className="font-semibold">Primeiras contas que seguiu</h2>
-                  <span className="ml-auto rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-bold text-accent">
-                    PRO
-                  </span>
-                </div>
-                <p className="mb-3 text-[11px] text-muted-foreground">
-                  Do começo da conta — normalmente as pessoas mais próximas. Sem verificados.
-                </p>
-                <ul className="divide-y divide-border">
-                  {firstFollows.items.map((u, i) => (
-                    <Row key={u.username + i} u={u} />
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          )}
 
-          {following.kind === "ready" && following.recent && (
+          {following.kind === "ready" && following.locked && following.recent && (
             <>
               <RecentSection
                 title="Seguiu recentemente"
