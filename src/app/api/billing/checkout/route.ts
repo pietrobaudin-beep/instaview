@@ -2,11 +2,14 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { env } from "@/lib/env";
+import { safeNext, withParam } from "@/lib/utils";
 import { createCheckoutSession, isBillingConfigured } from "@/lib/billing/stripe";
 import type { Plan } from "@prisma/client";
 
-const bodySchema = z.object({ plan: z.enum(["PRO", "AGENCY"]) });
+const bodySchema = z.object({
+  plan: z.enum(["PRO", "AGENCY"]),
+  next: z.string().max(300).nullish(),
+});
 
 /**
  * Starts an upgrade.
@@ -27,13 +30,17 @@ export async function POST(req: Request) {
       ? process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO
       : process.env.NEXT_PUBLIC_STRIPE_PRICE_AGENCY;
 
+  // Use the real site origin (NEXT_PUBLIC_APP_URL may be unset on Vercel).
+  const origin = new URL(req.url).origin;
+  const back = safeNext(parsed.data.next) ?? "/dashboard";
+
   if (isBillingConfigured() && priceId) {
     const session = await createCheckoutSession({
       userId: user.id,
       email: user.email,
       priceId,
-      successUrl: `${env.NEXT_PUBLIC_APP_URL}/dashboard?upgraded=1`,
-      cancelUrl: `${env.NEXT_PUBLIC_APP_URL}/pricing`,
+      successUrl: origin + withParam(back, "upgraded", "1"),
+      cancelUrl: origin + "/pricing",
     });
     return NextResponse.json({ url: session.url });
   }

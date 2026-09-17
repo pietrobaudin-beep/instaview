@@ -355,13 +355,16 @@ export function ProfileView({ username }: { username: string }) {
                         </li>
                       ))}
                     </ul>
-                    <Link href="/pricing" className="mt-4 block">
+                    <Link
+                      href={`/pricing?next=${encodeURIComponent(`/p/${state.data.username}`)}`}
+                      className="mt-4 block"
+                    >
                       <Button variant="accent" className="w-full">
                         <Lock className="h-4 w-4" /> Ver sem censura
                       </Button>
                     </Link>
                     <Link
-                      href="/login"
+                      href={`/login?next=${encodeURIComponent(`/p/${state.data.username}`)}`}
                       className="mt-2 inline-block text-xs text-muted-foreground hover:text-foreground"
                     >
                       já é assinante? entrar

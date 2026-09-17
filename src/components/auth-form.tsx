@@ -7,11 +7,13 @@ import { Activity, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { safeNext, withParam } from "@/lib/utils";
 
 export function AuthForm({ mode }: { mode: "signup" | "login" }) {
   const router = useRouter();
   const params = useSearchParams();
   const username = params.get("username");
+  const next = safeNext(params.get("next"));
 
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
@@ -20,7 +22,12 @@ export function AuthForm({ mode }: { mode: "signup" | "login" }) {
   const [error, setError] = React.useState<string | null>(null);
 
   const isSignup = mode === "signup";
-  const nextQuery = username ? `?username=${encodeURIComponent(username)}` : "";
+  // Carry context between the login ⇄ signup toggle.
+  const nextQuery = next
+    ? withParam("", "next", next)
+    : username
+      ? `?username=${encodeURIComponent(username)}`
+      : "";
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -35,6 +42,12 @@ export function AuthForm({ mode }: { mode: "signup" | "login" }) {
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? "Something went wrong");
+        return;
+      }
+      // Came from a purchase / profile page → go back there, logged in.
+      if (next) {
+        router.push(next);
+        router.refresh();
         return;
       }
       // If they arrived from the landing page with a handle, track it now.

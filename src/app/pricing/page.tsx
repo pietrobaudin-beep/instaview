@@ -5,11 +5,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PLANS } from "@/lib/plans";
 import { isBillingConfigured } from "@/lib/billing/stripe";
+import { getCurrentUser } from "@/lib/auth";
+import { safeNext, withParam } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export default function PricingPage() {
+export default async function PricingPage({
+  searchParams,
+}: {
+  searchParams: { next?: string };
+}) {
   const demoMode = !isBillingConfigured();
+  const user = await getCurrentUser();
+  const next = safeNext(searchParams.next);
+  const loginHref = withParam("/login", "next", next ? withParam("/pricing", "next", next) : "/pricing");
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-12">
@@ -17,9 +26,15 @@ export default function PricingPage() {
         <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
           <Activity className="h-5 w-5 text-accent" /> InstaView
         </Link>
-        <Link href="/dashboard" className="text-sm text-muted-foreground hover:text-foreground">
-          Dashboard →
-        </Link>
+        {user ? (
+          <span className="text-sm text-muted-foreground">
+            {user.email} · plano <b className="text-foreground">{user.plan}</b>
+          </span>
+        ) : (
+          <Link href={loginHref} className="text-sm text-muted-foreground hover:text-foreground">
+            Já é assinante? Entrar →
+          </Link>
+        )}
       </div>
 
       <div className="mb-10 text-center">
@@ -61,17 +76,24 @@ export default function PricingPage() {
                     </li>
                   ))}
                 </ul>
-                {key === "FREE" ? (
-                  <Link href="/dashboard">
+                {user?.plan === key ? (
+                  <Link href={next || "/dashboard"}>
                     <Button variant="outline" className="w-full">
-                      Current plan
+                      Seu plano atual
+                    </Button>
+                  </Link>
+                ) : key === "FREE" ? (
+                  <Link href={next || "/"}>
+                    <Button variant="outline" className="w-full">
+                      Continuar grátis
                     </Button>
                   </Link>
                 ) : (
                   <UpgradeButton
                     plan={key}
-                    label={`Choose ${plan.name}`}
+                    label={`Assinar ${plan.name}`}
                     variant={highlighted ? "accent" : "outline"}
+                    next={next}
                   />
                 )}
               </CardContent>

@@ -30,3 +30,14 @@ export function initials(name: string): string {
 export function formatNumber(n: number): string {
   return new Intl.NumberFormat("en-US", { notation: n >= 10000 ? "compact" : "standard" }).format(n);
 }
+
+/** Only allow same-site relative redirects (prevents open-redirects via ?next=). */
+export function safeNext(path: string | null | undefined): string | null {
+  if (!path || !path.startsWith("/") || path.startsWith("//") || path.startsWith("/\\")) return null;
+  return path;
+}
+
+/** Append a query param to a relative path that may already have a query string. */
+export function withParam(path: string, key: string, value: string): string {
+  return `${path}${path.includes("?") ? "&" : "?"}${key}=${encodeURIComponent(value)}`;
+}
