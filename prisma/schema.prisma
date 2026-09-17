@@ -142,6 +142,8 @@ model FollowerSnapshot {
   id        String         @id @default(cuid())
   profileId String
   status    SnapshotStatus @default(PENDING)
+  // Which list this snapshot is of: "followers" or "following".
+  kind      String         @default("followers")
 
   // Whether the provider returned the FULL list or only the recent head.
   // "head" mode reliably detects FOLLOWs but not UNFOLLOWs of old accounts.
@@ -199,6 +201,8 @@ model FollowerChange {
   snapshotId      String
   followerUsername String
   type            ChangeType
+  // "followers" = who follows the profile; "following" = who the profile follows.
+  kind            String     @default("followers")
 
   // Follower metadata captured at detection time.
   displayName String?
@@ -212,6 +216,7 @@ model FollowerChange {
 
   // Fast queries for the dashboard: "new followers in last 24h/7d/30d".
   @@index([profileId, type, detectedAt])
+  @@index([profileId, kind, detectedAt])
   @@index([profileId, detectedAt])
   @@index([snapshotId])
   @@map("follower_changes")

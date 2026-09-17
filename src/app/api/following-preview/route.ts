@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getProvider } from "@/lib/providers";
 import { countGenders, guessGender } from "@/lib/gender";
+import { getRecentFollowingChanges, recordFollowing, type RecentItem } from "@/lib/following-tracker";
+import { prisma } from "@/lib/db";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
 import { logger } from "@/lib/logger";
 import { ProviderError, type FollowerEntry } from "@/lib/providers/types";
@@ -41,6 +43,7 @@ export async function GET(req: Request) {
   // Fetch (or reuse cached) real following — ONE page only (~1 provider request).
   let all: FollowerEntry[] = [];
   let isPrivate = false;
+  let fresh = false;
   const hit = cache.get(username);
   if (hit && Date.now() - hit.at < TTL) {
     all = hit.users;
@@ -48,6 +51,7 @@ export async function GET(req: Request) {
     try {
       const result = await getProvider().getFollowing(username, { maxPages: 1, pageSize: 50 });
       all = result.followers;
+      fresh = true;
       cache.set(username, { at: Date.now(), users: all });
     } catch (e) {
       // Private accounts: Instagram only shows their following to approved
@@ -55,6 +59,27 @@ export async function GET(req: Request) {
       if (e instanceof ProviderError && e.code === "PRIVATE") isPrivate = true;
       else log.warn("following fetch failed", { username, error: (e as Error).message });
       all = [];
+    }
+  }
+
+  // History: record this snapshot for logged-in users so we can show who they
+  // started / stopped following over time. Uses the page we already fetched.
+  let recent: { started: RecentItem[]; stopped: RecentItem[] } = { started: [], stopped: [] };
+  if (user && !isPrivate) {
+    try {
+      let profileId: string | null = null;
+      if (fresh && all.length > 0) {
+        profileId = await recordFollowing(user.id, { username }, all);
+      } else {
+        const p = await prisma.trackedProfile.findUnique({
+          where: { userId_username: { userId: user.id, username } },
+          select: { id: true },
+        });
+        profileId = p?.id ?? null;
+      }
+      if (profileId) recent = await getRecentFollowingChanges(profileId, 5);
+    } catch (e) {
+      log.warn("history failed", { username, error: (e as Error).message });
     }
   }
 
@@ -68,10 +93,14 @@ export async function GET(req: Request) {
     ...(paid ? u : mask(u)),
     gender: guessGender(u.displayName, u.username),
   }));
+  const maskRecent = (items: RecentItem[]) =>
+    paid ? items : items.map((i) => ({ ...mask(i), detectedAt: i.detectedAt }));
+
   return NextResponse.json({
     locked: !paid,
     counts,
     following: out,
+    recent: { started: maskRecent(recent.started), stopped: maskRecent(recent.stopped) },
     real: all.length > 0,
     private: isPrivate,
   });

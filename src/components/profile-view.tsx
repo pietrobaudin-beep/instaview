@@ -2,7 +2,9 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Activity, ArrowLeft, BadgeCheck, Check, Lock, Loader2, UserPlus } from "lucide-react";
+import { Activity, ArrowLeft, BadgeCheck, Check, Lock, Loader2, UserMinus, UserPlus } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -96,6 +98,72 @@ function LockedRow({ u }: { u: FollowUser }) {
   );
 }
 
+interface RecentItem extends FollowUser {
+  detectedAt: string;
+}
+
+function ago(iso: string) {
+  try {
+    return formatDistanceToNow(new Date(iso), { addSuffix: true, locale: ptBR });
+  } catch {
+    return "";
+  }
+}
+
+/** "Seguiu recentemente" / "Deixou de seguir" — last 5, revealed only when paid. */
+function RecentSection({
+  title,
+  tone,
+  items,
+  locked,
+}: {
+  title: string;
+  tone: "green" | "red";
+  items: RecentItem[];
+  locked: boolean;
+}) {
+  if (!items.length) return null;
+  const Icon = tone === "green" ? UserPlus : UserMinus;
+  return (
+    <Card className="mt-4">
+      <CardContent className="p-6">
+        <div className="mb-3 flex items-center gap-2">
+          <Icon className={`h-4 w-4 ${tone === "green" ? "text-success" : "text-destructive"}`} />
+          <h2 className="font-semibold">{title}</h2>
+        </div>
+        <ul className="divide-y divide-border">
+          {items.map((u, i) => (
+            <li key={u.username + i} className="flex items-center gap-3 py-2.5">
+              <div className={locked ? "shrink-0 blur-[5px]" : "shrink-0"}>
+                <Avatar src={u.avatarUrl} name={u.displayName ?? u.username} size={36} />
+              </div>
+              <div className="min-w-0 flex-1">
+                {locked ? (
+                  <div className="space-y-1.5" aria-hidden>
+                    <div className="h-3 w-24 max-w-full rounded bg-muted" />
+                    <div className="h-2.5 w-16 max-w-full rounded bg-muted/60" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-1.5">
+                      <span className="truncate font-medium">@{u.username}</span>
+                      {u.isVerified && <BadgeCheck className="h-4 w-4 shrink-0 text-accent" />}
+                    </div>
+                    {u.displayName && (
+                      <p className="truncate text-sm text-muted-foreground">{u.displayName}</p>
+                    )}
+                  </>
+                )}
+              </div>
+              <span className="shrink-0 text-[11px] text-muted-foreground">{ago(u.detectedAt)}</span>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
+  );
+}
+
 function StatChip({
   tone,
   emoji,
@@ -134,6 +202,7 @@ export function ProfileView({ username }: { username: string }) {
         users: FollowUser[];
         real: boolean;
         counts?: { girls: number; boys: number };
+        recent?: { started: RecentItem[]; stopped: RecentItem[] };
       }
   >({ kind: "loading" });
   const [step, setStep] = React.useState(0);
@@ -201,6 +270,7 @@ export function ProfileView({ username }: { username: string }) {
           users,
           real: !!body.real,
           counts: body.counts,
+          recent: body.recent,
         });
       } catch {
         if (alive) setFollowing({ kind: "ready", locked: true, users: FAKE, real: false });
@@ -374,6 +444,29 @@ export function ProfileView({ username }: { username: string }) {
               )}
             </CardContent>
           </Card>
+
+          {following.kind === "ready" && following.recent && (
+            <>
+              <RecentSection
+                title="Seguiu recentemente"
+                tone="green"
+                items={following.recent.started}
+                locked={following.locked}
+              />
+              <RecentSection
+                title="Deixou de seguir"
+                tone="red"
+                items={following.recent.stopped}
+                locked={following.locked}
+              />
+              {!following.recent.started.length && !following.recent.stopped.length && (
+                <p className="mt-4 text-center text-xs text-muted-foreground">
+                  Primeira análise salva. Volte mais tarde para ver quem @{state.data.username}
+                  {" "}seguiu ou deixou de seguir desde agora.
+                </p>
+              )}
+            </>
+          )}
         </>
       )}
     </main>
