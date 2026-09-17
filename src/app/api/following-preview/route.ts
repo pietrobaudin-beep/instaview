@@ -4,7 +4,7 @@ import { getProvider } from "@/lib/providers";
 import { countGenders, guessGender } from "@/lib/gender";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
 import { logger } from "@/lib/logger";
-import type { FollowerEntry } from "@/lib/providers/types";
+import { ProviderError, type FollowerEntry } from "@/lib/providers/types";
 
 const log = logger.scope("api:following-preview");
 
@@ -40,6 +40,7 @@ export async function GET(req: Request) {
 
   // Fetch (or reuse cached) real following — ONE page only (~1 provider request).
   let all: FollowerEntry[] = [];
+  let isPrivate = false;
   const hit = cache.get(username);
   if (hit && Date.now() - hit.at < TTL) {
     all = hit.users;
@@ -49,7 +50,10 @@ export async function GET(req: Request) {
       all = result.followers;
       cache.set(username, { at: Date.now(), users: all });
     } catch (e) {
-      log.warn("following fetch failed", { username, error: (e as Error).message });
+      // Private accounts: Instagram only shows their following to approved
+      // followers, so no provider can read it. Report it explicitly.
+      if (e instanceof ProviderError && e.code === "PRIVATE") isPrivate = true;
+      else log.warn("following fetch failed", { username, error: (e as Error).message });
       all = [];
     }
   }
@@ -69,5 +73,6 @@ export async function GET(req: Request) {
     counts,
     following: out,
     real: all.length > 0,
+    private: isPrivate,
   });
 }

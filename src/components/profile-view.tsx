@@ -127,6 +127,7 @@ export function ProfileView({ username }: { username: string }) {
   >({ kind: "loading" });
   const [following, setFollowing] = React.useState<
     | { kind: "loading" }
+    | { kind: "private" }
     | {
         kind: "ready";
         locked: boolean;
@@ -187,6 +188,10 @@ export function ProfileView({ username }: { username: string }) {
         const res = await fetch(`/api/following-preview?username=${encodeURIComponent(username)}`);
         if (!alive) return;
         const body = await res.json();
+        if (body.private) {
+          setFollowing({ kind: "private" });
+          return;
+        }
         // Real accounts (blurred when locked); fall back to placeholders if the
         // provider can't return following (e.g. not on HikerAPI yet).
         const users: FollowUser[] = body.following?.length ? body.following : FAKE;
@@ -302,6 +307,18 @@ export function ProfileView({ username }: { username: string }) {
               {following.kind === "loading" && (
                 <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" /> Analisando…
+                </div>
+              )}
+
+              {following.kind === "private" && (
+                <div className="flex flex-col items-center gap-2 rounded-xl border border-border bg-muted/40 p-6 text-center">
+                  <Lock className="h-6 w-6 text-muted-foreground" />
+                  <p className="font-semibold">Esta conta é privada</p>
+                  <p className="max-w-xs text-sm text-muted-foreground">
+                    O Instagram só mostra quem uma conta privada segue para os seguidores aprovados
+                    dela. Não é possível analisar @{state.data.username}.
+                  </p>
+                  <Link href="/"><Button variant="outline" size="sm">Buscar outro @</Button></Link>
                 </div>
               )}
 
