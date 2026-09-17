@@ -50,7 +50,9 @@ export async function GET(req: Request) {
   } else {
     try {
       const result = await getProvider().getFollowing(username, { maxPages: 1, pageSize: 50 });
-      all = result.followers;
+      // Famous/brand accounts (verified) are noise for this product — keep
+      // only real people, for both the list and the gender counts.
+      all = result.followers.filter((u) => !u.isVerified);
       fresh = true;
       cache.set(username, { at: Date.now(), users: all });
     } catch (e) {

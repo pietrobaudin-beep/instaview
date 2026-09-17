@@ -34,7 +34,7 @@ export async function GET(req: Request) {
 
   try {
     const posts = await provider.getRecentMedia(username);
-    const items = rankInteractions(posts, username, 5);
+    const items = rankInteractions(posts, username, 5).filter((i) => !i.isVerified);
     cache.set(username, { at: Date.now(), items });
     return NextResponse.json({ locked: false, items });
   } catch (e) {

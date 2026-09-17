@@ -149,9 +149,10 @@ export async function recordFollowing(
 
 /** The latest N accounts this profile started / stopped following. */
 export async function getRecentFollowingChanges(profileId: string, limit = 5) {
+  // Verified/brand accounts are filtered out — this product is about real people.
   const pick = (t: "FOLLOW" | "UNFOLLOW") =>
     prisma.followerChange.findMany({
-      where: { profileId, kind: FOLLOWING_KIND, type: t },
+      where: { profileId, kind: FOLLOWING_KIND, type: t, isVerified: false },
       orderBy: { detectedAt: "desc" },
       take: limit,
     });

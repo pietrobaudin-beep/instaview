@@ -44,6 +44,13 @@ export async function GET(req: Request) {
     }
   }
 
-  const activity = await getPostActivity(profile.id, 5);
+  const raw = await getPostActivity(profile.id, 20);
+  const real = <T extends { isVerified: boolean }>(xs: T[]) => xs.filter((x) => !x.isVerified).slice(0, 5);
+  const activity = {
+    liked: real(raw.liked),
+    unliked: real(raw.unliked),
+    commented: real(raw.commented),
+    deletedComment: real(raw.deletedComment),
+  };
   return NextResponse.json({ locked: false, activity });
 }

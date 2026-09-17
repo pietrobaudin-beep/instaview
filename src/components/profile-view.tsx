@@ -380,6 +380,10 @@ export function ProfileView({ username }: { username: string }) {
     locked: true,
     data: { liked: [], unliked: [], commented: [], deletedComment: [] },
   });
+  const [firstFollows, setFirstFollows] = React.useState<{ locked: boolean; items: FollowUser[] }>({
+    locked: true,
+    items: [],
+  });
   const [step, setStep] = React.useState(0);
   const [analyzing, setAnalyzing] = React.useState(true);
 
@@ -419,6 +423,20 @@ export function ProfileView({ username }: { username: string }) {
         else setState({ kind: "ok", data: minimal, note: "Couldn't load the photo right now." });
       } catch {
         if (alive) setState({ kind: "ok", data: minimal, note: "Couldn't load the photo right now." });
+      }
+    })();
+    return () => { alive = false; };
+  }, [username]);
+
+  React.useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const r = await fetch(`/api/first-follows?username=${encodeURIComponent(username)}`);
+        const b = await r.json();
+        if (alive) setFirstFollows({ locked: !!b.locked, items: b.items ?? [] });
+      } catch {
+        /* keep locked */
       }
     })();
     return () => { alive = false; };
@@ -587,6 +605,9 @@ export function ProfileView({ username }: { username: string }) {
                 <UserPlus className="h-4 w-4 text-accent" />
                 <h2 className="font-semibold">Contas que @{state.data.username} seguiu recentemente</h2>
               </div>
+              <p className="-mt-2 mb-3 text-[11px] text-muted-foreground">
+                Apenas pessoas reais — contas verificadas e de marcas ficam de fora.
+              </p>
 
               {following.kind === "ready" && following.real && following.counts && (
                 <>
@@ -680,6 +701,29 @@ export function ProfileView({ username }: { username: string }) {
           )}
 
           {!activity.locked && <ActivityCard activity={activity.data} />}
+
+          {!firstFollows.locked && firstFollows.items.length > 0 && (
+            <Card className="mt-4 overflow-hidden">
+              <div className="h-1 w-full bg-gradient-to-r from-pink-500 via-accent to-blue-500" />
+              <CardContent className="p-6">
+                <div className="mb-1 flex items-center gap-2">
+                  <UserPlus className="h-4 w-4 text-accent" />
+                  <h2 className="font-semibold">Primeiras contas que seguiu</h2>
+                  <span className="ml-auto rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-bold text-accent">
+                    PRO
+                  </span>
+                </div>
+                <p className="mb-3 text-[11px] text-muted-foreground">
+                  Do começo da conta — normalmente as pessoas mais próximas. Sem verificados.
+                </p>
+                <ul className="divide-y divide-border">
+                  {firstFollows.items.map((u, i) => (
+                    <Row key={u.username + i} u={u} />
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
 
           {following.kind === "ready" && following.recent && (
             <>
