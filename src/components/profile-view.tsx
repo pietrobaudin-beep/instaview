@@ -475,8 +475,10 @@ export function ProfileView({ username }: { username: string }) {
     return () => { alive = false; };
   }, [username]);
 
+  const wide = following.kind === "ready" && !following.locked;
+
   return (
-    <main className="mx-auto max-w-lg px-6 py-8">
+    <main className={`mx-auto px-6 py-8 ${wide ? "max-w-7xl" : "max-w-lg"}`}>
       <div className="mb-8 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> Back

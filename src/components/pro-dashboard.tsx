@@ -126,14 +126,16 @@ function Section({
   icon: Icon,
   children,
   action,
+  className = "",
 }: {
   title: string;
   icon: React.ElementType;
   children: React.ReactNode;
   action?: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <section className="mt-6 rounded-2xl border border-border bg-card">
+    <section className={`rounded-2xl border border-border bg-card ${className}`}>
       <header className="flex items-center gap-2 border-b border-border px-5 py-4">
         <Icon className="h-4 w-4 text-accent" />
         <h2 className="font-semibold">{title}</h2>
@@ -264,7 +266,7 @@ export function ProDashboard(props: Props) {
 
       {top3.length > 0 && (
         <>
-          <h2 className="mb-3 mt-6 text-lg font-semibold">Pódio de interações</h2>
+          <h2 className="mb-3 mt-8 text-lg font-semibold">Pódio de interações</h2>
           <div className="grid gap-3 sm:grid-cols-3">
             {top3.map((p, i) => (
               <PodiumCard key={p.username} person={p} rank={i} />
@@ -276,7 +278,8 @@ export function ProDashboard(props: Props) {
         </>
       )}
 
-      <Section title="Ranking geral" icon={Sparkles}>
+      <div className="mt-8 grid items-start gap-6 xl:grid-cols-3">
+      <Section title="Ranking geral" icon={Sparkles} className="xl:col-span-2">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[420px] text-sm">
             <thead>
@@ -288,7 +291,7 @@ export function ProDashboard(props: Props) {
               </tr>
             </thead>
             <tbody>
-              {ranking.slice(0, 12).map((p, i) => {
+              {ranking.slice(0, 20).map((p, i) => {
                 const g = genderLabel(p.gender);
                 return (
                   <tr key={p.username + i} className="border-b border-border/60 last:border-0">
@@ -320,9 +323,10 @@ export function ProDashboard(props: Props) {
         </div>
       </Section>
 
+      <div className="space-y-6">
       {recent && (recent.started.length > 0 || recent.stopped.length > 0) && (
         <Section title="Mudanças em quem segue" icon={UserPlus}>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
             <MiniColumn title="Começou a seguir" icon={UserPlus} tone="text-success" items={recent.started} />
             <MiniColumn title="Deixou de seguir" icon={UserMinus} tone="text-destructive" items={recent.stopped} />
           </div>
@@ -394,6 +398,8 @@ export function ProDashboard(props: Props) {
           </>
         )}
       </Section>
+      </div>
+      </div>
     </div>
   );
 }
