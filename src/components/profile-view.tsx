@@ -23,20 +23,21 @@ interface FollowUser {
   displayName: string | null;
   avatarUrl: string | null;
   isVerified: boolean;
+  gender?: "f" | "m" | "u";
 }
 
 // Fake but realistic-looking rows for the blurred (free) teaser.
 const FAKE: FollowUser[] = [
-  { username: "lucas.silva", displayName: "Lucas Silva", avatarUrl: null, isVerified: false },
-  { username: "amanda_souza", displayName: "Amanda Souza", avatarUrl: null, isVerified: true },
-  { username: "joao.pedro", displayName: "João Pedro", avatarUrl: null, isVerified: false },
-  { username: "marina.costa", displayName: "Marina Costa", avatarUrl: null, isVerified: false },
-  { username: "rafa.dev", displayName: "Rafael Alves", avatarUrl: null, isVerified: false },
-  { username: "bia.santos", displayName: "Beatriz Santos", avatarUrl: null, isVerified: true },
-  { username: "th.ferreira", displayName: "Thiago Ferreira", avatarUrl: null, isVerified: false },
-  { username: "carol.m", displayName: "Carolina Melo", avatarUrl: null, isVerified: false },
-  { username: "gab.rocha", displayName: "Gabriel Rocha", avatarUrl: null, isVerified: false },
-  { username: "duda.lima", displayName: "Eduarda Lima", avatarUrl: null, isVerified: false },
+  { username: "lucas.silva", displayName: "Lucas Silva", avatarUrl: null, isVerified: false, gender: "m" },
+  { username: "amanda_souza", displayName: "Amanda Souza", avatarUrl: null, isVerified: true, gender: "f" },
+  { username: "joao.pedro", displayName: "João Pedro", avatarUrl: null, isVerified: false, gender: "m" },
+  { username: "marina.costa", displayName: "Marina Costa", avatarUrl: null, isVerified: false, gender: "f" },
+  { username: "rafa.dev", displayName: "Rafael Alves", avatarUrl: null, isVerified: false, gender: "m" },
+  { username: "bia.santos", displayName: "Beatriz Santos", avatarUrl: null, isVerified: true, gender: "f" },
+  { username: "th.ferreira", displayName: "Thiago Ferreira", avatarUrl: null, isVerified: false, gender: "m" },
+  { username: "carol.m", displayName: "Carolina Melo", avatarUrl: null, isVerified: false, gender: "f" },
+  { username: "gab.rocha", displayName: "Gabriel Rocha", avatarUrl: null, isVerified: false, gender: "m" },
+  { username: "duda.lima", displayName: "Eduarda Lima", avatarUrl: null, isVerified: false, gender: "f" },
 ];
 
 const STEPS = [
@@ -46,6 +47,22 @@ const STEPS = [
   "Processando seguidores…",
   "Finalizando análise…",
 ];
+
+function GenderBadge({ gender }: { gender?: "f" | "m" | "u" }) {
+  if (gender === "f")
+    return (
+      <span className="shrink-0 rounded-full border border-pink-500/40 bg-pink-500/15 px-2 py-0.5 text-[11px] font-medium text-pink-300">
+        👩 Menina
+      </span>
+    );
+  if (gender === "m")
+    return (
+      <span className="shrink-0 rounded-full border border-blue-500/40 bg-blue-500/15 px-2 py-0.5 text-[11px] font-medium text-blue-300">
+        👨 Menino
+      </span>
+    );
+  return null;
+}
 
 function Row({ u }: { u: FollowUser }) {
   return (
@@ -58,6 +75,23 @@ function Row({ u }: { u: FollowUser }) {
         </div>
         {u.displayName && <p className="truncate text-sm text-muted-foreground">{u.displayName}</p>}
       </div>
+      <GenderBadge gender={u.gender} />
+    </li>
+  );
+}
+
+/** Censored row: real (blurred) photo + hidden name + visible gender tag. */
+function LockedRow({ u }: { u: FollowUser }) {
+  return (
+    <li className="flex items-center gap-3 py-2.5">
+      <div className="shrink-0 blur-[5px]">
+        <Avatar src={u.avatarUrl} name={u.username} size={40} />
+      </div>
+      <div className="min-w-0 flex-1 space-y-1.5" aria-hidden>
+        <div className="h-3 w-28 max-w-full rounded bg-muted" />
+        <div className="h-2.5 w-20 max-w-full rounded bg-muted/60" />
+      </div>
+      <GenderBadge gender={u.gender} />
     </li>
   );
 }
@@ -279,36 +313,42 @@ export function ProfileView({ username }: { username: string }) {
 
               {following.kind === "ready" && following.locked && (
                 <>
-                  <div className="relative">
-                    <ul className="divide-y divide-border select-none blur-[6px]" aria-hidden>
-                      {following.users.map((u, i) => <Row key={u.username + i} u={u} />)}
-                    </ul>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-background/30 to-background/95 p-6 text-center">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-accent/15 text-accent">
-                        <Lock className="h-5 w-5" />
-                      </div>
-                      <p className="font-semibold">Veja quem @{state.data.username} anda seguindo</p>
-                      <ul className="space-y-1.5 text-left text-sm">
-                        {[
-                          "Descubra em segundos",
-                          "Cancele quando quiser, sem compromisso",
-                          "Alertas quando seguir alguém novo",
-                        ].map((b) => (
-                          <li key={b} className="flex items-center gap-2">
-                            <Check className="h-4 w-4 shrink-0 text-success" />
-                            <span className="text-muted-foreground">{b}</span>
-                          </li>
-                        ))}
-                      </ul>
-                      <Link href="/pricing" className="w-full max-w-[240px]">
-                        <Button variant="accent" className="w-full">
-                          <Lock className="h-4 w-4" /> Desbloquear agora
-                        </Button>
-                      </Link>
-                      <Link href="/login" className="text-xs text-muted-foreground hover:text-foreground">
-                        já é assinante? entrar
-                      </Link>
+                  {/* Censored list: real blurred photos + visible gender tags. */}
+                  <ul className="divide-y divide-border">
+                    {following.users.map((u, i) => (
+                      <LockedRow key={u.username + i} u={u} />
+                    ))}
+                  </ul>
+
+                  {/* CTA right below the list. */}
+                  <div className="mt-4 rounded-xl border border-accent/40 bg-accent/5 p-4 text-center">
+                    <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-accent/15 text-accent">
+                      <Lock className="h-5 w-5" />
                     </div>
+                    <p className="font-semibold">Veja quem @{state.data.username} anda seguindo</p>
+                    <ul className="mx-auto mt-3 max-w-[280px] space-y-1.5 text-left text-sm">
+                      {[
+                        "Descubra em segundos",
+                        "Cancele quando quiser, sem compromisso",
+                        "Alertas quando seguir alguém novo",
+                      ].map((b) => (
+                        <li key={b} className="flex items-center gap-2">
+                          <Check className="h-4 w-4 shrink-0 text-success" />
+                          <span className="text-muted-foreground">{b}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <Link href="/pricing" className="mt-4 block">
+                      <Button variant="accent" className="w-full">
+                        <Lock className="h-4 w-4" /> Ver sem censura
+                      </Button>
+                    </Link>
+                    <Link
+                      href="/login"
+                      className="mt-2 inline-block text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      já é assinante? entrar
+                    </Link>
                   </div>
                 </>
               )}

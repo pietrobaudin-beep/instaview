@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getProvider } from "@/lib/providers";
-import { countGenders } from "@/lib/gender";
+import { countGenders, guessGender } from "@/lib/gender";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
 import { logger } from "@/lib/logger";
 import type { FollowerEntry } from "@/lib/providers/types";
@@ -58,9 +58,12 @@ export async function GET(req: Request) {
   // it's a count, not an identity). Computed from the same single request.
   const counts = countGenders(all.map((u) => ({ displayName: u.displayName, username: u.username })));
 
-  // Only the first rows are shown; masked for free so names don't leak.
-  const shown = all.slice(0, 12);
-  const out = paid ? shown : shown.map(mask);
+  // Only the first rows are shown; masked for free so names don't leak — but we
+  // always send the estimated gender so the teaser can label each row.
+  const out = all.slice(0, 12).map((u) => ({
+    ...(paid ? u : mask(u)),
+    gender: guessGender(u.displayName, u.username),
+  }));
   return NextResponse.json({
     locked: !paid,
     counts,
