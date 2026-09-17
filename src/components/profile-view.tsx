@@ -92,7 +92,14 @@ export function ProfileView({ username }: { username: string }) {
     { kind: "loading" } | { kind: "ok"; data: Preview; note?: string } | { kind: "error"; code: string }
   >({ kind: "loading" });
   const [following, setFollowing] = React.useState<
-    { kind: "loading" } | { kind: "ready"; locked: boolean; users: FollowUser[] }
+    | { kind: "loading" }
+    | {
+        kind: "ready";
+        locked: boolean;
+        users: FollowUser[];
+        real: boolean;
+        counts?: { girls: number; boys: number };
+      }
   >({ kind: "loading" });
   const [step, setStep] = React.useState(0);
   const [analyzing, setAnalyzing] = React.useState(true);
@@ -149,9 +156,15 @@ export function ProfileView({ username }: { username: string }) {
         // Real accounts (blurred when locked); fall back to placeholders if the
         // provider can't return following (e.g. not on HikerAPI yet).
         const users: FollowUser[] = body.following?.length ? body.following : FAKE;
-        setFollowing({ kind: "ready", locked: !!body.locked || !body.real, users });
+        setFollowing({
+          kind: "ready",
+          locked: !!body.locked || !body.real,
+          users,
+          real: !!body.real,
+          counts: body.counts,
+        });
       } catch {
-        if (alive) setFollowing({ kind: "ready", locked: true, users: FAKE });
+        if (alive) setFollowing({ kind: "ready", locked: true, users: FAKE, real: false });
       }
     })();
     return () => { alive = false; };
@@ -240,11 +253,16 @@ export function ProfileView({ username }: { username: string }) {
                 <h2 className="font-semibold">Contas que @{state.data.username} seguiu recentemente</h2>
               </div>
 
-              {(state.data.followingCount > 0 || state.data.followersCount > 0) && (
-                <div className="mb-4 grid grid-cols-2 gap-3">
-                  <StatChip tone="pink" emoji="👤" label="Seguindo" value={state.data.followingCount} />
-                  <StatChip tone="blue" emoji="⭐" label="Seguidores" value={state.data.followersCount} />
-                </div>
+              {following.kind === "ready" && following.real && following.counts && (
+                <>
+                  <div className="mb-1.5 grid grid-cols-2 gap-3">
+                    <StatChip tone="pink" emoji="👩" label="Meninas" value={following.counts.girls} />
+                    <StatChip tone="blue" emoji="👨" label="Meninos" value={following.counts.boys} />
+                  </div>
+                  <p className="mb-4 text-[11px] text-muted-foreground">
+                    Estimativa pelo nome, com base nas contas que seguiu recentemente.
+                  </p>
+                </>
               )}
 
               {following.kind === "loading" && (

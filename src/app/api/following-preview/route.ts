@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getProvider } from "@/lib/providers";
+import { countGenders } from "@/lib/gender";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
 import { logger } from "@/lib/logger";
 import type { FollowerEntry } from "@/lib/providers/types";
@@ -37,24 +38,33 @@ export async function GET(req: Request) {
   const user = await getCurrentUser();
   const paid = !!user && user.plan !== "FREE";
 
-  // Fetch (or reuse cached) real following.
-  let users: FollowerEntry[] = [];
+  // Fetch (or reuse cached) real following — ONE page only (~1 provider request).
+  let all: FollowerEntry[] = [];
   const hit = cache.get(username);
   if (hit && Date.now() - hit.at < TTL) {
-    users = hit.users;
+    all = hit.users;
   } else {
     try {
-      const result = await getProvider().getFollowing(username, { maxPages: 1, pageSize: 12 });
-      users = result.followers.slice(0, 12);
-      cache.set(username, { at: Date.now(), users });
+      const result = await getProvider().getFollowing(username, { maxPages: 1, pageSize: 50 });
+      all = result.followers;
+      cache.set(username, { at: Date.now(), users: all });
     } catch (e) {
       log.warn("following fetch failed", { username, error: (e as Error).message });
-      users = [];
+      all = [];
     }
   }
 
-  // When the active provider can't return following (e.g. mock/ensembledata),
-  // `users` is empty; the client falls back to a blurred placeholder teaser.
-  const out = paid ? users : users.map(mask);
-  return NextResponse.json({ locked: !paid, following: out, real: users.length > 0 });
+  // Aggregate gender estimate over everything we fetched (safe to show free —
+  // it's a count, not an identity). Computed from the same single request.
+  const counts = countGenders(all.map((u) => ({ displayName: u.displayName, username: u.username })));
+
+  // Only the first rows are shown; masked for free so names don't leak.
+  const shown = all.slice(0, 12);
+  const out = paid ? shown : shown.map(mask);
+  return NextResponse.json({
+    locked: !paid,
+    counts,
+    following: out,
+    real: all.length > 0,
+  });
 }
