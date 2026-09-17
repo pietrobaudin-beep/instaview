@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getProvider } from "@/lib/providers";
+import { getProfileCached } from "@/lib/profile-cache";
 import { ProviderError } from "@/lib/providers/types";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
 import { logger } from "@/lib/logger";
@@ -8,15 +8,6 @@ const log = logger.scope("api:preview");
 
 export const dynamic = "force-dynamic";
 
-// Small in-memory cache to avoid re-fetching (and re-charging the provider) the
-// same handle repeatedly while someone types. Survives within a warm instance.
-interface Cached {
-  at: number;
-  data: unknown;
-}
-const cache = new Map<string, Cached>();
-const TTL = 24 * 60 * 60 * 1000; // 24 hours — minimise repeat provider charges
-
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const username = normalizeUsername(url.searchParams.get("username") || "");
@@ -24,28 +15,21 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "invalid" }, { status: 400 });
   }
 
-  const hit = cache.get(username);
-  if (hit && Date.now() - hit.at < TTL) {
-    return NextResponse.json(hit.data);
-  }
-
   try {
-    const provider = getProvider();
-    // Prefer the cheaper basic lookup for previews when the provider offers it.
-    const p = provider.getProfileBasic
-      ? await provider.getProfileBasic(username)
-      : await provider.getProfile(username);
-    const data = {
+    // Shared 24h cache — repeat views of the same @ cost the provider nothing.
+    const { profile: p, fetchedAt } = await getProfileCached(username);
+    return NextResponse.json({
       username: p.username,
       displayName: p.displayName,
       avatarUrl: p.avatarUrl,
+      bio: p.bio,
       isVerified: p.isVerified,
       isPrivate: p.isPrivate,
       followersCount: p.followersCount,
       followingCount: p.followingCount,
-    };
-    cache.set(username, { at: Date.now(), data });
-    return NextResponse.json(data);
+      postsCount: p.postsCount,
+      analyzedAt: fetchedAt.toISOString(),
+    });
   } catch (e) {
     const code = e instanceof ProviderError ? e.code : "UNKNOWN";
     if (code !== "NOT_FOUND") log.warn("preview failed", { username, code });

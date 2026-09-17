@@ -152,6 +152,12 @@ model FollowerSnapshot {
   mode        String  @default("head") // "head" | "full"
   capturedCount Int   @default(0)      // followers seen in this snapshot
   followersCount Int  @default(0)      // profile-reported total at capture time
+  followingCount Int  @default(0)      // profile-reported "seguindo" total at capture time
+
+  // Profile attributes at capture time, so we can report "changed the bio" /
+  // "the account went private" by comparing consecutive snapshots.
+  bio       String?
+  isPrivate Boolean @default(false)
 
   // Diff results, denormalized for fast reads.
   newFollowerCount  Int @default(0)

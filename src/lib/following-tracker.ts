@@ -27,6 +27,7 @@ export interface ProfileMeta {
   username: string;
   displayName?: string | null;
   avatarUrl?: string | null;
+  bio?: string | null;
   followersCount?: number;
   followingCount?: number;
   isVerified?: boolean;
@@ -63,7 +64,12 @@ export async function recordFollowing(
       status: "SUCCESS",
       mode: "head",
       capturedCount: current.length,
-      followersCount: meta.followingCount ?? current.length,
+      // Profile totals + attributes at capture time, so the history charts and
+      // the "changed the bio" / "went private" alerts have something to diff.
+      followersCount: meta.followersCount ?? 0,
+      followingCount: meta.followingCount ?? current.length,
+      bio: meta.bio ?? null,
+      isPrivate: meta.isPrivate ?? false,
       completedAt: new Date(),
     },
   });
@@ -136,6 +142,7 @@ export async function recordFollowing(
     data: {
       displayName: meta.displayName ?? profile.displayName,
       avatarUrl: meta.avatarUrl ?? profile.avatarUrl,
+      bio: meta.bio ?? profile.bio,
       followersCount: meta.followersCount ?? profile.followersCount,
       followingCount: meta.followingCount ?? profile.followingCount,
       isVerified: meta.isVerified ?? profile.isVerified,

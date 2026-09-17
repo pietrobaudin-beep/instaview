@@ -10,6 +10,8 @@ import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Avatar } from "@/components/ui/avatar";
 import { ProDashboard } from "@/components/pro-dashboard";
+import { ProfileHeader } from "@/components/profile-header";
+import { HistoryPanel } from "@/components/history-panel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatNumber } from "@/lib/utils";
@@ -18,10 +20,12 @@ interface Preview {
   username: string;
   displayName: string | null;
   avatarUrl: string | null;
+  bio: string | null;
   isVerified: boolean;
   isPrivate: boolean;
   followersCount: number;
   followingCount: number;
+  analyzedAt?: string | null;
 }
 
 interface FollowUser {
@@ -332,32 +336,7 @@ function ActivityCard({ activity }: { activity: PostActivity }) {
   );
 }
 
-function StatChip({
-  tone,
-  emoji,
-  label,
-  value,
-}: {
-  tone: "pink" | "blue";
-  emoji: string;
-  label: string;
-  value: number;
-}) {
-  const bg = tone === "pink" ? "bg-pink-500/15 border-pink-500/30" : "bg-blue-500/15 border-blue-500/30";
-  return (
-    <div className={`flex items-center gap-2.5 rounded-xl border p-3 ${bg}`}>
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-background text-lg">
-        {emoji}
-      </span>
-      <div className="min-w-0">
-        <div className="text-lg font-bold leading-none tabular-nums">{formatNumber(value)}</div>
-        <div className="text-xs text-muted-foreground">{label}</div>
-      </div>
-    </div>
-  );
-}
-
-export function ProfileView({ username }: { username: string }) {
+export function ProfileView({ username, loggedIn }: { username: string; loggedIn: boolean }) {
   const [state, setState] = React.useState<
     { kind: "loading" } | { kind: "ok"; data: Preview; note?: string } | { kind: "error"; code: string }
   >({ kind: "loading" });
@@ -410,8 +389,8 @@ export function ProfileView({ username }: { username: string }) {
     let alive = true;
     setState({ kind: "loading" });
     const minimal: Preview = {
-      username, displayName: null, avatarUrl: null, isVerified: false, isPrivate: false,
-      followersCount: 0, followingCount: 0,
+      username, displayName: null, avatarUrl: null, bio: null, isVerified: false, isPrivate: false,
+      followersCount: 0, followingCount: 0, analyzedAt: null,
     };
     (async () => {
       try {
@@ -420,10 +399,10 @@ export function ProfileView({ username }: { username: string }) {
         if (res.ok) setState({ kind: "ok", data: await res.json() });
         else if (res.status === 404) setState({ kind: "error", code: "not_found" });
         else if (res.status === 429)
-          setState({ kind: "ok", data: minimal, note: "Free data limit reached today (resets 00:00 UTC)." });
-        else setState({ kind: "ok", data: minimal, note: "Couldn't load the photo right now." });
+          setState({ kind: "ok", data: minimal, note: "Limite de análises de hoje atingido. Tente novamente mais tarde." });
+        else setState({ kind: "ok", data: minimal, note: "Não foi possível carregar os dados do perfil agora." });
       } catch {
-        if (alive) setState({ kind: "ok", data: minimal, note: "Couldn't load the photo right now." });
+        if (alive) setState({ kind: "ok", data: minimal, note: "Não foi possível carregar os dados do perfil agora." });
       }
     })();
     return () => { alive = false; };
@@ -481,7 +460,7 @@ export function ProfileView({ username }: { username: string }) {
     <main className={`mx-auto px-6 py-8 ${wide ? "max-w-7xl" : "max-w-lg"}`}>
       <div className="mb-8 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" /> Back
+          <ArrowLeft className="h-4 w-4" /> Voltar
         </Link>
         <div className="flex items-center gap-1.5 text-sm font-medium">
           <Activity className="h-4 w-4 text-accent" /> InstaView
@@ -524,42 +503,20 @@ export function ProfileView({ username }: { username: string }) {
 
       {!analyzing && state.kind === "error" && (
         <div className="flex flex-col items-center gap-3 py-16 text-center">
-          <p className="font-medium">@{username} not found</p>
-          <Link href="/"><Button variant="outline" size="sm">Try another @</Button></Link>
+          <p className="font-medium">@{username} não foi encontrado</p>
+          <Link href="/"><Button variant="outline" size="sm">Tentar outro @</Button></Link>
         </div>
       )}
 
       {!analyzing && state.kind === "ok" && (
         <>
-          <Card className="overflow-hidden">
-            {following.kind === "ready" && !following.locked && (
-              <div className="h-1.5 w-full bg-gradient-to-r from-pink-500 via-accent to-blue-500" />
-            )}
-            <CardContent className="flex items-center gap-4 p-6">
-              <Avatar src={state.data.avatarUrl} name={state.data.displayName ?? state.data.username} size={72} />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5">
-                  <h1 className="truncate text-xl font-semibold">@{state.data.username}</h1>
-                  {state.data.isVerified && <BadgeCheck className="h-5 w-5 shrink-0 text-accent" />}
-                  {following.kind === "ready" && !following.locked && (
-                    <span className="ml-1 rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-bold text-accent">
-                      PRO
-                    </span>
-                  )}
-                </div>
-                {state.data.displayName && (
-                  <p className="truncate text-sm text-muted-foreground">{state.data.displayName}</p>
-                )}
-                {state.data.followersCount > 0 && (
-                  <p className="mt-1 text-sm">
-                    <b>{formatNumber(state.data.followersCount)}</b>{" "}
-                    <span className="text-muted-foreground">followers</span>
-                  </p>
-                )}
-                {state.note && <p className="mt-1 text-xs text-muted-foreground">{state.note}</p>}
-              </div>
-            </CardContent>
-          </Card>
+          <ProfileHeader
+            profile={state.data}
+            counts={following.kind === "ready" ? following.counts : undefined}
+            premium={following.kind === "ready" && !following.locked}
+            note={state.note}
+            wide={wide}
+          />
 
           {following.kind === "ready" && !following.locked && (
             <ProDashboard
@@ -572,6 +529,7 @@ export function ProfileView({ username }: { username: string }) {
               interactions={interactions.items}
               following={following.users}
               recent={following.recent}
+              loggedIn={loggedIn}
             />
           )}
 
@@ -580,23 +538,12 @@ export function ProfileView({ username }: { username: string }) {
             <CardContent className="p-6">
               <div className="mb-4 flex items-center gap-2">
                 <UserPlus className="h-4 w-4 text-accent" />
-                <h2 className="font-semibold">Contas que @{state.data.username} seguiu recentemente</h2>
+                <h2 className="font-semibold">Novos seguindo</h2>
               </div>
-              <p className="-mt-2 mb-3 text-[11px] text-muted-foreground">
-                Apenas pessoas reais — contas verificadas e de marcas ficam de fora.
+              <p className="-mt-2 mb-4 text-[11px] text-muted-foreground">
+                Perfis que @{state.data.username} começou a seguir recentemente. Apenas pessoas
+                reais — contas verificadas e de marcas ficam de fora.
               </p>
-
-              {following.kind === "ready" && following.real && following.counts && (
-                <>
-                  <div className="mb-1.5 grid grid-cols-2 gap-3">
-                    <StatChip tone="pink" emoji="👩" label="Meninas" value={following.counts.girls} />
-                    <StatChip tone="blue" emoji="👨" label="Meninos" value={following.counts.boys} />
-                  </div>
-                  <p className="mb-4 text-[11px] text-muted-foreground">
-                    Estimativa pelo nome, com base nas contas que seguiu recentemente.
-                  </p>
-                </>
-              )}
 
               {following.kind === "loading" && (
                 <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
@@ -683,7 +630,7 @@ export function ProfileView({ username }: { username: string }) {
           {following.kind === "ready" && following.locked && following.recent && (
             <>
               <RecentSection
-                title="Seguiu recentemente"
+                title="Novos seguindo"
                 tone="green"
                 items={following.recent.started}
                 locked={following.locked}
@@ -694,13 +641,12 @@ export function ProfileView({ username }: { username: string }) {
                 items={following.recent.stopped}
                 locked={following.locked}
               />
-              {!following.recent.started.length && !following.recent.stopped.length && (
-                <p className="mt-4 text-center text-xs text-muted-foreground">
-                  Primeira análise salva. Volte mais tarde para ver quem @{state.data.username}
-                  {" "}seguiu ou deixou de seguir desde agora.
-                </p>
-              )}
             </>
+          )}
+
+          {/* PRO renders its own history inside the dashboard. */}
+          {following.kind === "ready" && following.locked && (
+            <HistoryPanel username={state.data.username} loggedIn={loggedIn} className="mt-4" />
           )}
         </>
       )}

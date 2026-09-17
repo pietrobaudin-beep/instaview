@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Activity, Bell, LineChart, UserPlus } from "lucide-react";
+import { Activity, History, Sparkles, UserPlus } from "lucide-react";
 import { TrackForm } from "@/components/track-form";
 import { Badge } from "@/components/ui/badge";
 import { env } from "@/lib/env";
@@ -7,18 +7,18 @@ import { env } from "@/lib/env";
 const FEATURES = [
   {
     icon: UserPlus,
-    title: "Who started following",
-    body: "Snapshot-based detection surfaces every new follower with the exact time it was spotted.",
+    title: "Novos seguindo",
+    body: "Descubra quais perfis foram seguidos desde a última análise.",
   },
   {
-    icon: LineChart,
-    title: "Growth history",
-    body: "Followers gained across 24h, 7d, 30d and 90d, with average/day and growth rate.",
+    icon: Sparkles,
+    title: "Interações recentes",
+    body: "Veja perfis que aparecem com mais frequência em curtidas e comentários.",
   },
   {
-    icon: Bell,
-    title: "Alerts (ready)",
-    body: "Email, webhook, Telegram and Discord channels wired into the schema — flip them on when you need.",
+    icon: History,
+    title: "Histórico de mudanças",
+    body: "Compare seguidores, seguindo e alterações no perfil ao longo do tempo.",
   },
 ];
 
@@ -33,13 +33,13 @@ export default function Home() {
         </div>
         <nav className="flex items-center gap-4 text-sm">
           <Link href="/login" className="text-muted-foreground hover:text-foreground">
-            Log in
+            Entrar
           </Link>
           <Link
             href="/signup"
             className="rounded-lg bg-primary px-3 py-1.5 font-medium text-primary-foreground hover:opacity-90"
           >
-            Sign up
+            Criar conta
           </Link>
         </nav>
       </header>
@@ -50,21 +50,21 @@ export default function Home() {
         <div className="mx-auto flex max-w-3xl flex-col items-center px-6 pb-16 pt-16 text-center sm:pt-24">
           {env.INSTAGRAM_PROVIDER === "mock" && (
             <Badge variant="accent" className="mb-6">
-              Demo mode · simulated data (MockProvider)
+              Modo demonstração · dados simulados
             </Badge>
           )}
           <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-6xl">
-            See who started following an Instagram account
+            Veja quem essa pessoa começou a seguir no Instagram.
           </h1>
           <p className="mt-5 max-w-xl text-pretty text-lg text-muted-foreground">
-            Enter any @username. InstaView watches the profile over time and tells you exactly who
-            started following — and when.
+            Digite um @username. Acompanhe novos seguindo, interações e mudanças no perfil ao longo
+            do tempo.
           </p>
           <div className="mt-8 flex justify-center">
             <TrackForm />
           </div>
           <p className="mt-4 text-xs text-muted-foreground">
-            No Instagram password needed. We never ask for your credentials.
+            Sem senha do Instagram. Analise apenas dados públicos disponíveis.
           </p>
         </div>
       </section>
@@ -81,8 +81,11 @@ export default function Home() {
       </section>
 
       <footer className="border-t border-border">
-        <div className="mx-auto max-w-6xl px-6 py-8 text-sm text-muted-foreground">
-          InstaView · follower monitoring · built with the InstagramDataProvider abstraction.
+        <div className="mx-auto flex max-w-6xl flex-col gap-1 px-6 py-8 text-sm text-muted-foreground">
+          <span>InstaView · acompanhe perfis públicos do Instagram</span>
+          <span className="text-xs">
+            Analisamos apenas informações públicas. Não pedimos senha e não acessamos contas.
+          </span>
         </div>
       </footer>
     </main>

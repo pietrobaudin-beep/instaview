@@ -28,7 +28,7 @@ export function initials(name: string): string {
 }
 
 export function formatNumber(n: number): string {
-  return new Intl.NumberFormat("en-US", { notation: n >= 10000 ? "compact" : "standard" }).format(n);
+  return new Intl.NumberFormat("pt-BR", { notation: n >= 10000 ? "compact" : "standard" }).format(n);
 }
 
 /** Only allow same-site relative redirects (prevents open-redirects via ?next=). */

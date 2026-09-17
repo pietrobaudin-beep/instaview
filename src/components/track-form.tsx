@@ -66,7 +66,7 @@ export function TrackForm({
     setError(null);
     const username = normalizeUsername(value);
     if (!username) {
-      setError("Enter an Instagram username.");
+      setError("Digite um @username do Instagram.");
       return;
     }
     setLoading(true);
@@ -89,12 +89,12 @@ export function TrackForm({
       }
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? "Something went wrong.");
+        setError(data.error ?? "Algo deu errado. Tente novamente.");
         return;
       }
       router.push(`/dashboard/${data.id}`);
     } catch {
-      setError("Network error. Is the server running?");
+      setError("Falha de conexão. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -114,13 +114,13 @@ export function TrackForm({
               onChange={(e) => setValue(e.target.value)}
               placeholder="username"
               className="h-12 pl-7 text-base"
-              aria-label="Instagram username"
+              aria-label="@username do Instagram"
               disabled={loading}
             />
           </div>
-          <Button type="submit" size="lg" variant="accent" disabled={loading} className="h-12">
+          <Button type="submit" size="lg" variant="accent" disabled={loading} className="h-12 whitespace-nowrap">
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-            Track
+            Analisar perfil
           </Button>
         </div>
         {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
@@ -141,7 +141,7 @@ export function TrackForm({
                   {preview.isVerified && <BadgeCheck className="h-4 w-4 shrink-0 text-accent" />}
                   {preview.isPrivate && (
                     <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                      Private
+                      Privado
                     </span>
                   )}
                 </div>
@@ -149,7 +149,7 @@ export function TrackForm({
                   {preview.displayName || " "}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {formatNumber(preview.followersCount)} followers
+                  {formatNumber(preview.followersCount)} seguidores
                 </p>
               </>
             ) : (

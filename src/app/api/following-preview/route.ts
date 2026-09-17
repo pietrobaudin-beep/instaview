@@ -4,6 +4,7 @@ import { getProvider } from "@/lib/providers";
 import { countGenders, guessGender } from "@/lib/gender";
 import { getRecentFollowingChanges, recordFollowing, type RecentItem } from "@/lib/following-tracker";
 import { prisma } from "@/lib/db";
+import { peekProfileCached } from "@/lib/profile-cache";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
 import { logger } from "@/lib/logger";
 import { ProviderError, type FollowerEntry } from "@/lib/providers/types";
@@ -71,7 +72,24 @@ export async function GET(req: Request) {
     try {
       let profileId: string | null = null;
       if (fresh && all.length > 0) {
-        profileId = await recordFollowing(user.id, { username }, all);
+        // Reuse the profile we already looked up for the preview (never a new
+        // provider request) so the snapshot carries the totals, bio and
+        // privacy state that the history chart and alerts compare over time.
+        const p = peekProfileCached(username);
+        profileId = await recordFollowing(
+          user.id,
+          {
+            username,
+            displayName: p?.displayName ?? null,
+            avatarUrl: p?.avatarUrl ?? null,
+            bio: p?.bio ?? null,
+            followersCount: p?.followersCount,
+            followingCount: p?.followingCount,
+            isVerified: p?.isVerified,
+            isPrivate: p?.isPrivate,
+          },
+          all,
+        );
       } else {
         const p = await prisma.trackedProfile.findUnique({
           where: { userId_username: { userId: user.id, username } },

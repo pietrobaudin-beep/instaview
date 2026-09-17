@@ -2,13 +2,13 @@
 
 import * as React from "react";
 import {
-  BadgeCheck, Crown, Heart, Loader2, MessageCircle, Sparkles, Trash2, UserMinus, UserPlus, Users,
+  Crown, Heart, Loader2, MessageCircle, Sparkles, Trash2, UserMinus, UserPlus,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { formatNumber } from "@/lib/utils";
+import { HistoryPanel } from "@/components/history-panel";
 
 export interface ProPerson {
   username: string;
@@ -40,6 +40,7 @@ interface Props {
   interactions: ProPerson[];
   following: ProPerson[];
   recent?: { started: ProRecent[]; stopped: ProRecent[] };
+  loggedIn: boolean;
 }
 
 function ago(iso: string) {
@@ -54,30 +55,6 @@ function genderLabel(g?: "f" | "m" | "u") {
   if (g === "f") return { text: "Menina", cls: "border-pink-500/40 bg-pink-500/15 text-pink-300" };
   if (g === "m") return { text: "Menino", cls: "border-blue-500/40 bg-blue-500/15 text-blue-300" };
   return { text: "—", cls: "border-border bg-muted text-muted-foreground" };
-}
-
-function StatCard({
-  value,
-  label,
-  icon: Icon,
-  tint,
-}: {
-  value: string;
-  label: string;
-  icon: React.ElementType;
-  tint: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-border bg-card p-4">
-      <div className="flex items-start justify-between">
-        <span className="text-2xl font-bold tabular-nums">{value}</span>
-        <span className={`flex h-7 w-7 items-center justify-center rounded-full ${tint}`}>
-          <Icon className="h-3.5 w-3.5" />
-        </span>
-      </div>
-      <p className="mt-1 text-xs text-muted-foreground">{label}</p>
-    </div>
-  );
 }
 
 const PODIUM = [
@@ -201,7 +178,11 @@ function MiniColumn({
 export function ProDashboard(props: Props) {
   const { username, counts, interactions, following, recent } = props;
   const top3 = interactions.slice(0, 3);
-  const ranking = interactions.length ? interactions : following;
+  const base = interactions.length ? interactions : following;
+
+  // Filter: todos / mulheres / homens (automatic estimate, so "todos" is default).
+  const [filter, setFilter] = React.useState<"all" | "f" | "m">("all");
+  const ranking = filter === "all" ? base : base.filter((p) => p.gender === filter);
 
   // Expensive extras load only when asked — keeps provider credits low.
   const [firsts, setFirsts] = React.useState<{ state: "idle" | "loading" | "done"; items: ProPerson[] }>({
@@ -237,33 +218,6 @@ export function ProDashboard(props: Props) {
 
   return (
     <div>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard
-          value={formatNumber(props.followersCount)}
-          label="Seguidores"
-          icon={Users}
-          tint="bg-accent/15 text-accent"
-        />
-        <StatCard
-          value={formatNumber(props.followingCount)}
-          label="Seguindo"
-          icon={UserPlus}
-          tint="bg-accent/15 text-accent"
-        />
-        <StatCard
-          value={String(counts?.girls ?? 0)}
-          label="Meninas"
-          icon={Users}
-          tint="bg-pink-500/20 text-pink-300"
-        />
-        <StatCard
-          value={String(counts?.boys ?? 0)}
-          label="Meninos"
-          icon={Users}
-          tint="bg-blue-500/20 text-blue-300"
-        />
-      </div>
-
       {top3.length > 0 && (
         <>
           <h2 className="mb-3 mt-8 text-lg font-semibold">Pódio de interações</h2>
@@ -279,7 +233,33 @@ export function ProDashboard(props: Props) {
       )}
 
       <div className="mt-8 grid items-start gap-6 xl:grid-cols-3">
-      <Section title="Ranking geral" icon={Sparkles} className="xl:col-span-2">
+      <Section
+        title="Ranking geral"
+        icon={Sparkles}
+        className="xl:col-span-2"
+        action={
+          <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/30 p-0.5">
+            {([
+              ["all", "Todos"],
+              ["f", "Mulheres"],
+              ["m", "Homens"],
+            ] as const).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setFilter(key)}
+                className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${
+                  filter === key
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        }
+      >
         <div className="overflow-x-auto">
           <table className="w-full min-w-[420px] text-sm">
             <thead>
@@ -321,13 +301,19 @@ export function ProDashboard(props: Props) {
             </tbody>
           </table>
         </div>
+        {ranking.length === 0 && (
+          <p className="py-6 text-center text-xs text-muted-foreground">
+            Nenhum perfil nesta categoria. A classificação é automática pelo nome e pode conter
+            erros.
+          </p>
+        )}
       </Section>
 
       <div className="space-y-6">
       {recent && (recent.started.length > 0 || recent.stopped.length > 0) && (
-        <Section title="Mudanças em quem segue" icon={UserPlus}>
+        <Section title="Novos seguindo" icon={UserPlus}>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-            <MiniColumn title="Começou a seguir" icon={UserPlus} tone="text-success" items={recent.started} />
+            <MiniColumn title="Novos seguindo" icon={UserPlus} tone="text-success" items={recent.started} />
             <MiniColumn title="Deixou de seguir" icon={UserMinus} tone="text-destructive" items={recent.stopped} />
           </div>
         </Section>
@@ -398,6 +384,8 @@ export function ProDashboard(props: Props) {
           </>
         )}
       </Section>
+
+      <HistoryPanel username={username} loggedIn={props.loggedIn} />
       </div>
       </div>
     </div>
