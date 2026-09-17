@@ -15,6 +15,7 @@ interface Preview {
   isVerified: boolean;
   isPrivate: boolean;
   followersCount: number;
+  followingCount: number;
 }
 
 interface FollowUser {
@@ -61,21 +62,26 @@ function Row({ u }: { u: FollowUser }) {
   );
 }
 
-function CategoryChip({ tone, emoji, label }: { tone: "pink" | "blue"; emoji: string; label: string }) {
+function StatChip({
+  tone,
+  emoji,
+  label,
+  value,
+}: {
+  tone: "pink" | "blue";
+  emoji: string;
+  label: string;
+  value: number;
+}) {
   const bg = tone === "pink" ? "bg-pink-500/15 border-pink-500/30" : "bg-blue-500/15 border-blue-500/30";
   return (
     <div className={`flex items-center gap-2.5 rounded-xl border p-3 ${bg}`}>
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-background text-lg">
         {emoji}
       </span>
-      <span className="flex-1 font-semibold">{label}</span>
-      <div className="flex items-center">
-        <div className="flex -space-x-2 blur-[3px]" aria-hidden>
-          {[0, 1, 2].map((i) => (
-            <span key={i} className="h-5 w-5 rounded-full border border-background bg-muted" />
-          ))}
-        </div>
-        <Lock className="ml-1.5 h-3.5 w-3.5 text-muted-foreground" />
+      <div className="min-w-0">
+        <div className="text-lg font-bold leading-none tabular-nums">{formatNumber(value)}</div>
+        <div className="text-xs text-muted-foreground">{label}</div>
       </div>
     </div>
   );
@@ -113,7 +119,8 @@ export function ProfileView({ username }: { username: string }) {
     let alive = true;
     setState({ kind: "loading" });
     const minimal: Preview = {
-      username, displayName: null, avatarUrl: null, isVerified: false, isPrivate: false, followersCount: 0,
+      username, displayName: null, avatarUrl: null, isVerified: false, isPrivate: false,
+      followersCount: 0, followingCount: 0,
     };
     (async () => {
       try {
@@ -233,6 +240,13 @@ export function ProfileView({ username }: { username: string }) {
                 <h2 className="font-semibold">Contas que @{state.data.username} seguiu recentemente</h2>
               </div>
 
+              {(state.data.followingCount > 0 || state.data.followersCount > 0) && (
+                <div className="mb-4 grid grid-cols-2 gap-3">
+                  <StatChip tone="pink" emoji="👤" label="Seguindo" value={state.data.followingCount} />
+                  <StatChip tone="blue" emoji="⭐" label="Seguidores" value={state.data.followersCount} />
+                </div>
+              )}
+
               {following.kind === "loading" && (
                 <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" /> Analisando…
@@ -247,12 +261,6 @@ export function ProfileView({ username }: { username: string }) {
 
               {following.kind === "ready" && following.locked && (
                 <>
-                  {/* Category chips — counts hidden (not fabricated) until unlock. */}
-                  <div className="mb-4 grid grid-cols-2 gap-3">
-                    <CategoryChip tone="pink" emoji="👩" label="Minas" />
-                    <CategoryChip tone="blue" emoji="👨" label="Garotos" />
-                  </div>
-
                   <div className="relative">
                     <ul className="divide-y divide-border select-none blur-[6px]" aria-hidden>
                       {following.users.map((u, i) => <Row key={u.username + i} u={u} />)}

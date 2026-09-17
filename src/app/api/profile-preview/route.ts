@@ -15,7 +15,7 @@ interface Cached {
   data: unknown;
 }
 const cache = new Map<string, Cached>();
-const TTL = 60 * 60 * 1000; // 1 hour
+const TTL = 24 * 60 * 60 * 1000; // 24 hours — minimise repeat provider charges
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -42,6 +42,7 @@ export async function GET(req: Request) {
       isVerified: p.isVerified,
       isPrivate: p.isPrivate,
       followersCount: p.followersCount,
+      followingCount: p.followingCount,
     };
     cache.set(username, { at: Date.now(), data });
     return NextResponse.json(data);

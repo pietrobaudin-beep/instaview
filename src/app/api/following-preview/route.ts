@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 // Cache the REAL following per @ so repeated views don't re-charge the provider.
 const cache = new Map<string, { at: number; users: FollowerEntry[] }>();
-const TTL = 60 * 60 * 1000; // 1 hour
+const TTL = 24 * 60 * 60 * 1000; // 24 hours — minimise repeat provider charges
 
 /** Mask an identity so the free (blurred) tier doesn't leak names via DevTools. */
 function mask(u: FollowerEntry): FollowerEntry {
