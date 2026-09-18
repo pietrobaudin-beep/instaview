@@ -236,6 +236,26 @@ model FollowerChange {
 }
 
 // ---------------------------------------------------------------------------
+// Free-plan usage
+// ---------------------------------------------------------------------------
+
+// One row per profile a free identity has analysed. The free plan allows a
+// single profile, so this is what the paywall counts. Re-opening the SAME
+// profile is always allowed — it costs nothing extra and would feel broken.
+model AnalysisUsage {
+  id String @id @default(cuid())
+  // "u:<userId>" when signed in, "v:<visitorId>" for an anonymous visitor.
+  key      String
+  username String
+
+  createdAt DateTime @default(now())
+
+  @@unique([key, username])
+  @@index([key])
+  @@map("analysis_usage")
+}
+
+// ---------------------------------------------------------------------------
 // Monitoring jobs (cron scheduling per profile)
 // ---------------------------------------------------------------------------
 

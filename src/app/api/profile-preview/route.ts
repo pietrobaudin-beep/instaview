@@ -3,6 +3,8 @@ import { getProfileCached } from "@/lib/profile-cache";
 import { ProviderError } from "@/lib/providers/types";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
 import { logger } from "@/lib/logger";
+import { getCurrentUser } from "@/lib/auth";
+import { checkAllowance, usageKey } from "@/lib/usage";
 
 const log = logger.scope("api:preview");
 
@@ -13,6 +15,18 @@ export async function GET(req: Request) {
   const username = normalizeUsername(url.searchParams.get("username") || "");
   if (!isValidUsername(username)) {
     return NextResponse.json({ error: "invalid" }, { status: 400 });
+  }
+
+  // Free plan: do not look up profiles beyond the one analysis they get.
+  const user = await getCurrentUser();
+  if (!user || user.plan === "FREE") {
+    const allowance = await checkAllowance(usageKey(user), username);
+    if (!allowance.allowed) {
+      return NextResponse.json(
+        { error: "limit_reached", spentOn: allowance.spentOn },
+        { status: 402 },
+      );
+    }
   }
 
   try {

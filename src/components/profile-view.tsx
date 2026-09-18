@@ -19,6 +19,7 @@ import { ProDashboard } from "@/components/pro-dashboard";
 import { HistoryPanel } from "@/components/history-panel";
 import { AppNav, NavSpacer } from "@/components/app-nav";
 import { AnalysisLoading } from "@/components/analysis-loading";
+import { SniffingDog } from "@/components/ui/dog";
 
 interface RecentItem extends Person {
   detectedAt: string;
@@ -100,6 +101,7 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
     | { kind: "loading" }
     | { kind: "ok"; data: HeroProfile; note?: string }
     | { kind: "error" }
+    | { kind: "limited"; spentOn: string | null }
   >({ kind: "loading" });
 
   const [following, setFollowing] = React.useState<
@@ -163,6 +165,10 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
         if (!alive) return;
         if (res.ok) setState({ kind: "ok", data: await res.json() });
         else if (res.status === 404) setState({ kind: "error" });
+        else if (res.status === 402) {
+          const b = await res.json().catch(() => ({}));
+          setState({ kind: "limited", spentOn: b.spentOn ?? null });
+        }
         else if (res.status === 429)
           setState({
             kind: "ok",
@@ -189,6 +195,11 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
     };
   }, [username]);
 
+  // Nothing to analyse if the profile is missing or the free analysis is spent.
+  React.useEffect(() => {
+    if (state.kind === "limited" || state.kind === "error") setAnalyzing(false);
+  }, [state.kind]);
+
   React.useEffect(() => {
     let alive = true;
     (async () => {
@@ -213,6 +224,10 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
         const res = await fetch(`/api/following-preview?username=${encodeURIComponent(username)}`);
         if (!alive) return;
         const body = await res.json();
+        if (res.status === 402 || body.limited) {
+          setState({ kind: "limited", spentOn: body.spentOn ?? null });
+          return;
+        }
         if (body.private) {
           setFollowing({ kind: "private" });
           return;
@@ -275,6 +290,43 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
 
         {(analyzing || state.kind === "loading") && (
           <AnalysisLoading step={step} steps={STEPS} username={username} />
+        )}
+
+        {!analyzing && state.kind === "limited" && (
+          <div className="mx-auto max-w-lg">
+            <Panel>
+              <div className="flex flex-col items-center gap-3 py-8 text-center">
+                <SniffingDog className="h-20 text-ink" animated />
+                <h1 className="text-2xl font-bold">Sua análise gratuita já foi usada</h1>
+                <p className="max-w-sm text-sm text-muted-foreground">
+                  O plano grátis inclui <b>1 perfil</b>. Assine o Pro para farejar quantos perfis
+                  quiser, sem censura.
+                </p>
+                <Link
+                  href={`/pricing?next=${encodeURIComponent(`/p/${username}`)}`}
+                  className="mt-2 w-full sm:w-auto"
+                >
+                  <Button variant="accent" size="lg" className="w-full">
+                    Desbloquear Pro <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+                {state.spentOn && state.spentOn !== username && (
+                  <Link
+                    href={`/p/${encodeURIComponent(state.spentOn)}`}
+                    className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                  >
+                    voltar para @{state.spentOn}
+                  </Link>
+                )}
+                <Link
+                  href={`/login?next=${encodeURIComponent(`/p/${username}`)}`}
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                >
+                  já é assinante? entrar
+                </Link>
+              </div>
+            </Panel>
+          </div>
         )}
 
         {!analyzing && state.kind === "error" && (

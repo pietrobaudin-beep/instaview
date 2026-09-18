@@ -5,6 +5,7 @@ import { countGenders, guessGender } from "@/lib/gender";
 import { getRecentFollowingChanges, recordFollowing, type RecentItem } from "@/lib/following-tracker";
 import { prisma } from "@/lib/db";
 import { peekProfileCached } from "@/lib/profile-cache";
+import { checkAllowance, claimAnalysis, usageKey } from "@/lib/usage";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
 import { logger } from "@/lib/logger";
 import { ProviderError, type FollowerEntry } from "@/lib/providers/types";
@@ -40,6 +41,20 @@ export async function GET(req: Request) {
 
   const user = await getCurrentUser();
   const paid = !!user && user.plan !== "FREE";
+
+  // Free plan: one profile only. Checked before any provider call, so an extra
+  // analysis never costs credits.
+  if (!paid) {
+    const key = usageKey(user);
+    const allowance = await checkAllowance(key, username);
+    if (!allowance.allowed) {
+      return NextResponse.json(
+        { limited: true, used: allowance.used, limit: allowance.limit, spentOn: allowance.spentOn },
+        { status: 402 },
+      );
+    }
+    await claimAnalysis(key, username);
+  }
 
   // Fetch (or reuse cached) real following — ONE page only (~1 provider request).
   let all: FollowerEntry[] = [];

@@ -7,6 +7,7 @@ import { SniffingDog } from "@/components/ui/dog";
 import { StatusPill } from "@/components/ui/brand";
 import { CurvedArrow, StickerNote } from "@/components/ui/doodles";
 import { getCurrentUser } from "@/lib/auth";
+import { FREE_ANALYSIS_LIMIT, checkAllowance, peekUsageKey } from "@/lib/usage";
 import { env } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
@@ -48,6 +49,15 @@ const FEATURES = [
 export default async function Home() {
   const user = await getCurrentUser();
 
+  // Free plan includes one profile; show what is left of it.
+  const paid = !!user && user.plan !== "FREE";
+  let used = 0;
+  if (!paid) {
+    const key = peekUsageKey(user);
+    if (key) used = (await checkAllowance(key, "")).used;
+  }
+  const left = Math.max(0, FREE_ANALYSIS_LIMIT - used);
+
   // Signed in: the app's search screen, with the tab bar.
   if (user) {
     return (
@@ -68,6 +78,22 @@ export default async function Home() {
           <div className="mt-7">
             <SearchBlock />
           </div>
+          {!paid && (
+            <p className="mt-5 text-sm text-muted-foreground">
+              {left > 0 ? (
+                <>
+                  Plano grátis: <b className="text-foreground">{left}</b> análise disponível.
+                </>
+              ) : (
+                <>
+                  Você já usou sua análise gratuita.{" "}
+                  <Link href="/pricing" className="font-semibold text-accent hover:underline">
+                    Desbloquear Pro
+                  </Link>
+                </>
+              )}
+            </p>
+          )}
         </main>
         <NavSpacer />
       </>
