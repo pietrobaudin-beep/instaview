@@ -15,6 +15,7 @@ import { HistoryPanel } from "@/components/history-panel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatNumber } from "@/lib/utils";
+import { Logo } from "@/components/ui/logo";
 
 interface Preview {
   username: string;
@@ -61,13 +62,13 @@ const STEPS = [
 function GenderBadge({ gender }: { gender?: "f" | "m" | "u" }) {
   if (gender === "f")
     return (
-      <span className="shrink-0 rounded-full border border-pink-500/40 bg-pink-500/15 px-2 py-0.5 text-[11px] font-medium text-pink-300">
+      <span className="shrink-0 rounded-full border border-pink-400/50 bg-pink-100 px-2 py-0.5 text-[11px] font-semibold text-pink-700">
         👩 Menina
       </span>
     );
   if (gender === "m")
     return (
-      <span className="shrink-0 rounded-full border border-blue-500/40 bg-blue-500/15 px-2 py-0.5 text-[11px] font-medium text-blue-300">
+      <span className="shrink-0 rounded-full border border-blue-400/50 bg-blue-100 px-2 py-0.5 text-[11px] font-semibold text-blue-700">
         👨 Menino
       </span>
     );
@@ -192,12 +193,12 @@ function InteractionSection({
 
   return (
     <Card className="mt-4 overflow-hidden">
-      <div className="h-1 w-full bg-gradient-to-r from-pink-500 via-accent to-blue-500" />
+      <div className="h-1 w-full bg-gradient-to-r from-[hsl(var(--pink))] via-accent to-[hsl(var(--maroon))]" />
       <CardContent className="p-6">
         <div className="mb-1 flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-accent" />
           <h2 className="font-semibold">Com quem mais interage</h2>
-          <span className="ml-auto rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-bold tracking-wide text-accent">
+          <span className="ml-auto rounded-full bg-[#FFD84D] px-2 py-0.5 text-[10px] font-bold tracking-wide text-[hsl(var(--maroon))]">
             PRO
           </span>
         </div>
@@ -308,12 +309,12 @@ function ActivityCard({ activity }: { activity: PostActivity }) {
     activity.commented.length + activity.deletedComment.length;
   return (
     <Card className="mt-4 overflow-hidden">
-      <div className="h-1 w-full bg-gradient-to-r from-pink-500 via-accent to-blue-500" />
+      <div className="h-1 w-full bg-gradient-to-r from-[hsl(var(--pink))] via-accent to-[hsl(var(--maroon))]" />
       <CardContent className="p-6">
         <div className="mb-1 flex items-center gap-2">
           <Heart className="h-4 w-4 text-accent" />
           <h2 className="font-semibold">Atividade nos posts</h2>
-          <span className="ml-auto rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-bold text-accent">
+          <span className="ml-auto rounded-full bg-[#FFD84D] px-2 py-0.5 text-[10px] font-bold text-[hsl(var(--maroon))]">
             PRO
           </span>
         </div>
@@ -463,7 +464,7 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
           <ArrowLeft className="h-4 w-4" /> Voltar
         </Link>
         <div className="flex items-center gap-1.5 text-sm font-medium">
-          <Activity className="h-4 w-4 text-accent" /> InstaView
+          <Logo className="h-5" />
         </div>
       </div>
 

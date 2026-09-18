@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { safeNext, withParam } from "@/lib/utils";
+import { Logo } from "@/components/ui/logo";
 
 export function AuthForm({ mode }: { mode: "signup" | "login" }) {
   const router = useRouter();
@@ -74,7 +75,7 @@ export function AuthForm({ mode }: { mode: "signup" | "login" }) {
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6">
       <Link href="/" className="mb-6 flex items-center gap-2 font-semibold tracking-tight">
-        <Activity className="h-5 w-5 text-accent" /> InstaView
+        <Logo className="h-6" />
       </Link>
       <Card>
         <CardContent className="p-6">
@@ -84,7 +85,7 @@ export function AuthForm({ mode }: { mode: "signup" | "login" }) {
           <p className="mt-1 text-sm text-muted-foreground">
             {isSignup
               ? "Start tracking who follows any Instagram profile."
-              : "Log in to your InstaView dashboard."}
+              : "Log in to your Farejo dashboard."}
           </p>
 
           <form onSubmit={submit} className="mt-5 space-y-3">

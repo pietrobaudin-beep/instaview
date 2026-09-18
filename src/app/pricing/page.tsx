@@ -7,6 +7,7 @@ import { PLANS } from "@/lib/plans";
 import { isBillingConfigured } from "@/lib/billing/stripe";
 import { getCurrentUser } from "@/lib/auth";
 import { safeNext, withParam } from "@/lib/utils";
+import { Logo } from "@/components/ui/logo";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +25,7 @@ export default async function PricingPage({
     <main className="mx-auto max-w-5xl px-6 py-12">
       <div className="mb-10 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
-          <Activity className="h-5 w-5 text-accent" /> InstaView
+          <Logo className="h-6" />
         </Link>
         {user ? (
           <span className="text-sm text-muted-foreground">
@@ -38,15 +39,15 @@ export default async function PricingPage({
       </div>
 
       <div className="mb-10 text-center">
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-          Reveal who started following
+        <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
+          Mais dados. Mais respostas.
         </h1>
         <p className="mt-3 text-muted-foreground">
-          Free shows the numbers. Upgrade to unlock the names, photos and timestamps.
+          No grátis você vê os números. No Pro, os nomes, as fotos e a hora exata de cada mudança.
         </p>
         {demoMode && (
           <p className="mt-2 text-xs text-accent">
-            Demo mode: “upgrade” unlocks instantly (no real charge until Stripe keys are set).
+Modo demonstração: a assinatura libera na hora e nada é cobrado.
           </p>
         )}
       </div>
@@ -64,8 +65,17 @@ export default async function PricingPage({
                 <div className="mb-4">
                   <h2 className="text-lg font-semibold">{plan.name}</h2>
                   <div className="mt-2 flex items-baseline gap-1">
-                    <span className="text-3xl font-semibold">${plan.priceMonthly}</span>
-                    <span className="text-sm text-muted-foreground">/mo</span>
+                    <span className="text-3xl font-extrabold">
+                      {plan.priceMonthly === 0
+                        ? "Grátis"
+                        : plan.priceMonthly.toLocaleString("pt-BR", {
+                            style: "currency",
+                            currency: "BRL",
+                          })}
+                    </span>
+                    {plan.priceMonthly > 0 && (
+                      <span className="text-sm text-muted-foreground">/mês</span>
+                    )}
                   </div>
                 </div>
                 <ul className="mb-6 flex-1 space-y-2 text-sm">

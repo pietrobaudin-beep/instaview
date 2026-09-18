@@ -68,7 +68,7 @@ export function AdminPanel({ adminEmail }: { adminEmail: string }) {
     <main className="mx-auto max-w-4xl px-6 py-10">
       <div className="mb-8 flex items-center justify-between">
         <div className="flex items-center gap-2 font-semibold tracking-tight">
-          <ShieldCheck className="h-5 w-5 text-accent" /> InstaView Admin
+          <ShieldCheck className="h-5 w-5 text-accent" /> Farejo Admin
         </div>
         <span className="text-sm text-muted-foreground">{adminEmail}</span>
       </div>

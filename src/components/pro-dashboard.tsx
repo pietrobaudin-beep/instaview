@@ -52,14 +52,14 @@ function ago(iso: string) {
 }
 
 function genderLabel(g?: "f" | "m" | "u") {
-  if (g === "f") return { text: "Menina", cls: "border-pink-500/40 bg-pink-500/15 text-pink-300" };
-  if (g === "m") return { text: "Menino", cls: "border-blue-500/40 bg-blue-500/15 text-blue-300" };
+  if (g === "f") return { text: "Menina", cls: "border-pink-400/50 bg-pink-100 text-pink-700" };
+  if (g === "m") return { text: "Menino", cls: "border-blue-400/50 bg-blue-100 text-blue-700" };
   return { text: "—", cls: "border-border bg-muted text-muted-foreground" };
 }
 
 const PODIUM = [
   { ring: "border-amber-400/70", badge: "bg-amber-400 text-black", label: "1" },
-  { ring: "border-zinc-400/60", badge: "bg-zinc-300 text-black", label: "2" },
+  { ring: "border-zinc-400/70", badge: "bg-zinc-400 text-white", label: "2" },
   { ring: "border-orange-700/60", badge: "bg-orange-700 text-white", label: "3" },
 ];
 

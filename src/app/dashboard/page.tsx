@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { getCurrentUser } from "@/lib/auth";
 import { getUserProfiles } from "@/lib/profiles";
 import { formatNumber } from "@/lib/utils";
+import { Logo } from "@/components/ui/logo";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,7 @@ export default async function DashboardHome() {
     <main className="mx-auto max-w-4xl px-6 py-10">
       <div className="mb-8 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
-          <Activity className="h-5 w-5 text-accent" /> InstaView
+          <Logo className="h-6" />
         </Link>
         <div className="flex items-center gap-3">
           <span className="text-sm text-muted-foreground">{user.email}</span>

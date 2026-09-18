@@ -34,7 +34,7 @@ const bodySchema = z.object({
 
 /**
  * Receives a follower snapshot pushed by the /receive bridge page (same-origin,
- * authenticated by the InstaView session). Stores it and returns a summary.
+ * authenticated by the Farejo session). Stores it and returns a summary.
  */
 export async function POST(req: Request) {
   const user = await getCurrentUser();

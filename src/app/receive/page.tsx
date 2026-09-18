@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { Activity, CheckCircle2, Loader2, XCircle } from "lucide-react";
+import { Logo } from "@/components/ui/logo";
 
 type Status =
   | { kind: "waiting" }
@@ -67,7 +68,7 @@ export default function ReceivePage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-4 px-6 text-center">
       <div className="flex items-center gap-2 font-semibold">
-        <Activity className="h-5 w-5 text-accent" /> InstaView
+        <Logo className="h-6" />
       </div>
 
       {status.kind === "waiting" && (
@@ -75,7 +76,7 @@ export default function ReceivePage() {
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           <p className="text-sm text-muted-foreground">
             Waiting for Instagram data… If nothing happens, go back to the Instagram tab and click
-            the <b>Sync InstaView</b> bookmark again.
+            the <b>Sync Farejo</b> bookmark again.
           </p>
         </>
       )}
@@ -118,7 +119,7 @@ export default function ReceivePage() {
           <XCircle className="h-10 w-10 text-destructive" />
           <p className="text-sm text-destructive">{status.message}</p>
           <p className="text-xs text-muted-foreground">
-            Make sure you&apos;re logged in to InstaView in this browser, then try the bookmark
+            Make sure you&apos;re logged in to Farejo in this browser, then try the bookmark
             again.
           </p>
         </>

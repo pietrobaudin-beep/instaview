@@ -128,10 +128,9 @@ export async function getProfileHistory(profileId: string): Promise<ProfileHisto
     if (delta !== 0 && previous.followersCount > 0) {
       alerts.push({
         tone: delta > 0 ? "success" : "muted",
-        text:
-          delta > 0
-            ? `Ganhou ${delta.toLocaleString("pt-BR")} seguidores desde a última análise.`
-            : `Perdeu ${Math.abs(delta).toLocaleString("pt-BR")} seguidores desde a última análise.`,
+        text: `${delta > 0 ? "Ganhou" : "Perdeu"} ${Math.abs(delta).toLocaleString("pt-BR")} ${
+          Math.abs(delta) === 1 ? "seguidor" : "seguidores"
+        } desde a última análise.`,
       });
     }
   }

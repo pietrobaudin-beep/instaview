@@ -7,7 +7,7 @@ import type { Plan } from "@prisma/client";
 export interface PlanConfig {
   id: Plan;
   name: string;
-  priceMonthly: number; // USD, display only
+  priceMonthly: number; // BRL, display only — Stripe charges what its price id says
   /** Max profiles a user/org can monitor simultaneously. */
   maxProfiles: number;
   /** Minimum minutes between collections (smaller = more frequent). */
@@ -27,7 +27,7 @@ export interface PlanConfig {
 export const PLANS: Record<Plan, PlanConfig> = {
   FREE: {
     id: "FREE",
-    name: "Free",
+    name: "Grátis",
     priceMonthly: 0,
     maxProfiles: 1,
     minIntervalMinutes: 24 * 60, // once a day
@@ -35,12 +35,17 @@ export const PLANS: Record<Plan, PlanConfig> = {
     alerts: false,
     team: false,
     exportAndApi: false,
-    features: ["1 tracked profile", "Daily updates", "7-day history", "New-follower detection"],
+    features: [
+      "1 perfil acompanhado",
+      "Atualizações diárias",
+      "Contagem de mulheres e homens",
+      "Histórico de 7 dias",
+    ],
   },
   PRO: {
     id: "PRO",
     name: "Pro",
-    priceMonthly: 19,
+    priceMonthly: 29.9,
     maxProfiles: 10,
     minIntervalMinutes: 60, // hourly
     historyDays: 365,
@@ -48,12 +53,19 @@ export const PLANS: Record<Plan, PlanConfig> = {
     team: false,
     exportAndApi: false,
     stripePriceEnv: "NEXT_PUBLIC_STRIPE_PRICE_PRO",
-    features: ["10 tracked profiles", "Hourly updates", "Full history", "Email + webhook alerts"],
+    features: [
+      "Quem começou a seguir, sem censura",
+      "Quem deixou de seguir",
+      "Interações em posts específicos",
+      "Acompanhe vários perfis",
+      "Histórico e relatórios completos",
+      "Alertas de novas conexões",
+    ],
   },
   AGENCY: {
     id: "AGENCY",
     name: "Agency",
-    priceMonthly: 99,
+    priceMonthly: 99.9,
     maxProfiles: 100,
     minIntervalMinutes: 30,
     historyDays: Number.POSITIVE_INFINITY,
@@ -62,12 +74,12 @@ export const PLANS: Record<Plan, PlanConfig> = {
     exportAndApi: true,
     stripePriceEnv: "NEXT_PUBLIC_STRIPE_PRICE_AGENCY",
     features: [
-      "100 tracked profiles",
-      "30-min updates",
-      "Unlimited history",
-      "Team members",
-      "CSV export + REST API",
-      "All alert channels",
+      "100 perfis acompanhados",
+      "Atualizações a cada 30 min",
+      "Histórico ilimitado",
+      "Membros de equipe",
+      "Exportar CSV + API",
+      "Todos os canais de alerta",
     ],
   },
 };

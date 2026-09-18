@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Activity, Bookmark, Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Logo } from "@/components/ui/logo";
 
 /** Builds the self-contained sync script, embedding this site's real origin. */
 function buildScript(origin: string): string {
@@ -14,7 +15,7 @@ var gc=function(n){var v="; "+document.cookie,p=v.split("; "+n+"=");return p.len
 if(!location.hostname.endsWith("instagram.com")){alert("Abra o instagram.com (logado) e clique no favorito ali.");return}
 var vid=gc("ds_user_id");if(!vid){alert("Faca login no Instagram primeiro.");return}
 var w=window.open(S+"/receive","iv_sync","width=460,height=640");
-if(!w){alert("Permita pop-ups para o InstaView e tente de novo.");return}
+if(!w){alert("Permita pop-ups para o Farejo e tente de novo.");return}
 var sl=function(ms){return new Promise(function(r){setTimeout(r,ms)})},H={"X-IG-App-ID":A};
 var mp=function(u){return{username:u.username,displayName:u.full_name||null,avatarUrl:u.profile_pic_url||null,isVerified:!!u.is_verified}};
 var all=async function(k,cap){var o=[],m,p=0,t=false;while(p<cap){var url="https://www.instagram.com/api/v1/friendships/"+vid+"/"+k+"/?count=50"+(m?"&max_id="+encodeURIComponent(m):"");var r=await fetch(url,{credentials:"same-origin",headers:H});if(!r.ok){if(p===0)throw new Error("Instagram HTTP "+r.status);break}var d=await r.json();(d.users||[]).forEach(function(u){o.push(mp(u))});m=d.next_max_id;p++;if(!m||d.has_more===false)break;if(p>=cap)t=true;await sl(p%5===0?4000:900)}return{list:o,truncated:t}};
@@ -55,15 +56,15 @@ export function ConnectClient() {
     <main className="mx-auto max-w-lg px-6 py-10">
       <div className="mb-8 flex items-center justify-between">
         <Link href="/dashboard" className="flex items-center gap-2 font-semibold tracking-tight">
-          <Activity className="h-5 w-5 text-accent" /> InstaView
+          <Logo className="h-6" />
         </Link>
       </div>
 
       <h1 className="text-2xl font-semibold tracking-tight">Connect your Instagram</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Sync your own account so InstaView can show who unfollowed you. It uses your own logged-in
+        Sync your own account so Farejo can show who unfollowed you. It uses your own logged-in
         session in your browser — no password, and nothing leaves your machine except your follower
-        list, sent straight to your InstaView account.
+        list, sent straight to your Farejo account.
       </p>
 
       <Card className="mt-6">
@@ -114,7 +115,7 @@ export function ConnectClient() {
               className="inline-flex cursor-grab items-center gap-2 rounded-lg border border-accent/50 bg-accent/10 px-4 py-2 text-sm font-semibold text-accent"
               draggable
             >
-              <Bookmark className="h-4 w-4" /> Sync InstaView
+              <Bookmark className="h-4 w-4" /> Sync Farejo
             </a>
           </div>
         </CardContent>

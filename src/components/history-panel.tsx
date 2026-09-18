@@ -81,8 +81,8 @@ function Panel({
 
 const TONE: Record<AlertItem["tone"], string> = {
   accent: "border-accent/40 bg-accent/10 text-accent",
-  success: "border-emerald-500/40 bg-emerald-500/10 text-emerald-300",
-  danger: "border-rose-500/40 bg-rose-500/10 text-rose-300",
+  success: "border-emerald-500/40 bg-emerald-50 text-emerald-800",
+  danger: "border-rose-500/40 bg-rose-50 text-rose-800",
   muted: "border-border bg-muted/30 text-muted-foreground",
 };
 
@@ -219,7 +219,7 @@ export function HistoryPanel({
               Acompanhar perfil
             </Button>
           ) : h?.saved ? (
-            <span className="inline-flex items-center gap-1 text-xs text-emerald-300">
+            <span className="inline-flex items-center gap-1 text-xs text-emerald-700">
               <Check className="h-3.5 w-3.5" /> Acompanhando
             </span>
           ) : null
@@ -259,13 +259,13 @@ export function HistoryPanel({
                   <li key={t.username + i} className="relative">
                     <span
                       className={`absolute -left-[26px] top-2 flex h-4 w-4 items-center justify-center rounded-full ${
-                        t.type === "FOLLOW" ? "bg-emerald-500/20" : "bg-rose-500/20"
+                        t.type === "FOLLOW" ? "bg-emerald-100" : "bg-rose-100"
                       }`}
                     >
                       {t.type === "FOLLOW" ? (
-                        <UserPlus className="h-2.5 w-2.5 text-emerald-300" />
+                        <UserPlus className="h-2.5 w-2.5 text-emerald-700" />
                       ) : (
-                        <UserMinus className="h-2.5 w-2.5 text-rose-300" />
+                        <UserMinus className="h-2.5 w-2.5 text-rose-700" />
                       )}
                     </span>
                     <div className="flex items-center gap-2.5">

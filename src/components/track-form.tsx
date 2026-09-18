@@ -20,10 +20,13 @@ interface Preview {
 export function TrackForm({
   autoFocus = true,
   mode = "preview",
+  onPink = false,
 }: {
   autoFocus?: boolean;
   /** "preview" → public result page (no login). "track" → add to your account. */
   mode?: "preview" | "track";
+  /** True inside the pink hero panel, where the accent button would vanish. */
+  onPink?: boolean;
 }) {
   const router = useRouter();
   const [value, setValue] = React.useState("");
@@ -105,7 +108,7 @@ export function TrackForm({
       <form onSubmit={onSubmit}>
         <div className="flex flex-col gap-3 sm:flex-row">
           <div className="relative flex-1">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
               @
             </span>
             <Input
@@ -113,12 +116,18 @@ export function TrackForm({
               value={value}
               onChange={(e) => setValue(e.target.value)}
               placeholder="username"
-              className="h-12 pl-7 text-base"
+              className="h-12 pl-8 text-base"
               aria-label="@username do Instagram"
               disabled={loading}
             />
           </div>
-          <Button type="submit" size="lg" variant="accent" disabled={loading} className="h-12 whitespace-nowrap">
+          <Button
+            type="submit"
+            size="lg"
+            variant={onPink ? "default" : "accent"}
+            disabled={loading}
+            className="h-12 whitespace-nowrap"
+          >
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
             Analisar perfil
           </Button>

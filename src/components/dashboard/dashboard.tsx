@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { ChangeItem, DashboardSummary, Period, SeriesPoint } from "@/lib/analytics";
 import { cn, formatNumber } from "@/lib/utils";
+import { Logo } from "@/components/ui/logo";
 
 interface DashboardData {
   locked: boolean;
@@ -146,7 +147,7 @@ export function Dashboard({ initial }: { initial: DashboardData }) {
           <ArrowLeft className="h-4 w-4" /> All profiles
         </Link>
         <div className="flex items-center gap-1.5 text-sm font-medium">
-          <Activity className="h-4 w-4 text-accent" /> InstaView
+          <Logo className="h-5" />
         </div>
       </div>
 

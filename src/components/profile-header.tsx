@@ -83,29 +83,32 @@ export function ProfileHeader({
   return (
     <div>
       <div className="overflow-hidden rounded-2xl border border-border bg-card">
-        {premium && <div className="h-1.5 w-full bg-gradient-to-r from-pink-500 via-accent to-blue-500" />}
+        {premium && <div className="h-1.5 w-full bg-gradient-to-r from-[hsl(var(--pink))] via-accent to-[hsl(var(--maroon))]" />}
         <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-start">
-          <Avatar
-            src={profile.avatarUrl}
-            name={profile.displayName ?? profile.username}
-            size={88}
-          />
+          {/* Pink ring around the photo, as in the brand screens. */}
+          <div className="shrink-0 rounded-full p-1 ring-2 ring-accent">
+            <Avatar
+              src={profile.avatarUrl}
+              name={profile.displayName ?? profile.username}
+              size={88}
+            />
+          </div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="truncate text-xl font-semibold">@{profile.username}</h1>
+              <h1 className="truncate text-2xl font-extrabold tracking-tight">@{profile.username}</h1>
               {profile.isVerified && <BadgeCheck className="h-5 w-5 shrink-0 text-accent" />}
               <span
                 className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ${
                   profile.isPrivate
-                    ? "border-amber-500/40 bg-amber-500/15 text-amber-300"
-                    : "border-emerald-500/40 bg-emerald-500/15 text-emerald-300"
+                    ? "border-amber-500/50 bg-amber-100 text-amber-800"
+                    : "border-emerald-500/50 bg-emerald-100 text-emerald-800"
                 }`}
               >
                 {profile.isPrivate ? <Lock className="h-3 w-3" /> : <Globe className="h-3 w-3" />}
                 {profile.isPrivate ? "Perfil privado" : "Perfil público"}
               </span>
               {premium && (
-                <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-bold text-accent">
+                <span className="rounded-full bg-[#FFD84D] px-2 py-0.5 text-[10px] font-bold text-[hsl(var(--maroon))]">
                   PRO
                 </span>
               )}
@@ -147,14 +150,14 @@ export function ProfileHeader({
           value={String(counts?.girls ?? 0)}
           label="Mulheres no seguindo"
           icon={Users}
-          tint="bg-pink-500/20 text-pink-300"
+          tint="bg-pink-200 text-pink-700"
           hint="Estimativa automática pelo nome — pode conter erros."
         />
         <Stat
           value={String(counts?.boys ?? 0)}
           label="Homens no seguindo"
           icon={Users}
-          tint="bg-blue-500/20 text-blue-300"
+          tint="bg-blue-200 text-blue-700"
           hint="Estimativa automática pelo nome — pode conter erros."
         />
       </div>
