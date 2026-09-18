@@ -9,9 +9,21 @@ const bodySchema = z.object({
   name: z.string().optional(),
 });
 
+/**
+ * Passwordless login for LOCAL development only.
+ *
+ * It signs you in as any email with no password, so it must never answer on a
+ * deployed site. AUTH_MODE defaults to "dev" when unset, which is exactly how
+ * it ended up open in production — so the environment check below does not
+ * rely on configuration: a production build refuses, whatever AUTH_MODE says.
+ */
+function devLoginAllowed(): boolean {
+  return process.env.NODE_ENV !== "production" && env.AUTH_MODE === "dev";
+}
+
 export async function POST(req: Request) {
-  if (env.AUTH_MODE !== "dev") {
-    return NextResponse.json({ error: "Dev login disabled (AUTH_MODE != dev)" }, { status: 403 });
+  if (!devLoginAllowed()) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
   const parsed = bodySchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {

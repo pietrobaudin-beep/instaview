@@ -114,7 +114,11 @@ export async function loginUser(email: string, password: string): Promise<User> 
 
 /** Dev-only: upsert a user by email (used by the dev login route). */
 export async function devSignIn(email: string, name?: string): Promise<User> {
-  if (env.AUTH_MODE !== "dev") throw new Error("devSignIn is only available in AUTH_MODE=dev");
+  // Belt and braces with the route guard: never sign in without a password on a
+  // production build, even if something else ends up calling this.
+  if (process.env.NODE_ENV === "production" || env.AUTH_MODE !== "dev") {
+    throw new Error("devSignIn is only available in local development");
+  }
   const user = await prisma.user.upsert({
     where: { email },
     create: { email, name: name ?? email.split("@")[0] },
