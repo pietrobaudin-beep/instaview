@@ -11,6 +11,15 @@ export async function POST(req: Request) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
+  // Putting a profile "no Faro" (ongoing tracking) is the Pro feature: the free
+  // plan is a one-off snapshot, Pro is someone watching for you.
+  if (user.plan === "FREE") {
+    return NextResponse.json(
+      { error: "Colocar no Faro é um recurso do Farejo PRO.", code: "pro_required" },
+      { status: 402 },
+    );
+  }
+
   const parsed = bodySchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "username is required" }, { status: 400 });
 

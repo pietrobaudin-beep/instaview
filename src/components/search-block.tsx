@@ -23,7 +23,22 @@ interface Preview {
  * a live preview of the profile being typed, and the recent searches kept on
  * this device.
  */
-export function SearchBlock({ onPink = false }: { onPink?: boolean }) {
+export function SearchBlock({
+  onPink = false,
+  buttonLabel = "Farejar",
+  placeholder = "Digite um usuário",
+  showRecent = true,
+  autoFocus = true,
+  onActiveChange,
+}: {
+  onPink?: boolean;
+  buttonLabel?: string;
+  placeholder?: string;
+  showRecent?: boolean;
+  autoFocus?: boolean;
+  /** Fires when the field starts / stops being used (focus or any text). */
+  onActiveChange?: (active: boolean) => void;
+}) {
   const router = useRouter();
   const [value, setValue] = React.useState("");
   const [loading, setLoading] = React.useState(false);
@@ -32,6 +47,13 @@ export function SearchBlock({ onPink = false }: { onPink?: boolean }) {
   const [previewLoading, setPreviewLoading] = React.useState(false);
   const [recent, setRecent] = React.useState<RecentSearch[]>([]);
   const reqId = React.useRef(0);
+  const [focused, setFocused] = React.useState(false);
+
+  // "Active" = someone is using the field: focused, or it holds text.
+  const active = focused || value.trim().length > 0;
+  React.useEffect(() => {
+    onActiveChange?.(active);
+  }, [active, onActiveChange]);
 
   React.useEffect(() => setRecent(readRecentSearches()), []);
 
@@ -73,7 +95,7 @@ export function SearchBlock({ onPink = false }: { onPink?: boolean }) {
     setError(null);
     const username = normalizeUsername(value);
     if (!username) {
-      setError("Digite um @username do Instagram.");
+      setError("Digite um usuário do Instagram.");
       return;
     }
     setLoading(true);
@@ -94,10 +116,12 @@ export function SearchBlock({ onPink = false }: { onPink?: boolean }) {
               @
             </span>
             <Input
-              autoFocus
+              autoFocus={autoFocus}
               value={value}
               onChange={(e) => setValue(e.target.value)}
-              placeholder="Digite um @ do Instagram..."
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              placeholder={placeholder}
               className="h-14 pl-9 pr-4 text-base"
               aria-label="@username do Instagram"
               disabled={loading}
@@ -106,14 +130,15 @@ export function SearchBlock({ onPink = false }: { onPink?: boolean }) {
           <button
             type="submit"
             disabled={loading}
-            aria-label="Analisar perfil"
-            className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full transition hover:opacity-90 disabled:opacity-60 ${buttonTone}`}
+            aria-label={buttonLabel}
+            className={`flex h-14 shrink-0 items-center justify-center gap-2 rounded-full px-5 font-bold transition hover:opacity-90 disabled:opacity-60 ${buttonTone}`}
           >
             {loading ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
               <Search className="h-5 w-5" />
             )}
+            <span className="hidden sm:inline">{buttonLabel}</span>
           </button>
         </div>
         {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
@@ -164,9 +189,9 @@ export function SearchBlock({ onPink = false }: { onPink?: boolean }) {
         </button>
       )}
 
-      {recent.length > 0 && (
+      {showRecent && recent.length > 0 && (
         <div className="mt-8 text-left">
-          <h2 className="mb-2 text-sm font-bold">Buscas recentes</h2>
+          <h2 className="mb-2 text-sm font-bold">Farejados recentemente</h2>
           <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
             {recent.map((r) => (
               <li key={r.username}>

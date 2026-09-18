@@ -43,6 +43,11 @@ interface Props {
   loggedIn: boolean;
   /** False when the page already shows history in its own tab. */
   showHistory?: boolean;
+  /**
+   * The subscriber-only extras ("Primeiras contas", "Atividade nos posts").
+   * Off for a one-off unlock, which reveals the profile but is not Pro.
+   */
+  proExtras?: boolean;
 }
 
 function ago(iso: string) {
@@ -221,6 +226,7 @@ export function ProDashboard(props: Props) {
   return (
     <div>
       {/* Dark banner from the brand board, so Pro reads as the exclusive tier. */}
+      {props.proExtras !== false && (
       <div className="premium-surface relative mb-6 overflow-hidden rounded-3xl px-6 py-5">
         <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-pink/25 blur-3xl" />
         <div className="relative flex flex-wrap items-center gap-3">
@@ -232,6 +238,7 @@ export function ProDashboard(props: Props) {
           </p>
         </div>
       </div>
+      )}
 
       {top3.length > 0 && (
         <>
@@ -334,6 +341,8 @@ export function ProDashboard(props: Props) {
         </Section>
       )}
 
+      {props.proExtras !== false && (
+      <>
       <Section
         title="Primeiras contas que seguiu"
         icon={UserPlus}
@@ -399,9 +408,11 @@ export function ProDashboard(props: Props) {
           </>
         )}
       </Section>
+      </>
+      )}
 
       {props.showHistory !== false && (
-        <HistoryPanel username={username} loggedIn={props.loggedIn} />
+        <HistoryPanel username={username} loggedIn={props.loggedIn} isPro />
       )}
       </div>
       </div>

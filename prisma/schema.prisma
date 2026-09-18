@@ -35,6 +35,7 @@ model User {
 
   trackedProfiles TrackedProfile[]
   memberships     Membership[]
+  unlocks         ProfileUnlock[]
 
   @@map("users")
 }
@@ -233,6 +234,28 @@ model FollowerChange {
   @@index([profileId, detectedAt])
   @@index([snapshotId])
   @@map("follower_changes")
+}
+
+// ---------------------------------------------------------------------------
+// One-off purchases
+// ---------------------------------------------------------------------------
+
+// "Uso único": a single paid unlock of ONE profile's full analysis, without a
+// subscription. It never includes Pro features such as putting the profile
+// "no Faro" (ongoing tracking).
+model ProfileUnlock {
+  id       String @id @default(cuid())
+  userId   String
+  username String
+  // The Stripe Checkout session that paid for it; null for demo-mode unlocks.
+  stripeSessionId String? @unique
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, username])
+  @@map("profile_unlocks")
 }
 
 // ---------------------------------------------------------------------------

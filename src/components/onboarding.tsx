@@ -3,30 +3,33 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
-import { Heart, SniffingDog } from "@/components/ui/dog";
-import { AtBubble, CurvedArrow, Magnifier, Sparkle } from "@/components/ui/doodles";
+import { Heart } from "@/components/ui/dog";
+import { CurvedArrow, Sparkle } from "@/components/ui/doodles";
 import { Logo } from "@/components/ui/logo";
+import { BRAND } from "@/lib/voice";
+import { FaroSwap, Mascot } from "@/components/ui/mascot";
 
 /** Marks onboarding as seen on this device so it only shows once. */
 const KEY = "farejo:onboarded";
 
+// Every line here is from the official brand book (see BRAND in lib/voice).
 const SLIDES = [
   {
     surface: "bg-background",
-    title: "Descubra mais do Instagram.",
-    body: "Acompanhe novos seguindo, quem deixou de seguir, interações e muito mais.",
+    title: `${BRAND.manifesto[0]}\n${BRAND.manifesto[1]}`,
+    body: "O Farejo encontra as pistas que você não percebeu.",
     art: "search",
   },
   {
     surface: "brand-panel",
-    title: "Para crushes, amigos ou só curiosidade.",
-    body: "O Farejo te mostra o que importa, de forma simples, rápida e segura.",
+    title: BRAND.phrases.prestaAtencao,
+    body: BRAND.phrases.vocePergunta,
     art: "dog",
   },
   {
     surface: "brand-purple",
-    title: "Tudo começa com um @.",
-    body: "Busque qualquer perfil público e veja o que mudou desde a última análise.",
+    title: BRAND.concept,
+    body: `${BRAND.phrases.umArroba} Descubra conexões, acompanhe mudanças e encontre pistas a partir de um @.`,
     art: "at",
   },
 ] as const;
@@ -60,20 +63,16 @@ export function Onboarding({ next = "/" }: { next?: string }) {
       </div>
 
       <div className="flex flex-1 flex-col items-center justify-center py-10 text-center">
-        <h1 className="max-w-md text-balance text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl">
+        <h1 className="max-w-xl whitespace-pre-line text-balance text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl">
           {slide.title}
         </h1>
         <p className="mt-4 max-w-sm text-base opacity-75">{slide.body}</p>
 
         <div className="mt-12 flex h-40 items-center justify-center">
           {slide.art === "search" && (
-            <div className="flex items-end gap-5">
-              <Magnifier className="h-16 text-accent" />
-              <AtBubble className="h-20 text-pink" />
-              <Sparkle className="h-10 text-yellow" />
-            </div>
+            <FaroSwap from="sentado" to="lupa" loop className="h-36 text-vinho" />
           )}
-          {slide.art === "dog" && <SniffingDog className="h-32 text-ink" animated />}
+          {slide.art === "dog" && <Mascot pose="feliz" className="h-36 text-ink" bob />}
           {slide.art === "at" && (
             <div className="flex items-center gap-4">
               <Heart className="h-12" />
@@ -103,6 +102,9 @@ export function Onboarding({ next = "/" }: { next?: string }) {
           {last ? "Começar agora" : "Continuar"}
           <ArrowRight className="h-5 w-5" />
         </button>
+        <p className="mt-4 text-center text-xs font-semibold uppercase tracking-[0.2em] opacity-60">
+          {BRAND.signature}
+        </p>
       </div>
     </main>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { BadgeCheck, Bookmark, BookmarkCheck, Globe, Loader2, Lock } from "lucide-react";
+import { BadgeCheck, Globe, Loader2, Lock, Pin } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { StatusPill } from "@/components/ui/brand";
 import { formatNumber } from "@/lib/utils";
@@ -41,12 +41,18 @@ export function ProfileHero({
   note,
   tracking,
   onTrack,
+  locked = false,
+  tier,
 }: {
   profile: HeroProfile;
   premium?: boolean;
   note?: string | null;
   tracking?: { saved: boolean; busy: boolean };
   onTrack?: () => void;
+  /** Free plan: the button shows a lock and opens the Pro offer instead. */
+  locked?: boolean;
+  /** Which badge to show beside the name. */
+  tier?: "free" | "single" | "pro";
 }) {
   return (
     <section className="overflow-hidden rounded-3xl border border-border bg-card">
@@ -54,12 +60,22 @@ export function ProfileHero({
         <div className="h-1.5 w-full bg-gradient-to-r from-pink via-accent to-purple" />
       )}
       <div className="flex flex-col items-center gap-5 p-6 text-center md:flex-row md:items-start md:gap-7 md:text-left">
-        <div className="shrink-0 rounded-full p-1 ring-[3px] ring-pink">
-          <Avatar
-            src={profile.avatarUrl}
-            name={profile.displayName ?? profile.username}
-            size={104}
-          />
+        <div className="relative shrink-0">
+          <div className="rounded-full p-1 ring-[3px] ring-pink">
+            <Avatar
+              src={profile.avatarUrl}
+              name={profile.displayName ?? profile.username}
+              size={104}
+            />
+          </div>
+          {tracking?.saved && (
+            <span
+              className="absolute -right-1 top-1 flex h-8 w-8 items-center justify-center rounded-full bg-pink shadow"
+              title="No seu Faro"
+            >
+              <Pin className="h-4 w-4 fill-ink text-ink" />
+            </span>
+          )}
         </div>
 
         <div className="min-w-0 flex-1">
@@ -68,7 +84,12 @@ export function ProfileHero({
               {profile.username}
             </h1>
             {profile.isVerified && <BadgeCheck className="h-5 w-5 shrink-0 text-[#3897F0]" />}
-            <StatusPill tone={premium ? "yellow" : "pink"}>{premium ? "PRO" : "GRÁTIS"}</StatusPill>
+            {(() => {
+              const t = tier ?? (premium ? "pro" : "free");
+              if (t === "pro") return <StatusPill tone="yellow">PRO</StatusPill>;
+              if (t === "single") return <StatusPill tone="dark">DESBLOQUEADO</StatusPill>;
+              return <StatusPill tone="pink">GRÁTIS</StatusPill>;
+            })()}
           </div>
 
           {profile.displayName && (
@@ -110,18 +131,18 @@ export function ProfileHero({
               disabled={tracking?.busy || tracking?.saved}
               className={`flex w-full items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-bold transition md:w-auto ${
                 tracking?.saved
-                  ? "bg-muted text-muted-foreground"
+                  ? "bg-muted text-foreground"
                   : "bg-pink text-ink hover:opacity-90"
               }`}
             >
               {tracking?.busy ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
-              ) : tracking?.saved ? (
-                <BookmarkCheck className="h-4 w-4" />
+              ) : locked ? (
+                <Lock className="h-4 w-4" />
               ) : (
-                <Bookmark className="h-4 w-4" />
+                <Pin className={`h-4 w-4 ${tracking?.saved ? "fill-pink text-accent" : ""}`} />
               )}
-              {tracking?.saved ? "Rastreando" : "Começar a rastrear"}
+              {tracking?.saved ? "No seu Faro" : "Colocar no Faro"}
             </button>
           </div>
         )}

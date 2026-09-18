@@ -95,13 +95,21 @@ export async function getProfileHistory(profileId: string): Promise<ProfileHisto
     (c) => c.type === "UNFOLLOW" && c.detectedAt.getTime() >= dayAgo,
   );
 
+  const today = followsToday.length + unfollowsToday.length;
+  if (today >= 5) {
+    alerts.push({
+      tone: "accent",
+      text: `🐾 O Faro esteve ocupado hoje. Encontramos ${today} mudanças.`,
+    });
+  }
+
   if (followsToday.length > 0) {
     alerts.push({
       tone: "success",
       text:
         followsToday.length === 1
-          ? "Seguiu 1 perfil novo nas últimas 24 horas."
-          : `Seguiu ${followsToday.length} perfis novos nas últimas 24 horas.`,
+          ? "🐶 Faro encontrou alguém novo nas últimas 24 horas."
+          : `🐶 Faro encontrou ${followsToday.length} pessoas novas nas últimas 24 horas.`,
     });
   }
   if (unfollowsToday.length > 0) {
@@ -109,20 +117,20 @@ export async function getProfileHistory(profileId: string): Promise<ProfileHisto
       tone: "danger",
       text:
         unfollowsToday.length === 1
-          ? "Deixou de seguir 1 perfil nas últimas 24 horas."
-          : `Deixou de seguir ${unfollowsToday.length} perfis nas últimas 24 horas.`,
+          ? "👀 Um rastro sumiu nas últimas 24 horas."
+          : `👀 ${unfollowsToday.length} rastros sumiram nas últimas 24 horas.`,
     });
   }
 
   if (previous && last) {
     if ((previous.bio ?? "") !== (last.bio ?? "") && (previous.bio || last.bio)) {
-      alerts.push({ tone: "accent", text: "O perfil alterou a bio." });
+      alerts.push({ tone: "accent", text: "✏️ O perfil alterou a bio." });
     }
     if (!previous.isPrivate && last.isPrivate) {
-      alerts.push({ tone: "danger", text: "A conta ficou privada." });
+      alerts.push({ tone: "danger", text: "🔒 A conta ficou privada." });
     }
     if (previous.isPrivate && !last.isPrivate) {
-      alerts.push({ tone: "success", text: "A conta voltou a ser pública." });
+      alerts.push({ tone: "success", text: "🔓 A conta voltou a ser pública." });
     }
     const delta = last.followersCount - previous.followersCount;
     if (delta !== 0 && previous.followersCount > 0) {
@@ -140,8 +148,8 @@ export async function getProfileHistory(profileId: string): Promise<ProfileHisto
       tone: "muted",
       text:
         snapshots.length <= 1
-          ? "Primeira análise salva. As próximas vão comparar com esta."
-          : "Nenhuma mudança detectada desde a última análise.",
+          ? "🐾 Primeiro rastro salvo. As próximas análises vão comparar com este."
+          : "😴 Faro pode descansar. Nenhuma mudança desde a última análise.",
     });
   }
 

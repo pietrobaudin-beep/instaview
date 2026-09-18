@@ -18,6 +18,13 @@ import type { User } from "@prisma/client";
 
 export const FREE_ANALYSIS_LIMIT = 1;
 
+/**
+ * The limit only applies on the live site. On localhost the owner tests freely
+ * — and the local build uses the mock provider, so there are no credits to
+ * protect there anyway.
+ */
+export const FREE_LIMIT_ENFORCED = process.env.NODE_ENV === "production";
+
 const VISITOR_COOKIE = "farejo_v";
 
 function sign(value: string): string {
@@ -80,6 +87,9 @@ export interface Allowance {
 
 /** Whether this identity may analyse `username`, without recording anything. */
 export async function checkAllowance(key: string, username: string): Promise<Allowance> {
+  if (!FREE_LIMIT_ENFORCED) {
+    return { allowed: true, used: 0, limit: FREE_ANALYSIS_LIMIT, claimed: false, spentOn: null };
+  }
   const rows = await prisma.analysisUsage.findMany({
     where: { key },
     orderBy: { createdAt: "asc" },

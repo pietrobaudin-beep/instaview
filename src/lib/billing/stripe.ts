@@ -32,21 +32,27 @@ export function planForPriceId(priceId: string | null | undefined): Plan {
   return "FREE";
 }
 
-/** Create a Checkout session for a plan. Wire this to an "Upgrade" button. */
+/**
+ * Create a Checkout session. "subscription" for plans; "payment" for the
+ * one-off "uso único", whose metadata carries the profile being unlocked so
+ * the webhook knows what to grant.
+ */
 export async function createCheckoutSession(params: {
   userId: string;
   email: string;
   priceId: string;
   successUrl: string;
   cancelUrl: string;
+  mode?: "subscription" | "payment";
+  metadata?: Record<string, string>;
 }) {
   return stripe().checkout.sessions.create({
-    mode: "subscription",
+    mode: params.mode ?? "subscription",
     customer_email: params.email,
     line_items: [{ price: params.priceId, quantity: 1 }],
     success_url: params.successUrl,
     cancel_url: params.cancelUrl,
     client_reference_id: params.userId,
-    metadata: { userId: params.userId },
+    metadata: { userId: params.userId, ...params.metadata },
   });
 }

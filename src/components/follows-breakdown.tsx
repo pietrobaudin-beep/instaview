@@ -38,7 +38,7 @@ export function FollowsBreakdown({
   const share = (n: number) => Math.round((n / people) * 100);
   return (
     <Panel
-      title="Quem essa pessoa segue?"
+      title="Quem essa pessoa segue"
       action={
         locked ? (
           <Link
@@ -75,7 +75,7 @@ export function TopInteraction({
   if (!person) return null;
   return (
     <Panel
-      title="Conta que mais interage"
+      title="👀 Parece ter mais interação com"
       action={
         !locked ? null : (
           <Link
@@ -95,6 +95,9 @@ export function TopInteraction({
         blurred={locked}
         className="py-0"
       />
+      <p className="mt-3 text-[11px] text-muted-foreground">
+        Entre os sinais disponíveis, este perfil aparece com frequência.
+      </p>
     </Panel>
   );
 }
@@ -111,7 +114,7 @@ export function OtherInteractions({
 }) {
   if (people.length === 0) return null;
   return (
-    <Panel title="Outras contas com quem interage bastante">
+    <Panel title="Pessoas que aparecem bastante">
       <ul className="grid grid-cols-3 gap-4 sm:grid-cols-6">
         {people.slice(0, 6).map((p, i) => (
           <li key={p.username + i} className="text-center">

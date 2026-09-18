@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { safeNext, withParam } from "@/lib/utils";
 import { Logo } from "@/components/ui/logo";
 import { StickerNote } from "@/components/ui/doodles";
+import { BRAND } from "@/lib/voice";
 
 export function AuthForm({ mode }: { mode: "signup" | "login" }) {
   const router = useRouter();
@@ -79,7 +80,7 @@ export function AuthForm({ mode }: { mode: "signup" | "login" }) {
         <Logo className="h-6" />
       </Link>
       <StickerNote className="mb-5 self-start" tone={isSignup ? "yellow" : "pink"}>
-        {isSignup ? "tudo começa com um @" : "curiosidade conecta"}
+        {(isSignup ? BRAND.phrases.umArroba : BRAND.signature).toLowerCase()}
       </StickerNote>
       <Card className="rounded-3xl">
         <CardContent className="p-6">
@@ -89,7 +90,7 @@ export function AuthForm({ mode }: { mode: "signup" | "login" }) {
           <p className="mt-1 text-sm text-muted-foreground">
             {isSignup
               ? "Comece a farejar qualquer perfil do Instagram."
-              : "Entre para ver seus rastreios."}
+              : "Entre para ver seus rastros."}
           </p>
 
           <form onSubmit={submit} className="mt-5 space-y-3">

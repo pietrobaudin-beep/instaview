@@ -2,18 +2,17 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 import { StatusPill } from "@/components/ui/brand";
 import { withParam } from "@/lib/utils";
 
 const BENEFITS = [
-  "Notificações em tempo real",
-  "Quem começou a seguir",
-  "Quem deixou de seguir",
-  "Interações em posts específicos",
-  "Rastreie vários perfis",
-  "Relatórios completos",
-  "Exportar dados",
+  { emoji: "📌", title: "Coloque perfis no Faro", body: "Acompanhe os perfis que você escolher." },
+  { emoji: "🐾", title: "Histórico de rastros", body: "Veja as mudanças anteriores." },
+  { emoji: "🔔", title: "Alertas", body: "Receba as novidades detectadas." },
+  { emoji: "❤️", title: "Interações", body: "Interações públicas disponíveis, organizadas." },
+  { emoji: "👥", title: "Seguidores e seguindo", body: "Compare as mudanças ao longo do tempo." },
+  { emoji: "📊", title: "Raio-X", body: "Entenda padrões e atividade." },
 ];
 
 function brl(v: number) {
@@ -84,18 +83,27 @@ export function Paywall({
       <div className="pointer-events-none absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-purple/20 blur-3xl" />
       <div className="relative">
       <StatusPill tone="yellow" className="text-xs">
-        PRO
+        Farejo PRO
       </StatusPill>
 
-      <h1 className="mt-5 text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
-        Desbloqueie o Farejo completo.
+      <h1 className="mt-5 text-4xl font-bold leading-tight tracking-tight sm:text-5xl">
+        Seu faro, ligado 24h.
       </h1>
+      <p className="mt-3 max-w-lg text-cream/75">
+        Escolha quem acompanhar. O Farejo organiza as mudanças e te avisa quando encontrar algo
+        novo.
+      </p>
 
-      <ul className="mt-7 grid gap-3 sm:grid-cols-2">
+      <ul className="mt-8 grid gap-4 sm:grid-cols-2">
         {BENEFITS.map((b) => (
-          <li key={b} className="flex items-start gap-2.5 text-sm font-medium">
-            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-pink" />
-            {b}
+          <li key={b.title} className="flex items-start gap-3">
+            <span className="text-xl leading-none" aria-hidden>
+              {b.emoji}
+            </span>
+            <span>
+              <span className="block text-sm font-bold">{b.title}</span>
+              <span className="block text-xs text-cream/65">{b.body}</span>
+            </span>
           </li>
         ))}
       </ul>

@@ -73,12 +73,12 @@ export function TrackingSettings({
   return (
     <main className="mx-auto max-w-4xl px-6 py-6">
       <AppHeader
-        title="Rastreando"
-        backHref="/rastreios"
+        title="No seu Faro"
+        backHref="/rastros"
         subtitle={
           active ? (
             <StatusPill tone="green">
-              <span className="text-[8px]">●</span> Ativo
+              <span className="text-[8px]">●</span> Farejando
             </StatusPill>
           ) : null
         }
@@ -102,7 +102,7 @@ export function TrackingSettings({
 
       <NoteBox className="items-center" icon={<SniffingDog className="h-12 text-ink" />}>
         <span className="hand text-lg">
-          Você será notificado sempre que algo novo acontecer!
+          O Faro te avisa quando encontrar algo novo!
         </span>
       </NoteBox>
         </div>
@@ -141,7 +141,7 @@ export function TrackingSettings({
         ) : saved ? (
           <Check className="h-5 w-5" />
         ) : null}
-        {saved ? "Rastreamento salvo" : "Salvar rastreamento"}
+        {saved ? "Faro atualizado 🐶" : "Salvar"}
       </button>
 
         </div>

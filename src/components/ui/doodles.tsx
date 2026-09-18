@@ -63,7 +63,7 @@ export function CurvedArrow({ className = "h-10" }: { className?: string }) {
   );
 }
 
-/** Yellow speech-bubble tag, as used for "curiosidade também é resposta". */
+/** Yellow speech-bubble tag for the handwritten brand lines. */
 export function StickerNote({
   children,
   className = "",
@@ -84,5 +84,21 @@ export function StickerNote({
     >
       {children}
     </span>
+  );
+}
+
+/**
+ * Faro's nose with the little pink nostril — the mascot's most recognisable
+ * detail, used on its own as a brand mark (badges, bullets, "descobertas").
+ */
+export function Nose({ className = "h-5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 40 30" className={className} aria-hidden>
+      <path
+        d="M20 2 C 31 2, 38 8, 38 15 C 38 23, 30 28, 20 28 C 10 28, 2 23, 2 15 C 2 8, 9 2, 20 2 Z"
+        fill="hsl(var(--ink))"
+      />
+      <circle cx="26" cy="18" r="4.2" fill="hsl(var(--pink))" />
+    </svg>
   );
 }

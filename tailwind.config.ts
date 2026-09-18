@@ -50,6 +50,7 @@ const config: Config = {
         yellow: "hsl(var(--yellow))",
         cream: "hsl(var(--cream))",
         ink: "hsl(var(--ink))",
+        vinho: "hsl(var(--vinho))",
       },
       borderRadius: {
         lg: "var(--radius)",

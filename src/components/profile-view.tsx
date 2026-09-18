@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, BadgeCheck, Check, Loader2, Lock } from "lucide-react";
+import { ArrowLeft, ArrowRight, BadgeCheck, Check, Loader2, Lock, Unlock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
 import { Chips, Panel, PersonRow } from "@/components/ui/brand";
@@ -19,25 +19,28 @@ import { ProDashboard } from "@/components/pro-dashboard";
 import { HistoryPanel } from "@/components/history-panel";
 import { AppNav, NavSpacer } from "@/components/app-nav";
 import { AnalysisLoading } from "@/components/analysis-loading";
-import { SniffingDog } from "@/components/ui/dog";
+import { markSeen, wasSeenRecently } from "@/lib/seen-profiles";
+import { BRAND, LOADING_DONE, LOADING_LINES } from "@/lib/voice";
+import { FaroUpsell } from "@/components/faro-upsell";
+import { SingleUnlockButton } from "@/components/single-unlock-button";
+import { PeekingFaro } from "@/components/ui/peeking-faro";
+import { NoteBox } from "@/components/ui/brand";
+import { Mascot } from "@/components/ui/mascot";
 
 interface RecentItem extends Person {
   detectedAt: string;
 }
 
-const STEPS = [
-  "conectando com o Instagram…",
-  "atualizando os dados do perfil…",
-  "farejando quem começou a seguir…",
-  "separando pessoas de marcas…",
-  "farejando o que interessa…",
-];
+// Faro's loading lines, ending on the "Achei!" beat.
+const STEPS = [...LOADING_LINES, LOADING_DONE];
+/** ~2.4s per line keeps the whole sequence around 17s. */
+const STEP_MS = 2400;
 
 const TABS = [
   { value: "visao", label: "Visão geral" },
   { value: "seguindo", label: "Seguindo" },
   { value: "interacoes", label: "Interações" },
-  { value: "historico", label: "Histórico" },
+  { value: "historico", label: "Rastro" },
 ] as const;
 
 type Tab = (typeof TABS)[number]["value"];
@@ -58,30 +61,46 @@ function GenderBadge({ gender }: { gender?: "f" | "m" | "u" }) {
   return null;
 }
 
-/** The upgrade block shown to free visitors. */
+/**
+ * The upgrade block shown to free visitors: two honest options — see only this
+ * profile once ("uso único"), or subscribe to follow it over time (PRO).
+ */
 function UpgradeCard({ username }: { username: string }) {
   return (
+    <div className="grid gap-4 md:grid-cols-2">
+    <div className="flex flex-col rounded-3xl border border-border bg-card p-6 text-center">
+      <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+        <Unlock className="h-5 w-5 text-vinho" />
+      </span>
+      <h2 className="text-lg font-bold">Só quer ver este perfil?</h2>
+      <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">
+        Desbloqueie a análise completa de @{username}, sem censura, com um pagamento único.
+      </p>
+      <SingleUnlockButton username={username} className="mt-auto pt-5" />
+    </div>
     <div className="rounded-3xl border-2 border-pink bg-pink/20 p-6 text-center">
       <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-pink text-ink">
         <Lock className="h-5 w-5" />
       </span>
-      <h2 className="text-lg font-extrabold">Desbloqueie o Farejo completo.</h2>
+      <h2 className="text-lg font-bold">Quer acompanhar o que mudar daqui pra frente?</h2>
+      <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
+        {BRAND.phrases.naoProcure}
+      </p>
       <ul className="mx-auto mt-4 max-w-sm space-y-2 text-left text-sm">
         {[
-          "Quem começou a seguir, sem censura",
-          "Quem deixou de seguir",
-          "Interações em posts específicos",
-          "Alertas quando algo novo acontecer",
+          "📌 Coloque perfis no Faro",
+          "🐾 Veja quem entrou e quem saiu, sem censura",
+          "❤️ Interações públicas organizadas",
+          "🔔 Alertas quando o Faro encontrar algo novo",
         ].map((b) => (
           <li key={b} className="flex items-start gap-2">
-            <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
             <span className="text-foreground/80">{b}</span>
           </li>
         ))}
       </ul>
       <Link href={`/pricing?next=${encodeURIComponent(`/p/${username}`)}`} className="mt-5 block">
         <Button variant="accent" size="lg" className="w-full sm:w-auto">
-          Desbloquear Pro <ArrowRight className="h-4 w-4" />
+          Farejo PRO <ArrowRight className="h-4 w-4" />
         </Button>
       </Link>
       <Link
@@ -90,6 +109,7 @@ function UpgradeCard({ username }: { username: string }) {
       >
         já é assinante? entrar
       </Link>
+    </div>
     </div>
   );
 }
@@ -110,6 +130,7 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
     | {
         kind: "ready";
         locked: boolean;
+        access: "free" | "single" | "pro";
         users: Person[];
         real: boolean;
         counts?: Breakdown;
@@ -126,9 +147,43 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
   const [step, setStep] = React.useState(0);
   const [analyzing, setAnalyzing] = React.useState(true);
   const [tracking, setTracking] = React.useState({ saved: false, busy: false });
+  const [upsell, setUpsell] = React.useState(false);
+  const [justPinned, setJustPinned] = React.useState(false);
+
+  // Is this profile already in the user's Faro? DB read only — no provider call.
+  React.useEffect(() => {
+    if (!loggedIn) return;
+    let alive = true;
+    fetch(`/api/profile-history?username=${encodeURIComponent(username)}`)
+      .then((r) => r.json())
+      .then((b) => alive && b.saved && setTracking({ saved: true, busy: false }))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [loggedIn, username]);
+
+  // Already seen this @ recently? Then skip the scene and go straight to the
+  // result. Decided after mount (storage is client-only) and before anything
+  // is drawn, so a revisit never flashes the pink screen.
+  const [intro, setIntro] = React.useState<"pending" | "play" | "skip">("pending");
+  React.useEffect(() => {
+    setIntro(wasSeenRecently(username) ? "skip" : "play");
+  }, [username]);
+
+  // Remember it once the scene has played through to the result. Only then:
+  // a skipped revisit must not push the 24h window forward, or someone coming
+  // back every day would never see a fresh search play again.
+  React.useEffect(() => {
+    if (intro === "play" && !analyzing && state.kind === "ok") markSeen(username);
+  }, [intro, analyzing, state.kind, username]);
 
   // Staged "analysis" animation shown before the result.
   React.useEffect(() => {
+    if (intro !== "play") {
+      if (intro === "skip") setAnalyzing(false);
+      return;
+    }
     setStep(0);
     setAnalyzing(true);
     let i = 0;
@@ -141,9 +196,9 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
       } else {
         setStep(i);
       }
-    }, 3300);
+    }, STEP_MS);
     return () => clearInterval(id);
-  }, [username]);
+  }, [intro, username]);
 
   React.useEffect(() => {
     let alive = true;
@@ -235,6 +290,7 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
         setFollowing({
           kind: "ready",
           locked: !!body.locked || !body.real,
+          access: body.real ? (body.access ?? (body.locked ? "free" : "pro")) : "free",
           users: body.following ?? [],
           real: !!body.real,
           counts: body.counts,
@@ -242,7 +298,7 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
         });
       } catch {
         if (alive)
-          setFollowing({ kind: "ready", locked: true, users: [], real: false });
+          setFollowing({ kind: "ready", locked: true, access: "free", users: [], real: false });
       }
     })();
     return () => {
@@ -250,9 +306,20 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
     };
   }, [username]);
 
+  const ready = following.kind === "ready" ? following : null;
+  const paid = !!ready && !ready.locked;
+  // Pro features (Faro, history, extras) need a subscription — a one-off
+  // unlock only reveals this profile.
+  const isPro = ready?.access === "pro";
+
   async function startTracking() {
     if (!loggedIn) {
       router.push(`/signup?next=${encodeURIComponent(`/p/${username}`)}`);
+      return;
+    }
+    // Not a subscriber: this is the Pro moment, not an error.
+    if (!isPro) {
+      setUpsell(true);
       return;
     }
     setTracking({ saved: false, busy: true });
@@ -262,14 +329,22 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ username }),
       });
+      if (r.status === 402) {
+        setTracking({ saved: false, busy: false });
+        setUpsell(true);
+        return;
+      }
       setTracking({ saved: r.ok, busy: false });
+      if (r.ok) {
+        setJustPinned(true);
+        // Takes the baseline from the page already cached — no provider cost.
+        fetch(`/api/following-preview?username=${encodeURIComponent(username)}`).catch(() => {});
+      }
     } catch {
       setTracking({ saved: false, busy: false });
     }
   }
 
-  const ready = following.kind === "ready" ? following : null;
-  const paid = !!ready && !ready.locked;
   const locked = !paid;
   const topInteraction = interactions.items[0] ?? ready?.users[0];
   const others = interactions.items.length > 1 ? interactions.items.slice(1) : ready?.users ?? [];
@@ -277,8 +352,16 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
   return (
     <>
       {loggedIn && <AppNav />}
+      {/* Clip at the SCREEN edge, not the content column: Faro peeks out beside
+          the card, and clipping at the column cut him down to a sliver. */}
+      <div className="overflow-x-clip">
       <main className="mx-auto max-w-5xl px-6 py-8">
-        <div className="mb-8 flex items-center justify-between">
+        {/* Tighter when the profile shows: Faro's peeking area sits just below. */}
+        <div
+          className={`flex items-center justify-between ${
+            !analyzing && state.kind === "ok" ? "mb-2" : "mb-8"
+          }`}
+        >
           <Link
             href="/"
             className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
@@ -288,26 +371,35 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
           {!loggedIn && <Logo className="h-6" />}
         </div>
 
-        {(analyzing || state.kind === "loading") && (
+        {intro === "play" && (analyzing || state.kind === "loading") && (
           <AnalysisLoading step={step} steps={STEPS} username={username} />
+        )}
+
+        {/* Revisit: no scene, just a quick beat while the (cached) data arrives. */}
+        {intro === "skip" && state.kind === "loading" && (
+          <div className="flex flex-col items-center gap-3 py-24 text-center">
+            <Mascot pose="lupa" className="h-16 text-vinho" bob />
+            <p className="text-sm text-muted-foreground">Abrindo @{username}…</p>
+          </div>
         )}
 
         {!analyzing && state.kind === "limited" && (
           <div className="mx-auto max-w-lg">
             <Panel>
               <div className="flex flex-col items-center gap-3 py-8 text-center">
-                <SniffingDog className="h-20 text-ink" animated />
+                <Mascot pose="feliz" className="h-20 text-vinho" bob />
                 <h1 className="text-2xl font-bold">Sua análise gratuita já foi usada</h1>
                 <p className="max-w-sm text-sm text-muted-foreground">
-                  O plano grátis inclui <b>1 perfil</b>. Assine o Pro para farejar quantos perfis
-                  quiser, sem censura.
+                  O plano grátis inclui <b>1 perfil</b>. Veja só este perfil com um pagamento
+                  único, ou assine o PRO para farejar quantos quiser.
                 </p>
+                <SingleUnlockButton username={username} className="mt-2 w-full max-w-xs" />
                 <Link
                   href={`/pricing?next=${encodeURIComponent(`/p/${username}`)}`}
-                  className="mt-2 w-full sm:w-auto"
+                  className="w-full max-w-xs"
                 >
-                  <Button variant="accent" size="lg" className="w-full">
-                    Desbloquear Pro <ArrowRight className="h-4 w-4" />
+                  <Button variant="outline" size="lg" className="w-full">
+                    Conhecer o Farejo PRO <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
                 {state.spentOn && state.spentOn !== username && (
@@ -331,7 +423,11 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
 
         {!analyzing && state.kind === "error" && (
           <div className="flex flex-col items-center gap-3 py-16 text-center">
-            <p className="font-bold">@{username} não foi encontrado</p>
+            <Mascot pose="lupa" className="h-24 text-vinho" bob />
+            <p className="mt-2 font-bold">@{username} não foi encontrado</p>
+            <p className="text-sm text-muted-foreground">
+              Confira se o usuário está certo. O Faro procurou, mas esse @ não existe.
+            </p>
             <Link href="/">
               <Button variant="outline" size="sm">
                 Tentar outro @
@@ -342,13 +438,30 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
 
         {!analyzing && state.kind === "ok" && (
           <>
-            <ProfileHero
-              profile={state.data}
-              premium={paid}
-              note={state.note}
-              tracking={tracking}
-              onTrack={following.kind === "private" ? undefined : startTracking}
-            />
+            {/* Profile found: Faro plays peek-a-boo around the card. */}
+            <PeekingFaro>
+              <ProfileHero
+                profile={state.data}
+                premium={isPro}
+                tier={ready?.access ?? "free"}
+                note={state.note}
+                tracking={tracking}
+                locked={!isPro}
+                onTrack={following.kind === "private" ? undefined : startTracking}
+              />
+            </PeekingFaro>
+
+            {justPinned && (
+              <NoteBox className="mt-4 items-center" icon={<Mascot pose="feliz" className="h-10 text-ink" decorative />}>
+                <p className="font-bold">@{state.data.username} está no seu Faro. 🐶</p>
+                <p className="text-sm opacity-80">
+                  A partir de agora você receberá alertas sobre as mudanças disponíveis nesse
+                  perfil.
+                </p>
+              </NoteBox>
+            )}
+
+            <FaroUpsell open={upsell} onClose={() => setUpsell(false)} next={`/p/${username}`} />
 
             {following.kind === "private" ? (
               <Panel className="mt-6">
@@ -368,7 +481,8 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
               </Panel>
             ) : (
               <>
-                <Chips options={TABS} value={tab} onChange={setTab} className="mt-6" />
+                <p className="mt-6 text-lg font-bold">{BRAND.phrases.achamosUmRastro} 👀</p>
+                <Chips options={TABS} value={tab} onChange={setTab} className="mt-3" />
 
                 {tab === "visao" && (
                   <div className="mt-5 space-y-5">
@@ -454,6 +568,7 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
                         recent={ready.recent}
                         loggedIn={loggedIn}
                         showHistory={false}
+                        proExtras={isPro}
                       />
                     ) : (
                       <div className="space-y-5">
@@ -470,7 +585,7 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
 
                 {tab === "historico" && (
                   <div className="mt-5">
-                    <HistoryPanel username={state.data.username} loggedIn={loggedIn} />
+                    <HistoryPanel username={state.data.username} loggedIn={loggedIn} isPro={isPro} />
                   </div>
                 )}
               </>
@@ -478,6 +593,7 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
           </>
         )}
       </main>
+      </div>
       {loggedIn && <NavSpacer />}
     </>
   );

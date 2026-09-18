@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, Compass, Search, User } from "lucide-react";
+import { Bell, PawPrint, Search, User } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { cn } from "@/lib/utils";
 
@@ -12,9 +12,9 @@ import { cn } from "@/lib/utils";
  * wants on a desktop screen.
  */
 const TABS = [
-  { href: "/", label: "Buscar", icon: Search },
-  { href: "/rastreios", label: "Rastreios", icon: Compass },
-  { href: "/notificacoes", label: "Notificações", icon: Bell },
+  { href: "/", label: "Farejar", icon: Search },
+  { href: "/rastros", label: "Meus rastros", icon: PawPrint },
+  { href: "/pistas", label: "Pistas", icon: Bell },
   { href: "/perfil", label: "Perfil", icon: User },
 ] as const;
 

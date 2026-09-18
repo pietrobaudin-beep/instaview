@@ -11,7 +11,7 @@ const grotesk = Space_Grotesk({
   display: "swap",
 });
 
-// Handwritten accent used for the brand annotations ("tudo começa com um @").
+// Handwritten accent used for the brand annotations ("toda curiosidade deixa um rastro").
 const hand = Caveat({
   subsets: ["latin"],
   weight: ["700"],
@@ -20,9 +20,9 @@ const hand = Caveat({
 });
 
 export const metadata: Metadata = {
-  title: "Farejo — Veja quem essa pessoa começou a seguir no Instagram",
+  title: "Farejo — Fareje além do @",
   description:
-    "Digite um @username e acompanhe novos seguindo, interações recentes e mudanças no perfil ao longo do tempo. Apenas dados públicos, sem senha do Instagram.",
+    "Curiosidade conecta. Descubra conexões, acompanhe mudanças e encontre pistas a partir de um @ — apenas informações públicas, sem senha do Instagram.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

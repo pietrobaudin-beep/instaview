@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { isBillingConfigured, planForPriceId, stripe } from "@/lib/billing/stripe";
+import { grantUnlock } from "@/lib/access";
+import { isValidUsername, normalizeUsername } from "@/lib/utils";
 
 const log = logger.scope("stripe:webhook");
 
@@ -35,11 +37,35 @@ export async function POST(req: Request) {
       case "checkout.session.completed": {
         const s = event.data.object as any;
         const userId = s.metadata?.userId ?? s.client_reference_id;
+
+        // "Uso único": unlock one profile — only once the money actually
+        // arrived (async methods such as boleto complete the session unpaid).
+        if (s.mode === "payment" && s.metadata?.kind === "single") {
+          const username = normalizeUsername(String(s.metadata?.username ?? ""));
+          if (userId && isValidUsername(username) && s.payment_status === "paid") {
+            await grantUnlock(userId, username, s.id);
+            log.info("single unlock granted", { userId, username });
+          }
+          break;
+        }
+
         if (userId) {
           await prisma.user.update({
             where: { id: userId },
             data: { stripeCustomerId: s.customer ?? undefined, stripeSubscriptionId: s.subscription ?? undefined },
           });
+        }
+        break;
+      }
+      // PIX / boleto: the session completed unpaid earlier; this is the moment
+      // the money actually arrives, so the one-off unlock is granted here.
+      case "checkout.session.async_payment_succeeded": {
+        const s = event.data.object as any;
+        const userId = s.metadata?.userId ?? s.client_reference_id;
+        const username = normalizeUsername(String(s.metadata?.username ?? ""));
+        if (s.metadata?.kind === "single" && userId && isValidUsername(username)) {
+          await grantUnlock(userId, username, s.id);
+          log.info("single unlock granted (async payment)", { userId, username });
         }
         break;
       }

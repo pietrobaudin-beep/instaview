@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { SniffingDog } from "@/components/ui/dog";
 import { AppNav, NavSpacer } from "@/components/app-nav";
 import { NotificationsFeed, type Notification } from "@/components/notifications-feed";
 import { Panel } from "@/components/ui/brand";
@@ -9,10 +8,12 @@ import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { FOLLOWING_KIND } from "@/lib/following-tracker";
 import { COMMENTS_KIND, LIKES_KIND } from "@/lib/post-activity";
+import { BRAND } from "@/lib/voice";
+import { Mascot } from "@/components/ui/mascot";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Notificações · Farejo", description: "Tudo que foi detectado nos perfis que você acompanha." };
+export const metadata = { title: "Pistas · Farejo", description: "Tudo que o Faro encontrou nos perfis do seu Faro." };
 
 /** Turn a stored change row into the sentence shown in the feed. */
 function describe(kind: string, type: "FOLLOW" | "UNFOLLOW"): Notification["action"] {
@@ -23,7 +24,7 @@ function describe(kind: string, type: "FOLLOW" | "UNFOLLOW"): Notification["acti
 
 export default async function NotificacoesPage() {
   const user = await getCurrentUser();
-  if (!user) redirect("/login?next=/notificacoes");
+  if (!user) redirect("/login?next=/pistas");
 
   const profiles = await prisma.trackedProfile.findMany({
     where: { userId: user.id },
@@ -60,16 +61,17 @@ export default async function NotificacoesPage() {
     <>
       <AppNav />
       <main className="mx-auto max-w-3xl px-6 py-8">
-        <h1 className="mb-6 text-3xl font-extrabold tracking-tight">Notificações</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Pistas</h1>
+        <p className="mb-6 mt-1 text-muted-foreground">{BRAND.phrases.despercebido}</p>
 
         {profiles.length === 0 ? (
           <Panel>
             <div className="flex flex-col items-center gap-3 py-10 text-center">
-              <SniffingDog className="h-24 text-ink opacity-70" />
-              <p className="text-lg font-bold">Nada por aqui ainda</p>
+              <Mascot pose="feliz" className="h-24 text-vinho" bob />
+              <p className="text-lg font-bold">Nada passou pelo Faro ainda</p>
               <p className="max-w-sm text-sm text-muted-foreground">
-                Analise um perfil e toque em <b>Começar a rastrear</b>. A partir daí, cada mudança
-                aparece nesta lista.
+                Fareje um @ e toque em <b>Colocar no Faro</b>. Cada pista que o Faro encontrar
+                aparece aqui.
               </p>
               <Link href="/" className="mt-2">
                 <Button variant="accent">Farejar um perfil</Button>

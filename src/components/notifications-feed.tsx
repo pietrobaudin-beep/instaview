@@ -6,6 +6,8 @@ import { formatDistanceToNow, isToday, isYesterday } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Avatar } from "@/components/ui/avatar";
 import { Chips, Panel } from "@/components/ui/brand";
+import { pistaHeadline, type PistaKind } from "@/lib/voice";
+import { Mascot } from "@/components/ui/mascot";
 
 export type NotificationAction =
   | "comecou_a_seguir"
@@ -38,10 +40,16 @@ const VERB: Record<NotificationAction, string> = {
 
 const FILTERS = [
   { value: "todas", label: "Todas" },
-  { value: "seguindo", label: "Seguindo" },
+  { value: "seguindo", label: "Novos follows" },
   { value: "interacoes", label: "Interações" },
-  { value: "deixou", label: "Deixou de seguir" },
+  { value: "deixou", label: "Rastros sumidos" },
 ] as const;
+
+function kindOf(a: NotificationAction): PistaKind {
+  if (a === "comecou_a_seguir") return "follow";
+  if (a === "deixou_de_seguir") return "unfollow";
+  return "interaction";
+}
 
 type Filter = (typeof FILTERS)[number]["value"];
 
@@ -91,9 +99,11 @@ export function NotificationsFeed({ items }: { items: Notification[] }) {
 
       {visible.length === 0 ? (
         <Panel className="mt-5">
-          <p className="py-6 text-center text-sm text-muted-foreground">
-            Nenhuma atividade nesta categoria ainda.
-          </p>
+          <div className="flex flex-col items-center gap-2 py-8 text-center">
+            <Mascot pose="dormindo" className="h-20 text-vinho" bob />
+            <p className="font-bold">😴 Faro pode descansar.</p>
+            <p className="text-sm text-muted-foreground">Nenhuma pista nesta categoria ainda.</p>
+          </div>
         </Panel>
       ) : (
         <div className="mt-5 space-y-6">
@@ -108,15 +118,28 @@ export function NotificationsFeed({ items }: { items: Notification[] }) {
                       className="flex items-center gap-3 px-4 py-3 transition hover:bg-muted/40"
                     >
                       <Avatar src={n.subjectAvatarUrl} name={n.subject} size={40} />
-                      <p className="min-w-0 flex-1 text-sm">
-                        <span className="font-semibold">{n.subject}</span>{" "}
-                        <span className="text-muted-foreground">{VERB[n.action]}</span>{" "}
-                        <span className="font-semibold">{n.target}</span>
+                      <div className="min-w-0 flex-1 text-sm">
+                        <p className="font-bold">
+                          {pistaHeadline(kindOf(n.action)).emoji}{" "}
+                          {pistaHeadline(kindOf(n.action)).title}
+                        </p>
+                        {/* Follows are done BY the tracked profile; likes and comments are
+                            done by someone else ON the tracked profile's post. */}
+                        <p>
+                          <span className="font-semibold">
+                            @{kindOf(n.action) === "interaction" ? n.target : n.subject}
+                          </span>{" "}
+                          <span className="text-muted-foreground">{VERB[n.action]}</span>{" "}
+                          <span className="font-semibold">
+                            @{kindOf(n.action) === "interaction" ? n.subject : n.target}
+                          </span>
+                        </p>
                         <span className="block text-[11px] text-muted-foreground">
                           {ago(n.detectedAt)}
                         </span>
-                      </p>
+                      </div>
                       <Avatar src={n.targetAvatarUrl} name={n.target} size={32} />
+                      <span className="h-2 w-2 shrink-0 rounded-full bg-accent" aria-hidden />
                     </Link>
                   </li>
                 ))}

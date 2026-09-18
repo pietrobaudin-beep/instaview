@@ -2,12 +2,13 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Bell, BookmarkPlus, Check, Loader2, TrendingUp, UserMinus, UserPlus } from "lucide-react";
+import { Bell, Check, Loader2, Lock, Pin, TrendingUp, UserMinus, UserPlus } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { formatNumber } from "@/lib/utils";
+import { BRAND } from "@/lib/voice";
 
 interface SeriesPoint {
   at: string;
@@ -148,10 +149,13 @@ export function HistoryPanel({
   username,
   className = "",
   loggedIn,
+  isPro = false,
 }: {
   username: string;
   className?: string;
   loggedIn: boolean;
+  /** Pro can pin; free sees the lock and is sent to the offer. */
+  isPro?: boolean;
 }) {
   const router = useRouter();
   const [history, setHistory] = React.useState<History | null>(null);
@@ -192,6 +196,11 @@ export function HistoryPanel({
         router.push(`/login?next=${encodeURIComponent(`/p/${username}`)}`);
         return;
       }
+      // Putting a profile no Faro is a Pro feature.
+      if (r.status === 402) {
+        router.push(`/pricing?next=${encodeURIComponent(`/p/${username}`)}`);
+        return;
+      }
       const b = await r.json();
       if (!r.ok) {
         setSaveError(b.error ?? "Não foi possível salvar este perfil.");
@@ -209,18 +218,25 @@ export function HistoryPanel({
 
   return (
     <div className={`space-y-6 ${className}`}>
+      <p className="text-lg font-bold">{BRAND.phrases.oQueMudou}</p>
       <Panel
-        title="Alertas"
+        title="Pistas"
         icon={Bell}
         action={
           h && !h.saved ? (
             <Button size="sm" variant="accent" onClick={save} disabled={saving}>
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <BookmarkPlus className="h-4 w-4" />}
-              Acompanhar perfil
+              {saving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : isPro ? (
+                <Pin className="h-4 w-4" />
+              ) : (
+                <Lock className="h-4 w-4" />
+              )}
+              Colocar no Faro
             </Button>
           ) : h?.saved ? (
             <span className="inline-flex items-center gap-1 text-xs text-emerald-700">
-              <Check className="h-3.5 w-3.5" /> Acompanhando
+              <Check className="h-3.5 w-3.5" /> No seu Faro
             </span>
           ) : null
         }
@@ -230,8 +246,8 @@ export function HistoryPanel({
         ) : !h.saved ? (
           <div>
             <p className="text-sm text-muted-foreground">
-              Salve este perfil para receber comparações futuras: quem começou a seguir, quem
-              deixou de seguir e mudanças no perfil.
+              Coloque este perfil no Faro e o Farejo observa por você: quem começou a seguir,
+              quem deixou de seguir e o que mudou no perfil.
             </p>
             {saveError && <p className="mt-2 text-xs text-destructive">{saveError}</p>}
           </div>
@@ -248,10 +264,10 @@ export function HistoryPanel({
 
       {h?.saved && (
         <>
-          <Panel title="Atividade detectada" icon={UserPlus}>
+          <Panel title="Rastro recente" icon={UserPlus}>
             {h.timeline.length === 0 ? (
               <p className="text-xs text-muted-foreground">
-                Nada detectado ainda. Cada nova análise compara com a anterior.
+                😴 Nada passou pelo Faro ainda. Cada nova análise compara com a anterior.
               </p>
             ) : (
               <ol className="relative space-y-4 border-l border-border pl-5">

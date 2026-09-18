@@ -4,6 +4,7 @@ import { getRecentMediaCached } from "@/lib/media-cache";
 import { rankInteractions, type Interaction } from "@/lib/interactions";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
 import { logger } from "@/lib/logger";
+import { accessFor } from "@/lib/access";
 
 const log = logger.scope("api:interactions");
 
@@ -22,7 +23,9 @@ export async function GET(req: Request) {
   if (!isValidUsername(username)) return NextResponse.json({ error: "invalid" }, { status: 400 });
 
   const user = await getCurrentUser();
-  if (!user || user.plan === "FREE") return NextResponse.json({ locked: true, items: [] });
+  if ((await accessFor(user, username)) === "free") {
+    return NextResponse.json({ locked: true, items: [] });
+  }
 
   const hit = cache.get(username);
   if (hit && Date.now() - hit.at < TTL) {

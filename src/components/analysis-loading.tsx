@@ -1,6 +1,7 @@
 "use client";
 
-import { AnimatedDog, Heart } from "@/components/ui/dog";
+import { Heart } from "@/components/ui/dog";
+import { LoadingScene } from "@/components/loading-scene";
 import { Logo } from "@/components/ui/logo";
 
 /**
@@ -18,14 +19,15 @@ export function AnalysisLoading({
   username?: string;
 }) {
   const progress = ((step + 1) / steps.length) * 100;
+  const done = step === steps.length - 1;
 
   return (
     <div className="brand-panel fixed inset-0 z-50 overflow-hidden">
       {/* Handwritten annotations, as in the designs. */}
       <span className="hand absolute left-6 top-14 -rotate-[8deg] text-2xl leading-tight sm:left-12 sm:top-20 sm:text-3xl">
-        tudo começa
+        toda curiosidade
         <br />
-        com um @
+        deixa um rastro
         <span className="mt-1 block h-[3px] w-14 rounded-full bg-current" />
       </span>
       <Heart className="absolute right-8 top-16 h-8 sm:right-16 sm:top-20 sm:h-10" />
@@ -36,7 +38,10 @@ export function AnalysisLoading({
           curiosidade conecta.
         </p>
 
-        <AnimatedDog className="mt-8 w-full max-w-[190px] sm:max-w-[220px]" />
+        {/* Faro searching for real — and, on "Achei!", back with the bone. */}
+        <div className="mt-8 w-full max-w-[340px]">
+          <LoadingScene done={done} />
+        </div>
 
         {/* Status sits directly above the bar. */}
         <p
@@ -54,18 +59,19 @@ export function AnalysisLoading({
         </div>
         {username && (
           <p className="mt-3 text-xs opacity-70">
-            analisando <b>@{username}</b>
+            farejando <b>@{username}</b>
           </p>
         )}
       </div>
 
       <span className="hand absolute bottom-24 right-6 rotate-[8deg] text-right text-xl leading-tight sm:bottom-28 sm:right-14 sm:text-2xl">
-        curiosidade também
-        <br />é resposta <span className="align-middle">♥</span>
+        algumas respostas
+        <br />
+        precisam ser farejadas <span className="align-middle">♥</span>
       </span>
 
       <p className="absolute inset-x-0 bottom-8 text-center text-[11px] tracking-[0.25em] opacity-70">
-        FAREJANDO
+        FAREJE ALÉM DO @
       </p>
     </div>
   );

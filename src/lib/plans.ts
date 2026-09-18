@@ -87,6 +87,22 @@ export const PLANS: Record<Plan, PlanConfig> = {
   },
 };
 
+/**
+ * "Uso único": unlock the full analysis of ONE profile, paid once, no
+ * subscription. Display price only — Stripe charges what its price id says.
+ */
+export const SINGLE_UNLOCK = {
+  name: "Uso único",
+  price: 9.9,
+  stripePriceEnv: "NEXT_PUBLIC_STRIPE_PRICE_SINGLE",
+  features: [
+    "Análise completa de 1 perfil",
+    "Nomes e fotos sem censura",
+    "Interações desse perfil",
+    "Sem assinatura",
+  ],
+} as const;
+
 export function planFor(plan: Plan): PlanConfig {
   return PLANS[plan];
 }

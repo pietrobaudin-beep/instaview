@@ -7,7 +7,6 @@ import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { clampInterval, planFor } from "@/lib/plans";
-import { collectProfile } from "@/lib/monitoring/snapshot";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
 import type { TrackedProfile, User } from "@prisma/client";
 
@@ -64,11 +63,11 @@ export async function trackProfile(user: User, rawUsername: string): Promise<Tra
 
   log.info("profile tracked", { userId: user.id, username, profileId: profile.id, interval });
 
-  // Kick off the baseline collection immediately so the dashboard isn't empty.
-  // (Errors are swallowed here; the snapshot itself records the failure.)
-  await collectProfile(profile.id).catch((e) => log.error("baseline collect failed", { error: e }));
-
-  return prisma.trackedProfile.findUniqueOrThrow({ where: { id: profile.id } });
+  // No provider call here. The baseline is taken from the "following" page the
+  // analysis already fetched and cached (see /api/following-preview), so
+  // putting a profile no Faro costs nothing. Collecting here used to fetch the
+  // FOLLOWERS list — several paid requests for data this product never shows.
+  return profile;
 }
 
 export async function setMonitoring(userId: string, profileId: string, enabled: boolean) {

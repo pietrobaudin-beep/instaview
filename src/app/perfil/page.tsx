@@ -50,21 +50,20 @@ export default async function PerfilPage() {
           </div>
 
           <div className="mt-5 grid grid-cols-2 gap-3">
-            <StatBox value={tracked} label="perfis rastreados" />
-            <StatBox value={detected} label="mudanças detectadas" />
+            <StatBox value={tracked} label="perfis no Faro" />
+            <StatBox value={detected} label="pistas encontradas" />
           </div>
         </Panel>
 
         {!isPaid && (
           <div className="mt-5">
-            <Panel title="Farejo Pro">
+            <Panel title="Farejo PRO">
               <p className="text-sm text-muted-foreground">
-                Veja os nomes sem censura, quem deixou de seguir, interações em posts e alertas em
-                tempo real.
+                Seu faro, ligado 24h. Coloque perfis no Faro e receba alertas quando algo mudar.
               </p>
               <Link href="/pricing" className="mt-4 block">
                 <Button variant="accent" className="w-full sm:w-auto">
-                  Desbloquear Pro <ArrowRight className="h-4 w-4" />
+                  Conhecer o Farejo PRO <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
             </Panel>

@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function TrackingPage({ params }: { params: { username: string } }) {
   const username = normalizeUsername(decodeURIComponent(params.username));
   const user = await getCurrentUser();
-  if (!user) redirect(`/login?next=/rastreios/${encodeURIComponent(username)}`);
+  if (!user) redirect(`/login?next=/rastros/${encodeURIComponent(username)}`);
 
   const profile = await prisma.trackedProfile.findUnique({
     where: { userId_username: { userId: user.id, username } },

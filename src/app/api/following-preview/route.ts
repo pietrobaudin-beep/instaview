@@ -2,10 +2,16 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getProvider } from "@/lib/providers";
 import { countGenders, guessGender } from "@/lib/gender";
-import { getRecentFollowingChanges, recordFollowing, type RecentItem } from "@/lib/following-tracker";
+import {
+  FOLLOWING_KIND,
+  getRecentFollowingChanges,
+  recordFollowing,
+  type RecentItem,
+} from "@/lib/following-tracker";
 import { prisma } from "@/lib/db";
 import { peekProfileCached } from "@/lib/profile-cache";
 import { checkAllowance, claimAnalysis, usageKey } from "@/lib/usage";
+import { accessFor } from "@/lib/access";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
 import { logger } from "@/lib/logger";
 import { ProviderError, type FollowerEntry } from "@/lib/providers/types";
@@ -40,7 +46,9 @@ export async function GET(req: Request) {
   if (!isValidUsername(username)) return NextResponse.json({ error: "invalid" }, { status: 400 });
 
   const user = await getCurrentUser();
-  const paid = !!user && user.plan !== "FREE";
+  // Revealed for Pro, and for a one-off unlock of THIS profile ("uso único").
+  const access = await accessFor(user, username);
+  const paid = access !== "free";
 
   // Free plan: one profile only. Checked before any provider call, so an extra
   // analysis never costs credits.
@@ -83,39 +91,47 @@ export async function GET(req: Request) {
     }
   }
 
-  // History: record this snapshot for logged-in users so we can show who they
-  // started / stopped following over time. Uses the page we already fetched.
+  // History — only for profiles a Pro user put "no Faro". Viewing a profile is
+  // a one-off look; it no longer creates a rastro on its own.
+  //
+  // A snapshot is written when the page was freshly fetched, or when the
+  // profile was just pinned and has no baseline yet — in that case the cached
+  // page is good enough, so the baseline costs no provider request.
   let recent: { started: RecentItem[]; stopped: RecentItem[] } = { started: [], stopped: [] };
-  if (user && !isPrivate) {
+  if (user && access === "pro" && !isPrivate) {
     try {
-      let profileId: string | null = null;
-      if (fresh && all.length > 0) {
-        // Reuse the profile we already looked up for the preview (never a new
-        // provider request) so the snapshot carries the totals, bio and
-        // privacy state that the history chart and alerts compare over time.
-        const p = peekProfileCached(username);
-        profileId = await recordFollowing(
-          user.id,
-          {
-            username,
-            displayName: p?.displayName ?? null,
-            avatarUrl: p?.avatarUrl ?? null,
-            bio: p?.bio ?? null,
-            followersCount: p?.followersCount,
-            followingCount: p?.followingCount,
-            isVerified: p?.isVerified,
-            isPrivate: p?.isPrivate,
-          },
-          all,
-        );
-      } else {
-        const p = await prisma.trackedProfile.findUnique({
-          where: { userId_username: { userId: user.id, username } },
-          select: { id: true },
-        });
-        profileId = p?.id ?? null;
+      const tracked = await prisma.trackedProfile.findUnique({
+        where: { userId_username: { userId: user.id, username } },
+        select: { id: true },
+      });
+      if (tracked) {
+        const hasBaseline =
+          (await prisma.followerSnapshot.count({
+            where: { profileId: tracked.id, kind: FOLLOWING_KIND },
+          })) > 0;
+
+        if ((fresh || !hasBaseline) && all.length > 0) {
+          // Profile totals come from the preview lookup already cached — never
+          // a new provider request — so the history chart and the "alterou a
+          // bio" / "ficou privada" alerts have something to compare.
+          const p = peekProfileCached(username);
+          await recordFollowing(
+            user.id,
+            {
+              username,
+              displayName: p?.displayName ?? null,
+              avatarUrl: p?.avatarUrl ?? null,
+              bio: p?.bio ?? null,
+              followersCount: p?.followersCount,
+              followingCount: p?.followingCount,
+              isVerified: p?.isVerified,
+              isPrivate: p?.isPrivate,
+            },
+            all,
+          );
+        }
+        recent = await getRecentFollowingChanges(tracked.id, 5);
       }
-      if (profileId) recent = await getRecentFollowingChanges(profileId, 5);
     } catch (e) {
       log.warn("history failed", { username, error: (e as Error).message });
     }
@@ -145,6 +161,7 @@ export async function GET(req: Request) {
 
   return NextResponse.json({
     locked: !paid,
+    access,
     counts,
     following: out,
     recent: { started: maskRecent(recent.started), stopped: maskRecent(recent.stopped) },
