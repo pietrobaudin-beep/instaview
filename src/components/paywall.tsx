@@ -1,0 +1,158 @@
+"use client";
+
+import * as React from "react";
+import { useRouter } from "next/navigation";
+import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
+import { StatusPill } from "@/components/ui/brand";
+import { withParam } from "@/lib/utils";
+
+const BENEFITS = [
+  "Notificações em tempo real",
+  "Quem começou a seguir",
+  "Quem deixou de seguir",
+  "Interações em posts específicos",
+  "Rastreie vários perfis",
+  "Relatórios completos",
+  "Exportar dados",
+];
+
+function brl(v: number) {
+  return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+/**
+ * The Pro paywall. Built on the brand board's dark card so the paid tier reads
+ * as the exclusive one, with the pink and yellow accents keeping it on-brand.
+ */
+export function Paywall({
+  monthly,
+  yearly,
+  next,
+  demoMode,
+}: {
+  monthly: number;
+  yearly: number;
+  next?: string | null;
+  /** True when Stripe keys are missing and "subscribing" just unlocks locally. */
+  demoMode: boolean;
+}) {
+  const router = useRouter();
+  const [interval, setInterval] = React.useState<"monthly" | "yearly">("yearly");
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+
+  async function subscribe() {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ plan: "PRO", interval, next }),
+      });
+      if (res.status === 401) {
+        const back = next ? withParam("/pricing", "next", next) : "/pricing";
+        router.push(withParam("/signup", "next", back));
+        return;
+      }
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Algo deu errado. Tente novamente.");
+        return;
+      }
+      if (data.url) {
+        window.location.href = data.url; // Stripe Checkout
+      } else {
+        router.push(next || "/");
+        router.refresh();
+      }
+    } catch {
+      setError("Falha de conexão. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const options = [
+    { id: "monthly" as const, label: "Mensal", price: brl(monthly), note: "por mês" },
+    { id: "yearly" as const, label: "Anual", price: brl(yearly), note: "2 meses grátis" },
+  ];
+
+  return (
+    <div className="premium-surface relative overflow-hidden rounded-[2rem] p-7 sm:p-10">
+      <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-pink/20 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-purple/20 blur-3xl" />
+      <div className="relative">
+      <StatusPill tone="yellow" className="text-xs">
+        PRO
+      </StatusPill>
+
+      <h1 className="mt-5 text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
+        Desbloqueie o Farejo completo.
+      </h1>
+
+      <ul className="mt-7 grid gap-3 sm:grid-cols-2">
+        {BENEFITS.map((b) => (
+          <li key={b} className="flex items-start gap-2.5 text-sm font-medium">
+            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-pink" />
+            {b}
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-8 grid gap-3 sm:grid-cols-2">
+        {options.map((o) => {
+          const active = interval === o.id;
+          return (
+            <button
+              key={o.id}
+              type="button"
+              onClick={() => setInterval(o.id)}
+              aria-pressed={active}
+              className={`rounded-2xl border-2 p-4 text-left transition ${
+                active
+                  ? "border-pink bg-white/10"
+                  : "border-white/15 bg-white/[0.04] opacity-80 hover:opacity-100"
+              }`}
+            >
+              <span className="flex items-center gap-2 text-xs font-semibold">
+                <span
+                  className={`flex h-4 w-4 items-center justify-center rounded-full border-2 ${
+                    active ? "border-pink" : "border-white/40"
+                  }`}
+                >
+                  {active && (
+                    <span className="h-2 w-2 rounded-full bg-pink" />
+                  )}
+                </span>
+                {o.label}
+              </span>
+              <span className="mt-2 block text-2xl font-bold">{o.price}</span>
+              <span className="block text-xs opacity-70">{o.note}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <button
+        type="button"
+        onClick={subscribe}
+        disabled={loading}
+        className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-pink px-6 py-4 text-base font-bold text-ink transition hover:opacity-90 disabled:opacity-60"
+      >
+        {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
+        Assinar agora
+        {!loading && <ArrowRight className="h-5 w-5" />}
+      </button>
+
+      {error && <p className="mt-3 text-center text-sm font-semibold">{error}</p>}
+      {demoMode && (
+        <p className="mt-3 text-center text-xs opacity-70">
+          Modo demonstração: a assinatura libera na hora e nada é cobrado.
+        </p>
+      )}
+      <p className="mt-2 text-center text-xs opacity-70">Cancele quando quiser.</p>
+      </div>
+    </div>
+  );
+}

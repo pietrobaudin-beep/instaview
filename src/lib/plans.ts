@@ -8,6 +8,8 @@ export interface PlanConfig {
   id: Plan;
   name: string;
   priceMonthly: number; // BRL, display only — Stripe charges what its price id says
+  /** BRL for a year up front, when the plan offers it. Display only. */
+  priceYearly?: number;
   /** Max profiles a user/org can monitor simultaneously. */
   maxProfiles: number;
   /** Minimum minutes between collections (smaller = more frequent). */
@@ -46,6 +48,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     id: "PRO",
     name: "Pro",
     priceMonthly: 29.9,
+    priceYearly: 199.9,
     maxProfiles: 10,
     minIntervalMinutes: 60, // hourly
     historyDays: 365,

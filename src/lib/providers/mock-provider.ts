@@ -106,7 +106,7 @@ export class MockProvider implements InstagramDataProvider {
         .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
         .join(" "),
       avatarUrl: `https://i.pravatar.cc/300?u=${encodeURIComponent(username)}`,
-      bio: `Demo profile • ${model.posts} posts • simulated by MockProvider`,
+      bio: null,
       isPrivate: false,
       isVerified: model.verified,
       followersCount: total,

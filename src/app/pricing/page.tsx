@@ -1,15 +1,18 @@
 import Link from "next/link";
-import { Activity, Check } from "lucide-react";
+import { Check, X } from "lucide-react";
+import { Paywall } from "@/components/paywall";
 import { UpgradeButton } from "@/components/pricing-actions";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Logo } from "@/components/ui/logo";
+import { Panel } from "@/components/ui/brand";
 import { PLANS } from "@/lib/plans";
 import { isBillingConfigured } from "@/lib/billing/stripe";
 import { getCurrentUser } from "@/lib/auth";
 import { safeNext, withParam } from "@/lib/utils";
-import { Logo } from "@/components/ui/logo";
 
 export const dynamic = "force-dynamic";
+
+export const metadata = { title: "Farejo Pro · Farejo", description: "Desbloqueie o Farejo completo." };
 
 export default async function PricingPage({
   searchParams,
@@ -19,98 +22,101 @@ export default async function PricingPage({
   const demoMode = !isBillingConfigured();
   const user = await getCurrentUser();
   const next = safeNext(searchParams.next);
-  const loginHref = withParam("/login", "next", next ? withParam("/pricing", "next", next) : "/pricing");
+  const loginHref = withParam(
+    "/login",
+    "next",
+    next ? withParam("/pricing", "next", next) : "/pricing",
+  );
+  const pro = PLANS.PRO;
 
   return (
-    <main className="mx-auto max-w-5xl px-6 py-12">
-      <div className="mb-10 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
-          <Logo className="h-6" />
+    <main className="mx-auto max-w-3xl px-6 py-10">
+      <div className="mb-8 flex items-center justify-between">
+        <Link href="/" aria-label="Farejo">
+          <Logo className="h-7" />
         </Link>
-        {user ? (
-          <span className="text-sm text-muted-foreground">
-            {user.email} · plano <b className="text-foreground">{user.plan}</b>
-          </span>
-        ) : (
-          <Link href={loginHref} className="text-sm text-muted-foreground hover:text-foreground">
-            Já é assinante? Entrar →
+        <Link
+          href={next || "/"}
+          aria-label="Fechar"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
+        >
+          <X className="h-5 w-5" />
+        </Link>
+      </div>
+
+      {user?.plan === "PRO" || user?.plan === "AGENCY" ? (
+        <Panel>
+          <div className="flex flex-col items-center gap-3 py-8 text-center">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+              <Check className="h-6 w-6" />
+            </span>
+            <h1 className="text-2xl font-extrabold">Você já tem o Farejo {user.plan}.</h1>
+            <p className="max-w-sm text-sm text-muted-foreground">
+              Todos os recursos estão liberados na sua conta.
+            </p>
+            <Link href={next || "/"} className="mt-2">
+              <Button variant="accent">Voltar para o app</Button>
+            </Link>
+          </div>
+        </Panel>
+      ) : (
+        <Paywall
+          monthly={pro.priceMonthly}
+          yearly={pro.priceYearly ?? pro.priceMonthly * 12}
+          next={next}
+          demoMode={demoMode}
+        />
+      )}
+
+      {/* Secondary options, kept small so the Pro offer stays the focus. */}
+      <div className="mt-8 grid gap-4 sm:grid-cols-2">
+        <Panel title={`Farejo ${PLANS.FREE.name}`}>
+          <ul className="space-y-1.5 text-sm text-muted-foreground">
+            {PLANS.FREE.features.map((f) => (
+              <li key={f} className="flex items-start gap-2">
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                {f}
+              </li>
+            ))}
+          </ul>
+          <Link href={next || "/"} className="mt-4 block">
+            <Button variant="outline" className="w-full">
+              Continuar grátis
+            </Button>
           </Link>
-        )}
+        </Panel>
+
+        <Panel title={`Farejo ${PLANS.AGENCY.name}`}>
+          <ul className="space-y-1.5 text-sm text-muted-foreground">
+            {PLANS.AGENCY.features.slice(0, 4).map((f) => (
+              <li key={f} className="flex items-start gap-2">
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                {f}
+              </li>
+            ))}
+          </ul>
+          <div className="mt-4">
+            <UpgradeButton
+              plan="AGENCY"
+              label={`Assinar Agency · ${PLANS.AGENCY.priceMonthly.toLocaleString("pt-BR", {
+                style: "currency",
+                currency: "BRL",
+              })}/mês`}
+              variant="outline"
+              next={next}
+            />
+          </div>
+        </Panel>
       </div>
 
-      <div className="mb-10 text-center">
-        <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
-          Mais dados. Mais respostas.
-        </h1>
-        <p className="mt-3 text-muted-foreground">
-          No grátis você vê os números. No Pro, os nomes, as fotos e a hora exata de cada mudança.
+      {!user && (
+        <p className="mt-8 text-center text-sm text-muted-foreground">
+          Já é assinante?{" "}
+          <Link href={loginHref} className="font-semibold text-accent hover:underline">
+            Entrar
+          </Link>
         </p>
-        {demoMode && (
-          <p className="mt-2 text-xs text-accent">
-Modo demonstração: a assinatura libera na hora e nada é cobrado.
-          </p>
-        )}
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        {(["FREE", "PRO", "AGENCY"] as const).map((key) => {
-          const plan = PLANS[key];
-          const highlighted = key === "PRO";
-          return (
-            <Card
-              key={key}
-              className={highlighted ? "border-accent/60 ring-1 ring-accent/30" : undefined}
-            >
-              <CardContent className="flex h-full flex-col p-6">
-                <div className="mb-4">
-                  <h2 className="text-lg font-semibold">{plan.name}</h2>
-                  <div className="mt-2 flex items-baseline gap-1">
-                    <span className="text-3xl font-extrabold">
-                      {plan.priceMonthly === 0
-                        ? "Grátis"
-                        : plan.priceMonthly.toLocaleString("pt-BR", {
-                            style: "currency",
-                            currency: "BRL",
-                          })}
-                    </span>
-                    {plan.priceMonthly > 0 && (
-                      <span className="text-sm text-muted-foreground">/mês</span>
-                    )}
-                  </div>
-                </div>
-                <ul className="mb-6 flex-1 space-y-2 text-sm">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2">
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" />
-                      <span className="text-muted-foreground">{f}</span>
-                    </li>
-                  ))}
-                </ul>
-                {user?.plan === key ? (
-                  <Link href={next || "/dashboard"}>
-                    <Button variant="outline" className="w-full">
-                      Seu plano atual
-                    </Button>
-                  </Link>
-                ) : key === "FREE" ? (
-                  <Link href={next || "/"}>
-                    <Button variant="outline" className="w-full">
-                      Continuar grátis
-                    </Button>
-                  </Link>
-                ) : (
-                  <UpgradeButton
-                    plan={key}
-                    label={`Assinar ${plan.name}`}
-                    variant={highlighted ? "accent" : "outline"}
-                    next={next}
-                  />
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+      )}
     </main>
   );
 }

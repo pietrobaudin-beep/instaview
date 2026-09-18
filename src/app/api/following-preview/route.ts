@@ -14,7 +14,7 @@ const log = logger.scope("api:following-preview");
 export const dynamic = "force-dynamic";
 
 // Cache the REAL following per @ so repeated views don't re-charge the provider.
-const cache = new Map<string, { at: number; users: FollowerEntry[] }>();
+const cache = new Map<string, { at: number; users: FollowerEntry[]; brands: number }>();
 const TTL = 24 * 60 * 60 * 1000; // 24 hours — minimise repeat provider charges
 
 /** Mask an identity so the free (blurred) tier doesn't leak names via DevTools. */
@@ -43,19 +43,22 @@ export async function GET(req: Request) {
 
   // Fetch (or reuse cached) real following — ONE page only (~1 provider request).
   let all: FollowerEntry[] = [];
+  let brands = 0;
   let isPrivate = false;
   let fresh = false;
   const hit = cache.get(username);
   if (hit && Date.now() - hit.at < TTL) {
     all = hit.users;
+    brands = hit.brands;
   } else {
     try {
       const result = await getProvider().getFollowing(username, { maxPages: 1, pageSize: 50 });
-      // Famous/brand accounts (verified) are noise for this product — keep
-      // only real people, for both the list and the gender counts.
+      // Famous/brand accounts (verified) are noise for the list itself, but we
+      // keep the count so the breakdown can show a "Marcas" slice.
+      brands = result.followers.filter((u) => u.isVerified).length;
       all = result.followers.filter((u) => !u.isVerified);
       fresh = true;
-      cache.set(username, { at: Date.now(), users: all });
+      cache.set(username, { at: Date.now(), users: all, brands });
     } catch (e) {
       // Private accounts: Instagram only shows their following to approved
       // followers, so no provider can read it. Report it explicitly.
@@ -105,7 +108,16 @@ export async function GET(req: Request) {
 
   // Aggregate gender estimate over everything we fetched (safe to show free —
   // it's a count, not an identity). Computed from the same single request.
-  const counts = countGenders(all.map((u) => ({ displayName: u.displayName, username: u.username })));
+  const g = countGenders(all.map((u) => ({ displayName: u.displayName, username: u.username })));
+  // Share of the page we read, so the three bars add up to something honest.
+  const total = all.length + brands;
+  const pct = (n: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
+  const counts = {
+    ...g,
+    brands,
+    total,
+    percent: { girls: pct(g.girls), boys: pct(g.boys), brands: pct(brands) },
+  };
 
   // Only the first rows are shown; masked for free so names don't leak — but we
   // always send the estimated gender so the teaser can label each row.

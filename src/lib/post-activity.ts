@@ -128,9 +128,11 @@ export async function syncPostActivity(profileId: string, username: string): Pro
 
 /** Latest N of each activity type. */
 export async function getPostActivity(profileId: string, limit = 5): Promise<PostActivity> {
+  // Verified/brand accounts are out of scope for this product — only the real
+  // people a profile interacts with are shown.
   const pick = (kind: string, type: "FOLLOW" | "UNFOLLOW") =>
     prisma.followerChange.findMany({
-      where: { profileId, kind, type },
+      where: { profileId, kind, type, isVerified: false },
       orderBy: { detectedAt: "desc" },
       take: limit,
     });

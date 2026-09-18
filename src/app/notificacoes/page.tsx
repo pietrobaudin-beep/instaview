@@ -1,0 +1,86 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { SniffingDog } from "@/components/ui/dog";
+import { AppNav, NavSpacer } from "@/components/app-nav";
+import { NotificationsFeed, type Notification } from "@/components/notifications-feed";
+import { Panel } from "@/components/ui/brand";
+import { Button } from "@/components/ui/button";
+import { getCurrentUser } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { FOLLOWING_KIND } from "@/lib/following-tracker";
+import { COMMENTS_KIND, LIKES_KIND } from "@/lib/post-activity";
+
+export const dynamic = "force-dynamic";
+
+export const metadata = { title: "Notificações · Farejo", description: "Tudo que foi detectado nos perfis que você acompanha." };
+
+/** Turn a stored change row into the sentence shown in the feed. */
+function describe(kind: string, type: "FOLLOW" | "UNFOLLOW"): Notification["action"] {
+  if (kind === LIKES_KIND) return type === "FOLLOW" ? "curtiu_post" : "descurtiu_post";
+  if (kind === COMMENTS_KIND) return type === "FOLLOW" ? "comentou" : "apagou_comentario";
+  return type === "FOLLOW" ? "comecou_a_seguir" : "deixou_de_seguir";
+}
+
+export default async function NotificacoesPage() {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login?next=/notificacoes");
+
+  const profiles = await prisma.trackedProfile.findMany({
+    where: { userId: user.id },
+    select: { id: true, username: true, avatarUrl: true },
+  });
+  const byId = new Map(profiles.map((p) => [p.id, p]));
+
+  const changes = profiles.length
+    ? await prisma.followerChange.findMany({
+        where: {
+          profileId: { in: profiles.map((p) => p.id) },
+          kind: { in: [FOLLOWING_KIND, LIKES_KIND, COMMENTS_KIND] },
+          isVerified: false,
+        },
+        orderBy: { detectedAt: "desc" },
+        take: 60,
+      })
+    : [];
+
+  const items: Notification[] = changes.map((c) => {
+    const profile = byId.get(c.profileId);
+    return {
+      id: c.id,
+      subject: profile?.username ?? "",
+      subjectAvatarUrl: profile?.avatarUrl ?? null,
+      action: describe(c.kind, c.type),
+      target: c.followerUsername,
+      targetAvatarUrl: c.avatarUrl,
+      detectedAt: c.detectedAt.toISOString(),
+    };
+  });
+
+  return (
+    <>
+      <AppNav />
+      <main className="mx-auto max-w-3xl px-6 py-8">
+        <h1 className="mb-6 text-3xl font-extrabold tracking-tight">Notificações</h1>
+
+        {profiles.length === 0 ? (
+          <Panel>
+            <div className="flex flex-col items-center gap-3 py-10 text-center">
+              <SniffingDog className="h-24 text-ink opacity-70" />
+              <p className="text-lg font-bold">Nada por aqui ainda</p>
+              <p className="max-w-sm text-sm text-muted-foreground">
+                Analise um perfil e toque em <b>Começar a rastrear</b>. A partir daí, cada mudança
+                aparece nesta lista.
+              </p>
+              <Link href="/" className="mt-2">
+                <Button variant="accent">Farejar um perfil</Button>
+              </Link>
+            </div>
+          </Panel>
+        ) : (
+          <NotificationsFeed items={items} />
+        )}
+      </main>
+      <NavSpacer />
+    </>
+  );
+}

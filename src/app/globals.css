@@ -3,37 +3,39 @@
 @tailwind utilities;
 
 /*
- * Farejo brand palette: cream paper, dark-maroon ink, hot pink accent.
- * Everything in the app reads these tokens, so the whole product follows.
+ * Farejo design system — values taken straight from the brand board.
+ * Pink #F6A8D2 · Roxo #B7A6FF · Amarelo #FFE257 · Creme #F7F4EE · Preto #1A0F14
  */
 :root {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial,
-    "Apple Color Emoji", "Segoe UI Emoji";
+  --font-sans: var(--font-grotesk), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
 
-  --radius: 1rem;
+  --radius: 1.25rem;
 
   /* Brand */
-  --cream: 40 71% 96%; /* #FCF6EC — paper */
-  --maroon: 335 71% 13%; /* #390A1C — ink, dark buttons */
-  --pink: 334 82% 72%; /* #F58FBD — the Farejo pink */
-  --pink-soft: 335 80% 92%; /* #FBDCE9 — tinted surfaces */
+  --pink: 328 81% 81%;
+  --purple: 251 100% 83%;
+  --yellow: 50 100% 67%;
+  --cream: 40 36% 95%;
+  --ink: 333 27% 8%;
+  /* Alias so existing hsl(var(--maroon)) usages keep working. */
+  --maroon: var(--ink);
 
   --background: var(--cream);
-  --foreground: var(--maroon);
-  --card: 45 100% 99%;
-  --card-foreground: var(--maroon);
-  --muted: 335 45% 95%;
-  --muted-foreground: 335 14% 45%;
-  --border: 335 32% 89%;
-  --input: 335 32% 89%;
+  --foreground: var(--ink);
+  --card: 0 0% 100%;
+  --card-foreground: var(--ink);
+  --muted: 40 30% 93%;
+  --muted-foreground: 333 8% 45%;
+  --border: 40 20% 88%;
+  --input: 40 20% 88%;
   --ring: var(--pink);
-  --primary: var(--maroon);
-  --primary-foreground: 40 71% 97%;
-  --secondary: var(--pink-soft);
-  --secondary-foreground: var(--maroon);
-  /* Deep enough to read as text and icons on cream; the light --pink is used
-     for fills (bg-accent/25, .brand-panel) so both sides of the brand survive. */
-  --accent: 334 62% 57%;
+  --primary: var(--ink);
+  --primary-foreground: var(--cream);
+  --secondary: var(--pink);
+  --secondary-foreground: var(--ink);
+  /* Deep enough to read as text/icons on cream; the light --pink is for fills. */
+  --accent: 328 62% 56%;
   --accent-foreground: 0 0% 100%;
   --destructive: 350 75% 48%;
   --destructive-foreground: 0 0% 100%;
@@ -53,15 +55,75 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Soft pink glow behind the hero, instead of the old technical dot grid. */
-.hero-grid {
-  background:
-    radial-gradient(ellipse 70% 55% at 50% 0%, hsl(var(--pink) / 0.45), transparent 70%),
-    radial-gradient(ellipse 50% 40% at 85% 30%, hsl(var(--pink) / 0.25), transparent 70%);
+/* Grotesk headlines are tight and heavy, as on the brand board. */
+h1,
+h2,
+h3 {
+  letter-spacing: -0.02em;
 }
 
-/* Chunky pink panel used for the hero and highlight blocks. */
+/* ---------------------------------------------------------------------------
+   Brand surfaces
+   --------------------------------------------------------------------------- */
+
 .brand-panel {
   background-color: hsl(var(--pink));
-  color: hsl(var(--maroon));
+  color: hsl(var(--ink));
+}
+
+.brand-purple {
+  background-color: hsl(var(--purple));
+  color: hsl(var(--ink));
+}
+
+.brand-yellow {
+  background-color: hsl(var(--yellow));
+  color: hsl(var(--ink));
+}
+
+/* The dark card from the brand board — used for Pro, so the paid area reads as
+   more exclusive without leaving the visual language. */
+.premium-surface {
+  background-color: hsl(var(--ink));
+  color: hsl(var(--cream));
+}
+
+/* Soft brand glow behind the landing hero. */
+.hero-grid {
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 0%, hsl(var(--pink) / 0.5), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 85% 30%, hsl(var(--purple) / 0.35), transparent 70%);
+}
+
+/* ---------------------------------------------------------------------------
+   Mascot
+   --------------------------------------------------------------------------- */
+
+/* Sniffing loop, used until the hand-drawn frames exist in /public/dog. */
+@keyframes dog-sniff {
+  0% { transform: translateY(0) rotate(0deg); }
+  20% { transform: translateY(3px) rotate(1.1deg); }
+  40% { transform: translateY(1px) rotate(0.2deg); }
+  60% { transform: translateY(4px) rotate(1.6deg); }
+  80% { transform: translateY(1px) rotate(0.3deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+
+.dog-sniff {
+  transform-origin: 18% 88%;
+  animation: dog-sniff 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dog-sniff {
+    animation: none;
+  }
+}
+
+/* Handwritten brand annotations ("tudo começa com um @"). */
+.hand {
+  font-family: var(--font-hand), ui-rounded, cursive;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
 }

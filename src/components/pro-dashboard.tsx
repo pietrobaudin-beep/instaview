@@ -41,6 +41,8 @@ interface Props {
   following: ProPerson[];
   recent?: { started: ProRecent[]; stopped: ProRecent[] };
   loggedIn: boolean;
+  /** False when the page already shows history in its own tab. */
+  showHistory?: boolean;
 }
 
 function ago(iso: string) {
@@ -52,8 +54,8 @@ function ago(iso: string) {
 }
 
 function genderLabel(g?: "f" | "m" | "u") {
-  if (g === "f") return { text: "Menina", cls: "border-pink-400/50 bg-pink-100 text-pink-700" };
-  if (g === "m") return { text: "Menino", cls: "border-blue-400/50 bg-blue-100 text-blue-700" };
+  if (g === "f") return { text: "Mulher", cls: "border-pink bg-pink/40 text-accent" };
+  if (g === "m") return { text: "Homem", cls: "border-purple bg-purple/40 text-[#5B47C4]" };
   return { text: "—", cls: "border-border bg-muted text-muted-foreground" };
 }
 
@@ -218,6 +220,19 @@ export function ProDashboard(props: Props) {
 
   return (
     <div>
+      {/* Dark banner from the brand board, so Pro reads as the exclusive tier. */}
+      <div className="premium-surface relative mb-6 overflow-hidden rounded-3xl px-6 py-5">
+        <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-pink/25 blur-3xl" />
+        <div className="relative flex flex-wrap items-center gap-3">
+          <span className="rounded-full bg-yellow px-2.5 py-1 text-[11px] font-bold text-ink">
+            PRO
+          </span>
+          <p className="text-sm font-medium">
+            Você está vendo tudo sobre <b>@{username}</b> — sem censura.
+          </p>
+        </div>
+      </div>
+
       {top3.length > 0 && (
         <>
           <h2 className="mb-3 mt-8 text-lg font-semibold">Pódio de interações</h2>
@@ -385,7 +400,9 @@ export function ProDashboard(props: Props) {
         )}
       </Section>
 
-      <HistoryPanel username={username} loggedIn={props.loggedIn} />
+      {props.showHistory !== false && (
+        <HistoryPanel username={username} loggedIn={props.loggedIn} />
+      )}
       </div>
       </div>
     </div>

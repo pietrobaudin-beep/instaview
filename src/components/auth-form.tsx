@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { safeNext, withParam } from "@/lib/utils";
 import { Logo } from "@/components/ui/logo";
+import { StickerNote } from "@/components/ui/doodles";
 
 export function AuthForm({ mode }: { mode: "signup" | "login" }) {
   const router = useRouter();
@@ -77,21 +78,24 @@ export function AuthForm({ mode }: { mode: "signup" | "login" }) {
       <Link href="/" className="mb-6 flex items-center gap-2 font-semibold tracking-tight">
         <Logo className="h-6" />
       </Link>
-      <Card>
+      <StickerNote className="mb-5 self-start" tone={isSignup ? "yellow" : "pink"}>
+        {isSignup ? "tudo começa com um @" : "curiosidade conecta"}
+      </StickerNote>
+      <Card className="rounded-3xl">
         <CardContent className="p-6">
-          <h1 className="text-xl font-semibold">
-            {isSignup ? "Create your account" : "Welcome back"}
+          <h1 className="text-2xl font-extrabold tracking-tight">
+            {isSignup ? "Criar sua conta" : "Bem-vindo de volta"}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {isSignup
-              ? "Start tracking who follows any Instagram profile."
-              : "Log in to your Farejo dashboard."}
+              ? "Comece a farejar qualquer perfil do Instagram."
+              : "Entre para ver seus rastreios."}
           </p>
 
           <form onSubmit={submit} className="mt-5 space-y-3">
             {isSignup && (
               <Input
-                placeholder="Name (optional)"
+                placeholder="Nome (opcional)"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 autoComplete="name"
@@ -108,7 +112,7 @@ export function AuthForm({ mode }: { mode: "signup" | "login" }) {
             />
             <Input
               type="password"
-              placeholder="Password"
+              placeholder="Senha"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete={isSignup ? "new-password" : "current-password"}
@@ -116,7 +120,7 @@ export function AuthForm({ mode }: { mode: "signup" | "login" }) {
             />
             <Button type="submit" className="w-full" variant="accent" disabled={loading}>
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              {isSignup ? "Create account" : "Log in"}
+              {isSignup ? "Criar conta" : "Entrar"}
             </Button>
             {error && <p className="text-sm text-destructive">{error}</p>}
           </form>
@@ -124,16 +128,16 @@ export function AuthForm({ mode }: { mode: "signup" | "login" }) {
           <p className="mt-4 text-center text-sm text-muted-foreground">
             {isSignup ? (
               <>
-                Already have an account?{" "}
+                Já tem conta?{" "}
                 <Link href={`/login${nextQuery}`} className="text-accent hover:underline">
-                  Log in
+                  Entrar
                 </Link>
               </>
             ) : (
               <>
-                New here?{" "}
+                Novo por aqui?{" "}
                 <Link href={`/signup${nextQuery}`} className="text-accent hover:underline">
-                  Create an account
+                  Criar uma conta
                 </Link>
               </>
             )}

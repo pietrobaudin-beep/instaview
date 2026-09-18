@@ -8,6 +8,7 @@ import type { Plan } from "@prisma/client";
 
 const bodySchema = z.object({
   plan: z.enum(["PRO", "AGENCY"]),
+  interval: z.enum(["monthly", "yearly"]).default("monthly"),
   next: z.string().max(300).nullish(),
 });
 
@@ -25,10 +26,15 @@ export async function POST(req: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
   const plan = parsed.data.plan as Plan;
 
+  // Yearly falls back to the monthly price id when no annual price is set up,
+  // so a missing env never blocks the purchase — it just bills monthly.
+  const yearly = parsed.data.interval === "yearly";
   const priceId =
     plan === "PRO"
-      ? process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO
-      : process.env.NEXT_PUBLIC_STRIPE_PRICE_AGENCY;
+      ? (yearly ? process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY : undefined) ??
+        process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO
+      : (yearly ? process.env.NEXT_PUBLIC_STRIPE_PRICE_AGENCY_YEARLY : undefined) ??
+        process.env.NEXT_PUBLIC_STRIPE_PRICE_AGENCY;
 
   // Use the real site origin (NEXT_PUBLIC_APP_URL may be unset on Vercel).
   const origin = new URL(req.url).origin;

@@ -44,6 +44,12 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Brand board colours, usable directly as bg-pink / text-ink / etc.
+        pink: "hsl(var(--pink))",
+        purple: "hsl(var(--purple))",
+        yellow: "hsl(var(--yellow))",
+        cream: "hsl(var(--cream))",
+        ink: "hsl(var(--ink))",
       },
       borderRadius: {
         lg: "var(--radius)",

@@ -107,6 +107,10 @@ model TrackedProfile {
   // provider requests, so it's opt-in per profile.
   captureFull       Boolean @default(false)
 
+  // Per-profile alert switches shown on the tracking screen
+  // ({ notifications, newFollowing, unfollowed, postInteractions, stories }).
+  trackingPrefs     Json?
+
   // Ownership: a profile belongs to a user, optionally scoped to an org.
   userId         String
   organizationId String?

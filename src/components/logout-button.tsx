@@ -13,7 +13,7 @@ export function LogoutButton() {
   }
   return (
     <Button variant="ghost" size="sm" onClick={logout}>
-      <LogOut className="h-4 w-4" /> Log out
+      <LogOut className="h-4 w-4" /> Sair
     </Button>
   );
 }
