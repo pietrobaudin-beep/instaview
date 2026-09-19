@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import {
   Activity,
   ArrowLeft,
@@ -70,6 +71,7 @@ export function Dashboard({ initial }: { initial: DashboardData }) {
   const [tab, setTab] = React.useState<Tab>("CURRENT");
   const [loading, setLoading] = React.useState(false);
   const [refreshing, setRefreshing] = React.useState(false);
+  const [refreshError, setRefreshError] = React.useState<string | null>(null);
 
   const load = React.useCallback(
     async (p: Period, t: Tab) => {
@@ -94,9 +96,15 @@ export function Dashboard({ initial }: { initial: DashboardData }) {
   }
 
   async function refresh() {
+    setRefreshError(null);
     setRefreshing(true);
     try {
-      await fetch(`/api/profiles/${initial.profile.id}/refresh`, { method: "POST" });
+      const response = await fetch(`/api/profiles/${initial.profile.id}/refresh`, { method: "POST" });
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        setRefreshError(body?.error ?? "Não foi possível atualizar agora.");
+        return;
+      }
       await load(period, tab);
     } finally {
       setRefreshing(false);
@@ -135,6 +143,12 @@ export function Dashboard({ initial }: { initial: DashboardData }) {
 
   const p = data.profile;
   const s = data.summary;
+  const now = Date.now();
+  const nextFarejoAt = p.nextRunAt ? new Date(p.nextRunAt) : null;
+  const refreshBlocked = Boolean(nextFarejoAt && nextFarejoAt.getTime() > now);
+  const lastFarejo = p.lastCollectedAt
+    ? formatDistanceToNow(new Date(p.lastCollectedAt), { addSuffix: true, locale: ptBR })
+    : null;
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-8">
@@ -164,15 +178,12 @@ export function Dashboard({ initial }: { initial: DashboardData }) {
               </div>
               {p.displayName && <p className="text-sm text-muted-foreground">{p.displayName}</p>}
               <p className="mt-1 text-xs text-muted-foreground">
-                Monitoring since{" "}
+                No Faro desde{" "}
                 {new Date(p.monitoringStartedAt).toLocaleDateString(undefined, {
                   year: "numeric",
                   month: "short",
                   day: "numeric",
                 })}
-                {p.lastCollectedAt && (
-                  <> · last check {formatDistanceToNow(new Date(p.lastCollectedAt))} ago</>
-                )}
               </p>
             </div>
           </div>
@@ -181,18 +192,24 @@ export function Dashboard({ initial }: { initial: DashboardData }) {
               variant={p.captureFull ? "accent" : "outline"}
               size="sm"
               onClick={toggleFullCapture}
-              title="Fetch the full follower list to detect unfollows (uses more requests)"
+              title="Lê a lista completa para detectar quem deixou de seguir (usa mais créditos)"
             >
               <ScanSearch className="h-4 w-4" />
-              Full capture: {p.captureFull ? "On" : "Off"}
+              Lista completa: {p.captureFull ? "Ativa" : "Desligada"}
             </Button>
-            <Button variant="outline" size="sm" onClick={refresh} disabled={refreshing}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={refresh}
+              disabled={refreshing || refreshBlocked}
+              title={refreshBlocked ? "A próxima atualização já está agendada" : "Atualizar agora"}
+            >
               {refreshing ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <RefreshCw className="h-4 w-4" />
               )}
-              Refresh now
+              {refreshBlocked ? "Atualização agendada" : "Atualizar agora"}
             </Button>
             <Button
               variant={p.status === "ACTIVE" ? "outline" : "accent"}
@@ -201,17 +218,48 @@ export function Dashboard({ initial }: { initial: DashboardData }) {
             >
               {p.status === "ACTIVE" ? (
                 <>
-                  <Pause className="h-4 w-4" /> Stop monitoring
+                  <Pause className="h-4 w-4" /> Pausar Faro
                 </>
               ) : (
                 <>
-                  <Play className="h-4 w-4" /> Start monitoring
+                  <Play className="h-4 w-4" /> Ativar Faro
                 </>
               )}
             </Button>
           </div>
         </CardContent>
       </Card>
+
+      <div className="mb-6 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-2xl border border-border bg-card px-5 py-4">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Último farejo</p>
+          <p className="mt-1 text-lg font-semibold">
+            {lastFarejo ?? "Ainda não foi atualizado"}
+          </p>
+          {p.lastCollectedAt && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Atualizado em {new Date(p.lastCollectedAt).toLocaleString("pt-BR")}
+            </p>
+          )}
+        </div>
+        <div className="rounded-2xl border border-border bg-card px-5 py-4">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Próximo farejo</p>
+          <p className="mt-1 text-lg font-semibold">
+            {nextFarejoAt
+              ? formatDistanceToNow(nextFarejoAt, { addSuffix: true, locale: ptBR })
+              : "Sem agendamento"}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Atualizações automáticas evitam chamadas repetidas à API.
+          </p>
+        </div>
+      </div>
+
+      {refreshError && (
+        <div className="mb-6 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-foreground">
+          {refreshError}
+        </div>
+      )}
 
       {p.lastError && (
         <div className="mb-6 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">

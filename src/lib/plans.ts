@@ -50,7 +50,11 @@ export const PLANS: Record<Plan, PlanConfig> = {
     priceMonthly: 29.9,
     priceYearly: 199.9,
     maxProfiles: 10,
-    minIntervalMinutes: 60, // hourly
+    // Six-hour snapshots make the Pro history useful without turning a
+    // subscription into dozens of provider calls per profile every day.
+    // The UI shows the next scheduled "farejo" so this feels intentional,
+    // rather than like stale data.
+    minIntervalMinutes: 6 * 60,
     historyDays: 365,
     alerts: true,
     team: false,
@@ -63,6 +67,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
       "Acompanhe vários perfis",
       "Histórico e relatórios completos",
       "Alertas de novas conexões",
+      "Último farejo e mudanças desde a última atualização",
     ],
   },
   AGENCY: {
