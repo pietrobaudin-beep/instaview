@@ -24,11 +24,25 @@ export function isBillingConfigured(): boolean {
   return Boolean(process.env.STRIPE_SECRET_KEY);
 }
 
-/** Map a Stripe price id to an internal Plan. Extend as you add prices. */
+/**
+ * Demo billing — "Assinar" unlocks instantly and charges nothing — so the
+ * paywall can be tried end to end without a Stripe account. Never on the live
+ * site: there it would hand out PRO (and provider credits) for free.
+ */
+export function isDemoBillingAllowed(): boolean {
+  return process.env.NODE_ENV !== "production";
+}
+
+/** Map a Stripe price id (monthly or yearly) to an internal Plan. */
 export function planForPriceId(priceId: string | null | undefined): Plan {
   if (!priceId) return "FREE";
-  if (priceId === process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO) return "PRO";
-  if (priceId === process.env.NEXT_PUBLIC_STRIPE_PRICE_AGENCY) return "AGENCY";
+  const env = process.env;
+  if (priceId === env.NEXT_PUBLIC_STRIPE_PRICE_PRO || priceId === env.NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY) {
+    return "PRO";
+  }
+  if (priceId === env.NEXT_PUBLIC_STRIPE_PRICE_AGENCY || priceId === env.NEXT_PUBLIC_STRIPE_PRICE_AGENCY_YEARLY) {
+    return "AGENCY";
+  }
   return "FREE";
 }
 
@@ -39,7 +53,8 @@ export function planForPriceId(priceId: string | null | undefined): Plan {
  */
 export async function createCheckoutSession(params: {
   userId: string;
-  email: string;
+  /** Pre-fills Stripe Checkout; WhatsApp-only accounts have none. */
+  email: string | null;
   priceId: string;
   successUrl: string;
   cancelUrl: string;
@@ -48,11 +63,16 @@ export async function createCheckoutSession(params: {
 }) {
   return stripe().checkout.sessions.create({
     mode: params.mode ?? "subscription",
-    customer_email: params.email,
+    customer_email: params.email ?? undefined,
     line_items: [{ price: params.priceId, quantity: 1 }],
     success_url: params.successUrl,
     cancel_url: params.cancelUrl,
     client_reference_id: params.userId,
     metadata: { userId: params.userId, ...params.metadata },
+    // The subscription carries the user id too, so its own events can find the
+    // user even when they arrive before checkout.session.completed.
+    ...((params.mode ?? "subscription") === "subscription"
+      ? { subscription_data: { metadata: { userId: params.userId } } }
+      : {}),
   });
 }

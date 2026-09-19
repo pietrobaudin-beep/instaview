@@ -11,8 +11,9 @@ const log = logger.scope("stripe:webhook");
 export const dynamic = "force-dynamic";
 
 /**
- * Stripe webhook (scaffold). Handles subscription lifecycle -> updates the
- * user's plan. Inactive until STRIPE_SECRET_KEY + STRIPE_WEBHOOK_SECRET are set.
+ * Stripe webhook. Handles the subscription lifecycle (-> the user's plan) and
+ * the one-off "uso único" (-> a ProfileUnlock). Inactive until
+ * STRIPE_SECRET_KEY + STRIPE_WEBHOOK_SECRET are set.
  */
 export async function POST(req: Request) {
   if (!isBillingConfigured()) {
@@ -74,11 +75,23 @@ export async function POST(req: Request) {
       case "customer.subscription.deleted": {
         const sub = event.data.object as any;
         const priceId = sub.items?.data?.[0]?.price?.id;
-        const plan = event.type === "customer.subscription.deleted" ? "FREE" : planForPriceId(priceId);
-        await prisma.user.updateMany({
-          where: { stripeSubscriptionId: sub.id },
-          data: { plan },
-        });
+        // Only a live subscription grants a plan; canceled / unpaid ones don't.
+        const live = ["active", "trialing"].includes(sub.status);
+        const plan = event.type === "customer.subscription.deleted" || !live ? "FREE" : planForPriceId(priceId);
+        const userId: string | undefined = sub.metadata?.userId;
+
+        if (userId && event.type !== "customer.subscription.deleted") {
+          // The subscription knows its user (set at checkout), so this works
+          // even when it arrives before checkout.session.completed.
+          await prisma.user.updateMany({
+            where: { id: userId },
+            data: { plan, stripeSubscriptionId: sub.id, stripeCustomerId: sub.customer ?? undefined },
+          });
+        } else {
+          // Deletions only touch the user who still holds THIS subscription, so
+          // ending an old one never downgrades someone on a newer one.
+          await prisma.user.updateMany({ where: { stripeSubscriptionId: sub.id }, data: { plan } });
+        }
         break;
       }
       default:

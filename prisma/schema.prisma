@@ -22,9 +22,14 @@ enum Plan {
 
 model User {
   id            String   @id @default(cuid())
-  email         String   @unique
+  // Sign-in is by one-time code, sent to the email OR the WhatsApp number, so
+  // either can be missing — but every account has at least one of them.
+  email         String?  @unique
+  // E.164, e.g. "+5511999999999".
+  phone         String?  @unique
+  // Optional: people pick a name after signing up, or never.
   name          String?
-  // Credentials auth (email + password). Null for demo/seed or SSO users.
+  // Legacy password logins (before one-time codes). No longer used to sign in.
   passwordHash  String?
   plan          Plan     @default(FREE)
   // Stripe billing (scaffold — see lib/plans.ts)
@@ -256,6 +261,30 @@ model ProfileUnlock {
 
   @@unique([userId, username])
   @@map("profile_unlocks")
+}
+
+// ---------------------------------------------------------------------------
+// Sign-in codes
+// ---------------------------------------------------------------------------
+
+// A one-time sign-in code sent by email or WhatsApp. Only a keyed hash of the
+// code is stored, never the code itself. A code dies when it is used, when it
+// expires, or after too many wrong guesses.
+model LoginCode {
+  id       String @id @default(cuid())
+  channel  String // "email" | "whatsapp"
+  // Normalized destination: lowercased email, or E.164 phone.
+  target   String
+  codeHash String
+  attempts Int    @default(0)
+
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([target, createdAt])
+  @@index([channel, createdAt])
+  @@map("login_codes")
 }
 
 // ---------------------------------------------------------------------------

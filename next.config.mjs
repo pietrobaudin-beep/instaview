@@ -7,6 +7,14 @@ const nextConfig = {
       { source: "/rastreios", destination: "/rastros", permanent: true },
       { source: "/rastreios/:username", destination: "/rastros/:username", permanent: true },
       { source: "/notificacoes", destination: "/pistas", permanent: true },
+      // The old Vercel address now points to the real domain, so search engines
+      // see one site. Only this exact host: preview deployments keep working.
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "instaview-sigma.vercel.app" }],
+        destination: "https://farejoapp.com/:path*",
+        permanent: true,
+      },
     ];
   },
   images: {

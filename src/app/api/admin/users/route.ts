@@ -13,7 +13,9 @@ export async function GET(req: Request) {
   const q = url.searchParams.get("q")?.trim().toLowerCase();
 
   const users = await prisma.user.findMany({
-    where: q ? { email: { contains: q, mode: "insensitive" } } : undefined,
+    where: q
+      ? { OR: [{ email: { contains: q, mode: "insensitive" } }, { phone: { contains: q } }] }
+      : undefined,
     orderBy: { createdAt: "desc" },
     take: 200,
     include: { _count: { select: { trackedProfiles: true } } },
@@ -22,7 +24,8 @@ export async function GET(req: Request) {
   return NextResponse.json({
     users: users.map((u) => ({
       id: u.id,
-      email: u.email,
+      // WhatsApp-only accounts have no email: show the number instead.
+      email: u.email ?? u.phone ?? "—",
       name: u.name,
       plan: u.plan,
       profiles: u._count.trackedProfiles,

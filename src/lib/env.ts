@@ -42,6 +42,20 @@ const schema = z.object({
   // Admin panel access.
   ADMIN_EMAILS: z.string().default(""), // comma-separated list of admin emails
   ADMIN_TOKEN: z.string().default(""), // shared secret required to log in as admin
+
+  // Sign-in codes by email (Resend). Unset → email codes only work on localhost.
+  RESEND_API_KEY: z.string().default(""),
+  EMAIL_FROM: z.string().default("Farejo <codigo@farejoapp.com>"),
+
+  // Sign-in codes by WhatsApp (official Meta Cloud API, with an approved
+  // "authentication" template). Unset → the WhatsApp option is hidden.
+  WHATSAPP_TOKEN: z.string().default(""),
+  WHATSAPP_PHONE_NUMBER_ID: z.string().default(""),
+  WHATSAPP_TEMPLATE: z.string().default("codigo_farejo"),
+  WHATSAPP_TEMPLATE_LANG: z.string().default("pt_BR"),
+  WHATSAPP_API_VERSION: z.string().default("v21.0"),
+  // Most WhatsApp codes sent per day, so nobody can run up the bill.
+  WHATSAPP_DAILY_CAP: z.coerce.number().int().positive().default(300),
 });
 
 const raw = {
@@ -62,6 +76,14 @@ const raw = {
   STRIPE_SECRET_KEY: clean(process.env.STRIPE_SECRET_KEY),
   ADMIN_EMAILS: clean(process.env.ADMIN_EMAILS),
   ADMIN_TOKEN: clean(process.env.ADMIN_TOKEN),
+  RESEND_API_KEY: clean(process.env.RESEND_API_KEY),
+  EMAIL_FROM: clean(process.env.EMAIL_FROM),
+  WHATSAPP_TOKEN: clean(process.env.WHATSAPP_TOKEN),
+  WHATSAPP_PHONE_NUMBER_ID: clean(process.env.WHATSAPP_PHONE_NUMBER_ID),
+  WHATSAPP_TEMPLATE: clean(process.env.WHATSAPP_TEMPLATE),
+  WHATSAPP_TEMPLATE_LANG: clean(process.env.WHATSAPP_TEMPLATE_LANG),
+  WHATSAPP_API_VERSION: clean(process.env.WHATSAPP_API_VERSION),
+  WHATSAPP_DAILY_CAP: clean(process.env.WHATSAPP_DAILY_CAP),
 };
 
 const parsed = schema.safeParse(raw);

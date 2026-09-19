@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { ArrowRight, Crown, Instagram, ShieldCheck } from "lucide-react";
 import { AppNav, NavSpacer } from "@/components/app-nav";
 import { LogoutButton } from "@/components/logout-button";
+import { NameEditor } from "@/components/name-editor";
 import { Button } from "@/components/ui/button";
 import { NoteBox, Panel, StatBox, StatusPill } from "@/components/ui/brand";
 import { getCurrentUser } from "@/lib/auth";
@@ -37,11 +38,11 @@ export default async function PerfilPage() {
         <Panel>
           <div className="flex items-center gap-4">
             <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-pink text-xl font-extrabold text-ink">
-              {initials(user.name || user.email)}
+              {initials(user.name || user.email || "F")}
             </span>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-lg font-bold">{user.name || "Sua conta"}</p>
-              <p className="truncate text-sm text-muted-foreground">{user.email}</p>
+              <NameEditor initial={user.name} />
+              <p className="truncate text-sm text-muted-foreground">{user.email ?? user.phone}</p>
             </div>
             <StatusPill tone={isPaid ? "yellow" : "pink"}>
               {isPaid && <Crown className="h-3 w-3" />}

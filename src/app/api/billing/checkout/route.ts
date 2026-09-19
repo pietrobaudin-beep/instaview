@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { isValidUsername, normalizeUsername, safeNext, withParam } from "@/lib/utils";
 import { grantUnlock } from "@/lib/access";
 import { SINGLE_UNLOCK } from "@/lib/plans";
-import { createCheckoutSession, isBillingConfigured } from "@/lib/billing/stripe";
+import { createCheckoutSession, isBillingConfigured, isDemoBillingAllowed } from "@/lib/billing/stripe";
 import type { Plan } from "@prisma/client";
 
 const bodySchema = z.object({
@@ -19,9 +19,12 @@ const bodySchema = z.object({
 /**
  * Starts an upgrade.
  * - If Stripe is configured (STRIPE_SECRET_KEY + price id) -> returns a Checkout URL.
- * - Otherwise (dev/demo) -> upgrades the current user immediately so the paywall
- *   is demoable end-to-end without a Stripe account. Real payments require keys.
+ * - Otherwise, on localhost (demo) -> upgrades the current user immediately so the
+ *   paywall is demoable end-to-end without a Stripe account.
+ * - Otherwise, on the live site -> refuses: nothing is ever given away for free.
  */
+
+const NOT_YET = "Os pagamentos ainda não estão ativos. Volte em breve! 🐶";
 export async function POST(req: Request) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -52,6 +55,7 @@ export async function POST(req: Request) {
     }
 
     // Demo mode (no Stripe keys): unlock immediately, nothing is charged.
+    if (!isDemoBillingAllowed()) return NextResponse.json({ error: NOT_YET }, { status: 503 });
     await grantUnlock(user.id, username, null);
     return NextResponse.json({ unlocked: true });
   }
@@ -84,6 +88,7 @@ export async function POST(req: Request) {
   }
 
   // Demo mode: unlock immediately.
+  if (!isDemoBillingAllowed()) return NextResponse.json({ error: NOT_YET }, { status: 503 });
   await prisma.user.update({ where: { id: user.id }, data: { plan } });
   return NextResponse.json({ unlocked: true });
 }

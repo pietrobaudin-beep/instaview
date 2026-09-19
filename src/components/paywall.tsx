@@ -28,12 +28,15 @@ export function Paywall({
   yearly,
   next,
   demoMode,
+  comingSoon = false,
 }: {
   monthly: number;
   yearly: number;
   next?: string | null;
-  /** True when Stripe keys are missing and "subscribing" just unlocks locally. */
+  /** True on localhost without Stripe keys: "subscribing" just unlocks locally. */
   demoMode: boolean;
+  /** True on the live site without Stripe keys: nothing is on sale yet. */
+  comingSoon?: boolean;
 }) {
   const router = useRouter();
   const [interval, setInterval] = React.useState<"monthly" | "yearly">("yearly");
@@ -158,6 +161,9 @@ export function Paywall({
         <p className="mt-3 text-center text-xs opacity-70">
           Modo demonstração: a assinatura libera na hora e nada é cobrado.
         </p>
+      )}
+      {comingSoon && (
+        <p className="mt-3 text-center text-xs opacity-70">Os pagamentos abrem em breve.</p>
       )}
       <p className="mt-2 text-center text-xs opacity-70">Cancele quando quiser.</p>
       </div>

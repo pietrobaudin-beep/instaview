@@ -1,18 +1,19 @@
 /**
- * Auth abstraction.
+ * Auth.
  *
- * AUTH_MODE=dev  -> passwordless cookie session for local development. The
- *                   cookie stores a signed user id; a dev login route upserts a
- *                   User by email and sets it.
- * AUTH_MODE=supabase -> replace `getCurrentUser` to read the Supabase session
- *                   (see README §Auth). The rest of the app only calls
- *                   getCurrentUser()/requireUser(), so nothing else changes.
+ * People sign in with a one-time code sent to their email or WhatsApp (see
+ * lib/login-code) — no passwords. The session is a cookie holding the user id,
+ * signed with APP_SECRET. The rest of the app only calls
+ * getCurrentUser()/requireUser().
+ *
+ * On localhost there is also a dev login with test accounts (/api/auth/dev),
+ * which refuses to run on a production build.
  */
 import { cookies } from "next/headers";
 import { createHmac } from "crypto";
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
-import { hashPassword, verifyPassword } from "@/lib/password";
+import type { Channel } from "@/lib/login-code/targets";
 import type { User } from "@prisma/client";
 
 const COOKIE = "iv_session";
@@ -65,51 +66,29 @@ export class UnauthorizedError extends Error {
   }
 }
 
-export class AuthError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "AuthError";
-  }
-}
-
-function emailIsAdmin(email: string): boolean {
-  return env.ADMIN_EMAILS.split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean)
-    .includes(email.toLowerCase());
-}
-
-/** Create a new account (email + password) and start a session. */
-export async function registerUser(email: string, password: string, name?: string): Promise<User> {
-  const normalized = email.trim().toLowerCase();
-  if (emailIsAdmin(normalized)) {
-    throw new AuthError("This email is reserved. Use the admin login.");
-  }
-  if (password.length < 6) throw new AuthError("Password must be at least 6 characters.");
-
-  const existing = await prisma.user.findUnique({ where: { email: normalized } });
-  if (existing) throw new AuthError("An account with this email already exists.");
-
-  const user = await prisma.user.create({
-    data: {
-      email: normalized,
-      name: name?.trim() || normalized.split("@")[0],
-      passwordHash: hashPassword(password),
-    },
-  });
-  setSessionCookie(user.id);
-  return user;
-}
-
-/** Authenticate an existing account and start a session. */
-export async function loginUser(email: string, password: string): Promise<User> {
-  const normalized = email.trim().toLowerCase();
-  const user = await prisma.user.findUnique({ where: { email: normalized } });
-  if (!user || !verifyPassword(password, user.passwordHash)) {
-    throw new AuthError("Invalid email or password.");
+/**
+ * After a verified one-time code: the account for this email / WhatsApp
+ * number, created on the spot the first time. The name comes later, if ever.
+ */
+export async function signInWithVerifiedTarget(
+  channel: Channel,
+  target: string,
+): Promise<{ user: User; isNew: boolean }> {
+  const where = channel === "email" ? { email: target } : { phone: target };
+  let user = await prisma.user.findUnique({ where });
+  let isNew = false;
+  if (!user) {
+    try {
+      user = await prisma.user.create({ data: where });
+      isNew = true;
+    } catch {
+      // Two tabs verifying at once: the other one created it first.
+      user = await prisma.user.findUnique({ where });
+      if (!user) throw new Error("could not create account");
+    }
   }
   setSessionCookie(user.id);
-  return user;
+  return { user, isNew };
 }
 
 /** Dev-only: upsert a user by email (used by the dev login route). */

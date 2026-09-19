@@ -7,7 +7,7 @@ import { Logo } from "@/components/ui/logo";
 import { Panel } from "@/components/ui/brand";
 import { PLANS, SINGLE_UNLOCK } from "@/lib/plans";
 import { SingleUnlockButton } from "@/components/single-unlock-button";
-import { isBillingConfigured } from "@/lib/billing/stripe";
+import { isBillingConfigured, isDemoBillingAllowed } from "@/lib/billing/stripe";
 import { getCurrentUser } from "@/lib/auth";
 import { safeNext, withParam } from "@/lib/utils";
 
@@ -20,7 +20,9 @@ export default async function PricingPage({
 }: {
   searchParams: { next?: string };
 }) {
-  const demoMode = !isBillingConfigured();
+  // Without Stripe: localhost unlocks for free (demo); the live site doesn't sell yet.
+  const demoMode = !isBillingConfigured() && isDemoBillingAllowed();
+  const comingSoon = !isBillingConfigured() && !isDemoBillingAllowed();
   const user = await getCurrentUser();
   const next = safeNext(searchParams.next);
   const loginHref = withParam(
@@ -68,6 +70,7 @@ export default async function PricingPage({
           yearly={pro.priceYearly ?? pro.priceMonthly * 12}
           next={next}
           demoMode={demoMode}
+          comingSoon={comingSoon}
         />
       )}
 
