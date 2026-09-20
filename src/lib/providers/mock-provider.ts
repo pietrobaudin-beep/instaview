@@ -121,7 +121,8 @@ export class MockProvider implements InstagramDataProvider {
         .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
         .join(" "),
       avatarUrl: `https://i.pravatar.cc/300?u=${encodeURIComponent(username)}`,
-      bio: null,
+      bio: `Fictício para demonstração.\nfalando de ${pick(mulberry32(hashSeed(username)), NOUN)} por aqui.`,
+      externalUrl: `https://linktr.ee/${username.replace(/[^a-z0-9._]/gi, "")}`,
       isPrivate: isPrivateHandle(username),
       isVerified: model.verified,
       followersCount: total,

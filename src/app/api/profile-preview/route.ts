@@ -39,6 +39,7 @@ export async function GET(req: Request) {
       displayName: p.displayName,
       avatarUrl: p.avatarUrl,
       bio: p.bio,
+      externalUrl: p.externalUrl ?? null,
       isVerified: p.isVerified,
       isPrivate: p.isPrivate,
       followersCount: p.followersCount,

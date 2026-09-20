@@ -15,6 +15,8 @@ export interface ProfileData {
   displayName: string | null;
   avatarUrl: string | null;
   bio: string | null;
+  /** Link que a própria pessoa colocou na bio, quando existe. */
+  externalUrl?: string | null;
   isPrivate: boolean;
   isVerified: boolean;
   followersCount: number;

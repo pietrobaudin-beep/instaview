@@ -144,6 +144,8 @@ interface HikerUser {
   profile_pic_url_hd?: string;
   is_verified?: boolean;
   is_private?: boolean;
+  biography?: string;
+  external_url?: string;
 }
 
 /** Same freshness window as the profile cache. */
@@ -227,7 +229,10 @@ export class HikerApiProvider implements InstagramDataProvider {
       username: u.username ?? username,
       displayName: u.full_name ?? null,
       avatarUrl: u.profile_pic_url_hd ?? u.profile_pic_url ?? null,
-      bio: null,
+      // A bio e o link já vêm nesta mesma resposta: descartá-los era jogar
+      // fora informação pela qual o Farejo já pagou.
+      bio: u.biography?.trim() || null,
+      externalUrl: u.external_url?.trim() || null,
       isPrivate: Boolean(u.is_private),
       isVerified: Boolean(u.is_verified),
       followersCount: Number(u.follower_count ?? 0),
