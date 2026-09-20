@@ -24,22 +24,22 @@ enum Plan {
 }
 
 model User {
-  id            String   @id @default(cuid())
+  id                   String   @id @default(cuid())
   // Sign-in is by one-time code, sent to the email OR the WhatsApp number, so
   // either can be missing — but every account has at least one of them.
-  email         String?  @unique
+  email                String?  @unique
   // E.164, e.g. "+5511999999999".
-  phone         String?  @unique
+  phone                String?  @unique
   // Optional: people pick a name after signing up, or never.
-  name          String?
+  name                 String?
   // Legacy password logins (before one-time codes). No longer used to sign in.
-  passwordHash  String?
-  plan          Plan     @default(FREE)
+  passwordHash         String?
+  plan                 Plan     @default(FREE)
   // Stripe billing (scaffold — see lib/plans.ts)
-  stripeCustomerId     String? @unique
-  stripeSubscriptionId String? @unique
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  stripeCustomerId     String?  @unique
+  stripeSubscriptionId String?  @unique
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   trackedProfiles TrackedProfile[]
   memberships     Membership[]
@@ -68,11 +68,11 @@ enum MemberRole {
 }
 
 model Membership {
-  id             String       @id @default(cuid())
+  id             String     @id @default(cuid())
   userId         String
   organizationId String
-  role           MemberRole   @default(MEMBER)
-  createdAt      DateTime     @default(now())
+  role           MemberRole @default(MEMBER)
+  createdAt      DateTime   @default(now())
 
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -106,19 +106,19 @@ model TrackedProfile {
   followingCount Int     @default(0)
   postsCount     Int     @default(0)
 
-  status            MonitoringStatus @default(ACTIVE)
-  monitoringStartedAt DateTime       @default(now())
-  lastCollectedAt   DateTime?
-  lastError         String?
+  status              MonitoringStatus @default(ACTIVE)
+  monitoringStartedAt DateTime         @default(now())
+  lastCollectedAt     DateTime?
+  lastError           String?
 
   // When true, each collection fetches the ENTIRE follower list (not just the
   // recent head), which enables reliable UNFOLLOW detection. Costs more
   // provider requests, so it's opt-in per profile.
-  captureFull       Boolean @default(false)
+  captureFull Boolean @default(false)
 
   // Per-profile alert switches shown on the tracking screen
   // ({ notifications, newFollowing, unfollowed, postInteractions, stories }).
-  trackingPrefs     Json?
+  trackingPrefs Json?
 
   // Ownership: a profile belongs to a user, optionally scoped to an org.
   userId         String
@@ -130,10 +130,10 @@ model TrackedProfile {
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
 
-  snapshots FollowerSnapshot[]
-  followers Follower[]
-  changes   FollowerChange[]
-  job       MonitoringJob?
+  snapshots  FollowerSnapshot[]
+  followers  Follower[]
+  changes    FollowerChange[]
+  job        MonitoringJob?
   alertRules AlertRule[]
   events     ProfileEvent[]
 
@@ -163,10 +163,10 @@ model FollowerSnapshot {
 
   // Whether the provider returned the FULL list or only the recent head.
   // "head" mode reliably detects FOLLOWs but not UNFOLLOWs of old accounts.
-  mode        String  @default("head") // "head" | "full"
-  capturedCount Int   @default(0)      // followers seen in this snapshot
-  followersCount Int  @default(0)      // profile-reported total at capture time
-  followingCount Int  @default(0)      // profile-reported "seguindo" total at capture time
+  mode           String @default("head") // "head" | "full"
+  capturedCount  Int    @default(0) // followers seen in this snapshot
+  followersCount Int    @default(0) // profile-reported total at capture time
+  followingCount Int    @default(0) // profile-reported "seguindo" total at capture time
 
   // Profile attributes at capture time, so we can report "changed the bio" /
   // "the account went private" by comparing consecutive snapshots.
@@ -178,10 +178,10 @@ model FollowerSnapshot {
   lostFollowerCount Int @default(0)
 
   error       String?
-  startedAt   DateTime @default(now())
+  startedAt   DateTime  @default(now())
   completedAt DateTime?
 
-  profile   TrackedProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profile   TrackedProfile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
   followers Follower[]
   changes   FollowerChange[]
 
@@ -218,14 +218,14 @@ enum ChangeType {
 
 // The headline event: a follower started (or stopped) following the profile.
 model FollowerChange {
-  id              String     @id @default(cuid())
-  profileId       String
-  snapshotId      String
+  id               String     @id @default(cuid())
+  profileId        String
+  snapshotId       String
   followerUsername String
-  type            ChangeType
+  type             ChangeType
   // "followers" = who follows the profile; "following" = who the profile follows.
-  kind            String     @default("followers")
-  mediaId         String?
+  kind             String     @default("followers")
+  mediaId          String?
 
   // Follower metadata captured at detection time.
   displayName String?
@@ -253,9 +253,9 @@ model FollowerChange {
 // subscription. It never includes Pro features such as putting the profile
 // "no Faro" (ongoing tracking).
 model ProfileUnlock {
-  id       String @id @default(cuid())
-  userId   String
-  username String
+  id              String  @id @default(cuid())
+  userId          String
+  username        String
   // The Stripe Checkout session that paid for it; null for demo-mode unlocks.
   stripeSessionId String? @unique
 
@@ -350,7 +350,7 @@ model LoginCode {
 // single profile, so this is what the paywall counts. Re-opening the SAME
 // profile is always allowed — it costs nothing extra and would feel broken.
 model AnalysisUsage {
-  id String @id @default(cuid())
+  id       String @id @default(cuid())
   // "u:<userId>" when signed in, "v:<visitorId>" for an anonymous visitor.
   key      String
   username String
@@ -370,13 +370,13 @@ model MonitoringJob {
   id        String @id @default(cuid())
   profileId String @unique
 
-  enabled          Boolean @default(true)
-  intervalMinutes  Int     @default(120)
-  nextRunAt        DateTime @default(now())
-  lastRunAt        DateTime?
-  lastRunStatus    String?  // "success" | "partial" | "failed"
-  consecutiveFailures Int   @default(0)
-  runCount         Int     @default(0)
+  enabled             Boolean   @default(true)
+  intervalMinutes     Int       @default(120)
+  nextRunAt           DateTime  @default(now())
+  lastRunAt           DateTime?
+  lastRunStatus       String? // "success" | "partial" | "failed"
+  consecutiveFailures Int       @default(0)
+  runCount            Int       @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -400,8 +400,8 @@ enum AlertChannel {
 }
 
 enum AlertTrigger {
-  NEW_FOLLOWER          // fire per detected new follower
-  FOLLOWER_MILESTONE    // fire when gained N followers in a window
+  NEW_FOLLOWER // fire per detected new follower
+  FOLLOWER_MILESTONE // fire when gained N followers in a window
 }
 
 model AlertRule {
@@ -412,15 +412,15 @@ model AlertRule {
   enabled   Boolean      @default(true)
 
   // Channel target: email address, webhook URL, chat id, etc.
-  target       String
+  target      String
   // For FOLLOWER_MILESTONE: threshold + window in hours.
-  threshold    Int?
-  windowHours  Int?
+  threshold   Int?
+  windowHours Int?
 
   createdAt DateTime @default(now())
 
-  profile        TrackedProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  deliveries     AlertDelivery[]
+  profile    TrackedProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  deliveries AlertDelivery[]
 
   @@index([profileId, enabled])
   @@map("alert_rules")
@@ -445,4 +445,33 @@ model AlertDelivery {
 
   @@index([ruleId, status])
   @@map("alert_deliveries")
+}
+
+// ---------------------------------------------------------------------------
+// Quem está no site agora
+// ---------------------------------------------------------------------------
+
+// Uma visita viva. A página manda um sinal a cada 30 segundos, e a linha é
+// regravada por visitante — não é um registro por pageview, é o estado atual.
+//
+// O que NÃO se guarda: IP, nome, e-mail, nada que identifique a pessoa. O
+// visitorId é o mesmo número anônimo do cookie de uso, e o país vem do
+// cabeçalho que a Vercel já calcula na borda. Mesmo assim é dado de
+// comportamento: precisa constar na Política de Privacidade, e linhas velhas
+// são apagadas sozinhas.
+model LiveVisit {
+  id        String @id @default(cuid())
+  visitorId String @unique
+
+  path     String
+  country  String?
+  city     String?
+  device   String?
+  referrer String?
+
+  startedAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+
+  @@index([lastSeenAt])
+  @@map("live_visits")
 }

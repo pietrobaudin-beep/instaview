@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, Caveat, Inter } from "next/font/google";
 import "./globals.css";
+import { Pulse } from "@/components/pulse";
 
 // Titles and subtitles, per the brand board: Bricolage Grotesque, in the
 // heavy weights. It carries the same tight, built feel as the Farejo wordmark.
@@ -36,7 +37,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR" className={`${display.variable} ${sans.variable} ${hand.variable}`}>
-      <body>{children}</body>
+      <body>
+        {children}
+        {/* Sinal de "estou aqui", para o admin saber quem está no site agora. */}
+        <Pulse />
+      </body>
     </html>
   );
 }

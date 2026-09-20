@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { AtSign, ChevronLeft, ChevronRight, Clock, Play, X } from "lucide-react";
+import { AtSign, ChevronLeft, ChevronRight, Clock, Pause as PauseIcon, Play, X } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 
 /**
@@ -54,7 +54,11 @@ export function StoryViewer({
 }) {
   const [i, setI] = React.useState(Math.min(startAt, Math.max(0, stories.length - 1)));
   const [progresso, setProgresso] = React.useState(0);
-  const [pausado, setPausado] = React.useState(false);
+  // Duas pausas diferentes: a do botão (fica) e a do dedo segurando (passa).
+  // Sem separar, tocar na tela depois de pausar no botão despausava sozinho.
+  const [pausadoNoBotao, setPausadoNoBotao] = React.useState(false);
+  const [segurando, setSegurando] = React.useState(false);
+  const pausado = pausadoNoBotao || segurando;
   const toqueIniciado = React.useRef<{ t: number; y: number } | null>(null);
 
   const atual = stories[i];
@@ -68,11 +72,12 @@ export function StoryViewer({
    * segundos. Com ref, quem manda é o relógio, uma vez por volta.
    */
   const iRef = React.useRef(i);
-  const progRef = React.useRef(0);
+  /** Quanto falta deste story, em ms. Guardado ao pausar. */
+  const restanteRef = React.useRef(DURACAO_MS);
 
   const irPara = React.useCallback((n: number) => {
     iRef.current = n;
-    progRef.current = 0;
+    restanteRef.current = DURACAO_MS;
     setI(n);
     setProgresso(0);
   }, []);
@@ -89,19 +94,28 @@ export function StoryViewer({
     irPara(Math.max(0, iRef.current - 1));
   }, [irPara]);
 
-  // O relógio do story. Para enquanto estiver segurando.
+  /**
+   * O relógio do story, por **relógio de parede**, não por contagem de tiques.
+   *
+   * Somar 50ms a cada volta parecia dar 5s e dava 4,3s: o navegador não entrega
+   * a volta exatamente no tempo pedido, e qualquer tique a mais ou a menos ia
+   * direto para a conta. Aqui o fim é uma hora marcada; a volta só desenha.
+   */
   React.useEffect(() => {
     if (pausado) return;
+    const fim = Date.now() + restanteRef.current;
     const id = window.setInterval(() => {
-      progRef.current += TICK_MS / DURACAO_MS;
-      if (progRef.current >= 1) {
+      const falta = fim - Date.now();
+      restanteRef.current = Math.max(0, falta);
+      if (falta <= 0) {
+        restanteRef.current = DURACAO_MS;
         avancar();
         return;
       }
-      setProgresso(progRef.current);
+      setProgresso(1 - falta / DURACAO_MS);
     }, TICK_MS);
     return () => window.clearInterval(id);
-  }, [pausado, avancar]);
+  }, [pausado, avancar, i]);
 
   // Teclado, e a página parada atrás da tela cheia.
   React.useEffect(() => {
@@ -111,7 +125,7 @@ export function StoryViewer({
       if (e.key === "ArrowLeft") voltar();
       if (e.key === " ") {
         e.preventDefault();
-        setPausado((p) => !p);
+        setPausadoNoBotao((p) => !p);
       }
     }
     window.addEventListener("keydown", onKey);
@@ -127,13 +141,13 @@ export function StoryViewer({
 
   function pressionar(e: React.PointerEvent) {
     toqueIniciado.current = { t: Date.now(), y: e.clientY };
-    setPausado(true);
+    setSegurando(true);
   }
 
   function soltar(e: React.PointerEvent) {
     const inicio = toqueIniciado.current;
     toqueIniciado.current = null;
-    setPausado(false);
+    setSegurando(false);
     if (!inicio) return;
 
     // Arrastou para baixo: fecha, como no Instagram.
@@ -157,9 +171,14 @@ export function StoryViewer({
       aria-modal="true"
       aria-label={`Stories de @${username}`}
     >
-      <div className="relative h-full w-full max-w-[26rem] sm:h-[92vh] sm:rounded-3xl sm:overflow-hidden">
+      {/* No celular ocupa a tela toda (dvh, que desconta a barra do navegador);
+          no computador vira o retângulo 9:16, como o Instagram na web. */}
+      <div className="relative h-[100dvh] w-full max-w-[26rem] overflow-hidden bg-neutral-900 sm:h-[92dvh] sm:aspect-[9/16] sm:w-auto sm:rounded-3xl">
         {/* As barrinhas: uma por story, a do meio enchendo. */}
-        <div className="absolute inset-x-0 top-0 z-20 flex gap-1 p-3">
+        <div
+          className="absolute inset-x-0 top-0 z-20 flex gap-1 px-3 pb-2"
+          style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.75rem)" }}
+        >
           {stories.map((s, n) => (
             <span key={s.id} className="h-0.5 flex-1 overflow-hidden rounded-full bg-white/30">
               <span
@@ -173,15 +192,28 @@ export function StoryViewer({
           ))}
         </div>
 
-        <div className="absolute inset-x-0 top-0 z-20 flex items-center gap-2.5 px-3 pb-3 pt-6">
+        <div
+          className="absolute inset-x-0 top-0 z-20 flex items-center gap-2.5 px-3 pb-3"
+          style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.5rem)" }}
+        >
           <Avatar src={avatarUrl ?? null} name={username} size={32} />
-          <span className="text-sm font-bold text-white">@{username}</span>
-          <span className="text-xs text-white/70">{quando(atual.takenAt)}</span>
+          <span className="truncate text-sm font-bold text-white">@{username}</span>
+          <span className="shrink-0 text-xs text-white/70">{quando(atual.takenAt)}</span>
+
+          {/* Pausar fica no cabeçalho, como no Instagram da web. */}
+          <button
+            type="button"
+            onClick={() => setPausadoNoBotao((p) => !p)}
+            aria-label={pausado ? "Continuar" : "Pausar"}
+            className="ml-auto flex h-10 w-10 items-center justify-center rounded-full text-white/90 transition hover:bg-white/15"
+          >
+            {pausado ? <Play className="h-5 w-5" /> : <PauseIcon className="h-5 w-5" />}
+          </button>
           <button
             type="button"
             onClick={onClose}
             aria-label="Fechar"
-            className="ml-auto rounded-full p-1.5 text-white/90 transition hover:bg-white/15"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-white/90 transition hover:bg-white/15"
           >
             <X className="h-5 w-5" />
           </button>
@@ -189,12 +221,12 @@ export function StoryViewer({
 
         {/* A imagem e as zonas de toque. */}
         <div
-          className="h-full w-full touch-none select-none bg-neutral-900"
+          className="absolute inset-0 touch-none select-none"
           onPointerDown={pressionar}
           onPointerUp={soltar}
           onPointerCancel={() => {
             toqueIniciado.current = null;
-            setPausado(false);
+            setSegurando(false);
           }}
         >
           {atual.imageUrl ? (
@@ -203,7 +235,7 @@ export function StoryViewer({
               src={atual.imageUrl}
               alt=""
               draggable={false}
-              className="h-full w-full object-contain"
+              className="h-full w-full object-cover"
             />
           ) : (
             <div className="flex h-full items-center justify-center text-white/40">
@@ -212,13 +244,14 @@ export function StoryViewer({
           )}
         </div>
 
-        {/* Setas para quem está no mouse — no celular basta tocar dos lados. */}
+        {/* Voltar e adiantar com o dedo: tocar dos lados funciona, mas um alvo
+            de 44px à vista evita a dúvida de "dá para adiantar?". */}
         <button
           type="button"
           onClick={voltar}
           aria-label="Story anterior"
           disabled={i === 0}
-          className="absolute left-1 top-1/2 z-20 hidden -translate-y-1/2 rounded-full bg-white/10 p-2 text-white transition hover:bg-white/20 disabled:opacity-0 sm:block"
+          className="absolute left-2 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur-sm transition hover:bg-black/55 disabled:opacity-0"
         >
           <ChevronLeft className="h-5 w-5" />
         </button>
@@ -226,12 +259,15 @@ export function StoryViewer({
           type="button"
           onClick={avancar}
           aria-label="Próximo story"
-          className="absolute right-1 top-1/2 z-20 hidden -translate-y-1/2 rounded-full bg-white/10 p-2 text-white transition hover:bg-white/20 sm:block"
+          className="absolute right-2 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur-sm transition hover:bg-black/55"
         >
           <ChevronRight className="h-5 w-5" />
         </button>
 
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 space-y-1.5 bg-gradient-to-t from-black/70 to-transparent px-4 pb-5 pt-10">
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-20 space-y-1.5 bg-gradient-to-t from-black/70 to-transparent px-4 pt-10"
+          style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1.25rem)" }}
+        >
           {atual.kind === "video" && (
             <p className="flex items-center gap-1.5 text-[11px] text-white/80">
               <Play className="h-3 w-3" /> Vídeo — mostramos a capa.
@@ -265,10 +301,13 @@ export function ProfileStories({
   username,
   avatarUrl,
   onClose,
+  onVazio,
 }: {
   username: string;
   avatarUrl?: string | null;
   onClose: () => void;
+  /** Avisa que não há story nenhum, para o anel sumir da foto. */
+  onVazio?: () => void;
 }) {
   const [estado, setEstado] = React.useState<
     | { kind: "loading" }
@@ -298,13 +337,17 @@ export function ProfileStories({
           kind: s.kind,
           mentions: (s.mentions ?? []).map((m: any) => m.username),
         }));
-        if (!items.length) return setEstado({ kind: "aviso", texto: "Nenhum story nas últimas 24 horas." });
+        if (!items.length) {
+          onVazio?.();
+          return setEstado({ kind: "aviso", texto: "Nenhum story nas últimas 24 horas." });
+        }
         setEstado({ kind: "ok", items });
       })
       .catch(() => vivo && setEstado({ kind: "aviso", texto: "Não conseguimos carregar os stories agora." }));
     return () => {
       vivo = false;
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [username]);
 
   if (estado.kind === "ok")

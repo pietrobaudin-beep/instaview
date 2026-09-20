@@ -37,6 +37,8 @@ type Result =
 
 // Switching tabs back and forth never refetches within the visit.
 const memo = new Map<string, Result>();
+/** Pedidos em voo, para dois lugares da tela não pagarem a mesma seção duas vezes. */
+const emVoo = new Map<string, Promise<Result>>();
 
 const proxied = (url: string | null) =>
   url && /(?:\.fbcdn\.net|\.cdninstagram\.com)/i.test(url) ? `/api/img?url=${encodeURIComponent(url)}` : url;
@@ -320,17 +322,22 @@ export function AboutLine({ username }: { username: string }) {
   React.useEffect(() => {
     if (memo.get(key)) return setRes(memo.get(key)!);
     let vivo = true;
-    fetch(`/api/raio-x?username=${encodeURIComponent(username)}&section=about`)
-      .then(async (r) => {
-        const b = await r.json().catch(() => ({}));
-        const out: Result =
-          b.status === "ok"
-            ? { kind: "ok", data: b.data, locked: !!b.locked, fetchedAt: b.fetchedAt }
-            : { kind: "unsupported" };
-        memo.set(key, out);
-        if (vivo) setRes(out);
-      })
-      .catch(() => vivo && setRes({ kind: "unsupported" }));
+    const pedido =
+      emVoo.get(key) ??
+      fetch(`/api/raio-x?username=${encodeURIComponent(username)}&section=about`)
+        .then(async (r) => {
+          const b = await r.json().catch(() => ({}));
+          const out: Result =
+            b.status === "ok"
+              ? { kind: "ok", data: b.data, locked: !!b.locked, fetchedAt: b.fetchedAt }
+              : { kind: "unsupported" };
+          memo.set(key, out);
+          return out;
+        })
+        .catch((): Result => ({ kind: "unsupported" }))
+        .finally(() => emVoo.delete(key));
+    emVoo.set(key, pedido);
+    pedido.then((out) => vivo && setRes(out));
     return () => {
       vivo = false;
     };

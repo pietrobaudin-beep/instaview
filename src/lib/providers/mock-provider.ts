@@ -217,6 +217,8 @@ export class MockProvider implements InstagramDataProvider {
   }
 
   async getStories(username: string): Promise<StoryItem[]> {
+    // Um @ sem story nenhum, para testar a tela que esconde o anel na foto.
+    if (/semstory/i.test(username)) return [];
     // A new batch every day, spread over the last hours.
     const day = Math.floor((this.now() - EPOCH) / DAY);
     const rng = mulberry32(hashSeed(`${username}:stories:${day}`));

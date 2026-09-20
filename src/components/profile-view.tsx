@@ -250,6 +250,14 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
   const [tab, setTab] = React.useState<Tab>("visao");
   // Os stories abrem em tela cheia pela foto, não como aba.
   const [storiesAbertos, setStoriesAbertos] = React.useState(false);
+  /**
+   * Tem story? `null` = ainda não dá para saber.
+   *
+   * A pergunta só é feita ao **cache** (`cached=1`), que não custa nada. Saber
+   * de verdade exigiria a requisição paga em todo perfil aberto, e o anel some
+   * de qualquer jeito assim que uma abertura mostrar que não há nenhum.
+   */
+  const [temStories, setTemStories] = React.useState<boolean | null>(null);
   const [step, setStep] = React.useState(0);
   const [analyzing, setAnalyzing] = React.useState(true);
   const [tracking, setTracking] = React.useState({ saved: false, busy: false });
@@ -307,6 +315,23 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
     const id = window.setTimeout(() => setIntro("play"), 900);
     return () => window.clearTimeout(id);
   }, [username, inFaro]);
+
+  // Pergunta ao cache se este perfil tinha story na última leitura. É grátis:
+  // `cached=1` nunca chama o provedor. Miss = continua sem saber.
+  React.useEffect(() => {
+    let vivo = true;
+    setTemStories(null);
+    fetch(`/api/raio-x?username=${encodeURIComponent(username)}&section=stories&cached=1`)
+      .then((r) => r.json())
+      .then((b) => {
+        if (!vivo) return;
+        if (b?.status === "ok" && Array.isArray(b?.data?.items)) setTemStories(b.data.items.length > 0);
+      })
+      .catch(() => {});
+    return () => {
+      vivo = false;
+    };
+  }, [username]);
 
   // Remember it once the scene has played through to the result. Only then:
   // a skipped revisit must not push the 24h window forward, or someone coming
@@ -629,7 +654,7 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
                 note={state.note}
                 tracking={tracking}
                 locked={!isPro}
-                onVerStories={() => setStoriesAbertos(true)}
+                onVerStories={temStories === false ? undefined : () => setStoriesAbertos(true)}
                 onTrack={following.kind === "private" ? undefined : startTracking}
               />
             </PeekingFaro>
@@ -639,6 +664,7 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
                 username={state.data.username}
                 avatarUrl={state.data.avatarUrl}
                 onClose={() => setStoriesAbertos(false)}
+                onVazio={() => setTemStories(false)}
               />
             )}
 
