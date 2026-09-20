@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { env } from "@/lib/env";
+import { cronAllowed } from "@/lib/cron-auth";
 import { logger } from "@/lib/logger";
 import { runDueJobs } from "@/lib/monitoring/runner";
 
@@ -16,12 +16,7 @@ export const maxDuration = 60; // seconds (Vercel)
  *   curl -X POST localhost:3000/api/cron -H "Authorization: Bearer $CRON_SECRET"
  */
 async function handle(req: Request) {
-  const auth = req.headers.get("authorization") ?? "";
-  const provided = auth.replace(/^Bearer\s+/i, "");
-  const url = new URL(req.url);
-  const queryKey = url.searchParams.get("key");
-
-  if (provided !== env.CRON_SECRET && queryKey !== env.CRON_SECRET) {
+  if (!cronAllowed(req)) {
     log.warn("cron unauthorized");
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

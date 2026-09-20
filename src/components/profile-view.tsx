@@ -26,6 +26,8 @@ import { SingleUnlockButton } from "@/components/single-unlock-button";
 import { PeekingFaro } from "@/components/ui/peeking-faro";
 import { NoteBox } from "@/components/ui/brand";
 import { Mascot } from "@/components/ui/mascot";
+import { RaioX } from "@/components/raio-x";
+import type { Section } from "@/lib/raio-x";
 
 interface RecentItem extends Person {
   detectedAt: string;
@@ -38,12 +40,24 @@ const STEP_MS = 2400;
 
 const TABS = [
   { value: "visao", label: "Visão geral" },
+  { value: "stories", label: "Stories" },
+  { value: "posts", label: "Posts" },
+  { value: "reels", label: "Reels" },
   { value: "seguindo", label: "Seguindo" },
   { value: "interacoes", label: "Interações" },
+  { value: "tagged", label: "Marcações" },
+  { value: "highlights", label: "Destaques" },
+  { value: "reposts", label: "Reposts" },
+  { value: "suggested", label: "Parecidos" },
+  { value: "about", label: "Sobre" },
   { value: "historico", label: "Rastro" },
 ] as const;
 
 type Tab = (typeof TABS)[number]["value"];
+
+// Tabs served by the Raio-X (one provider request each, fetched when opened).
+const RAIO_X_TABS: readonly Section[] = ["stories", "posts", "reels", "tagged", "highlights", "reposts", "suggested", "about"];
+const isRaioX = (t: Tab): t is Tab & Section => (RAIO_X_TABS as readonly string[]).includes(t);
 
 function GenderBadge({ gender }: { gender?: "f" | "m" | "u" }) {
   if (gender === "f")
@@ -580,6 +594,17 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
                         <UpgradeCard username={state.data.username} />
                       </div>
                     )}
+                  </div>
+                )}
+
+                {isRaioX(tab) && (
+                  <div className="mt-5">
+                    <RaioX
+                      key={tab}
+                      username={state.data.username}
+                      section={tab}
+                      upgrade={<UpgradeCard username={state.data.username} />}
+                    />
                   </div>
                 )}
 

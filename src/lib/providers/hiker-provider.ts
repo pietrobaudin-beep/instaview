@@ -20,7 +20,11 @@
  */
 import { logger } from "@/lib/logger";
 import {
+  AboutInfo,
   FollowerEntry,
+  HighlightItem,
+  PostItem,
+  StoryItem,
   GetFollowersOptions,
   GetFollowersResult,
   InstagramDataProvider,
@@ -37,6 +41,88 @@ const toEntry = (u: any): FollowerEntry => ({
   avatarUrl: u.profile_pic_url ?? null,
   isVerified: Boolean(u.is_verified),
 });
+
+/** Epoch seconds, epoch ms or ISO → ISO; null when missing. */
+function toIso(v: unknown): string | null {
+  if (v == null || v === "") return null;
+  if (typeof v === "number") return new Date(v < 1e12 ? v * 1000 : v).toISOString();
+  const d = new Date(String(v));
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
+
+const num = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
+
+/** The best still image of a media, across the v1 (instagrapi) and GraphQL shapes. */
+function thumbOf(m: any): string | null {
+  return (
+    m?.thumbnail_url ??
+    m?.image_versions2?.candidates?.[0]?.url ??
+    m?.resources?.[0]?.thumbnail_url ??
+    m?.carousel_media?.[0]?.image_versions2?.candidates?.[0]?.url ??
+    m?.display_url ??
+    m?.thumbnail_src ??
+    null
+  );
+}
+
+const userOf = (u: any): FollowerEntry | null => (u?.username ? toEntry(u) : null);
+
+/**
+ * A media object → PostItem. Reads instagrapi's v1 fields first (pk, code,
+ * taken_at, media_type, product_type, like_count…) and falls back to the
+ * GraphQL names (shortcode, taken_at_timestamp, edge_liked_by…).
+ */
+function toPost(m: any): PostItem {
+  const mediaType = Number(m?.media_type ?? 0);
+  const isReel = m?.product_type === "clips";
+  const kind: PostItem["kind"] = isReel
+    ? "reel"
+    : mediaType === 8 || m?.__typename === "GraphSidecar"
+      ? "carousel"
+      : mediaType === 2 || m?.is_video
+        ? "video"
+        : "photo";
+  const tags = [...(m?.usertags ?? []), ...(m?.coauthor_producers ?? []), ...(m?.edge_media_to_tagged_user?.edges ?? [])]
+    .map((t: any) => t?.user ?? t?.node?.user ?? t)
+    .filter((u: any) => u?.username);
+  return {
+    id: String(m?.pk ?? m?.id ?? m?.code ?? m?.shortcode ?? ""),
+    code: m?.code ?? m?.shortcode ?? null,
+    kind,
+    takenAt: toIso(m?.taken_at ?? m?.taken_at_timestamp),
+    caption: m?.caption_text ?? m?.caption?.text ?? m?.edge_media_to_caption?.edges?.[0]?.node?.text ?? null,
+    thumbnailUrl: thumbOf(m),
+    likeCount: num(m?.like_count) ?? num(m?.edge_liked_by?.count) ?? num(m?.edge_media_preview_like?.count),
+    commentCount: num(m?.comment_count) ?? num(m?.edge_media_to_comment?.count),
+    viewCount: num(m?.play_count) ?? num(m?.view_count) ?? num(m?.video_view_count),
+    owner: userOf(m?.user ?? m?.owner),
+    tagged: [...new Map(tags.map((u: any) => [u.username, toEntry(u)])).values()],
+  };
+}
+
+/**
+ * Walks an unknown response and collects every object `pick` accepts — for the
+ * endpoints whose exact shape isn't documented (GraphQL reposts, v2 suggestions).
+ */
+function collect(root: unknown, pick: (o: any) => boolean, limit = 60): any[] {
+  const out: any[] = [];
+  const seen = new Set<unknown>();
+  const walk = (v: unknown, depth: number) => {
+    if (out.length >= limit || depth > 8 || v == null || typeof v !== "object" || seen.has(v)) return;
+    seen.add(v);
+    if (!Array.isArray(v) && pick(v)) {
+      out.push(v);
+      return;
+    }
+    for (const child of Array.isArray(v) ? v : Object.values(v as object)) walk(child, depth + 1);
+  };
+  walk(root, 0);
+  return out;
+}
+
+/** Items from a v1 list or a `/chunk` tuple ([items, cursor]). */
+const itemsOf = (data: any): any[] =>
+  Array.isArray(data) ? (Array.isArray(data[0]) ? data[0] : data) : (data?.items ?? data?.response?.items ?? []);
 
 interface HikerConfig {
   apiKey: string;
@@ -152,6 +238,98 @@ export class HikerApiProvider implements InstagramDataProvider {
       seen.set(u.username, toEntry(u));
     }
     return [...seen.values()];
+  }
+
+  // ——— Raio-X sections ———
+
+  /** Private accounts hide everything below; say so instead of spending a request. */
+  private async publicUser(username: string): Promise<HikerUser> {
+    const user = await this.resolveUser(username);
+    if (user.is_private) throw new ProviderError("Account is private", "PRIVATE");
+    return user;
+  }
+
+  /** /v1/user/about — country, creation date, former usernames. */
+  async getAbout(username: string): Promise<AboutInfo> {
+    const user = await this.resolveUser(username);
+    const a = await this.request<any>("/v1/user/about", { id: String(user.pk) });
+    const former = a?.former_usernames;
+    return {
+      joined: a?.date ?? null,
+      country: a?.country ?? null,
+      formerUsernames: former == null ? null : Number.parseInt(String(former), 10) || 0,
+    };
+  }
+
+  /** /v1/user/medias/chunk — the latest page of posts. */
+  async getPosts(username: string): Promise<PostItem[]> {
+    const user = await this.publicUser(username);
+    const data = await this.request<any>("/v1/user/medias/chunk", { user_id: String(user.pk) });
+    return itemsOf(data).map(toPost);
+  }
+
+  /** /v1/user/medias/pinned — posts pinned to the top of the grid. */
+  async getPinned(username: string): Promise<PostItem[]> {
+    const user = await this.publicUser(username);
+    const data = await this.request<any>("/v1/user/medias/pinned", { user_id: String(user.pk), amount: "3" });
+    return itemsOf(data).map(toPost);
+  }
+
+  /** /v1/user/clips/chunk — latest reels. */
+  async getReels(username: string): Promise<PostItem[]> {
+    const user = await this.publicUser(username);
+    const data = await this.request<any>("/v1/user/clips/chunk", { user_id: String(user.pk) });
+    return itemsOf(data).map((m) => ({ ...toPost(m), kind: "reel" as const }));
+  }
+
+  /** /v1/user/tag/medias/chunk — posts by others where this profile is tagged. */
+  async getTaggedIn(username: string): Promise<PostItem[]> {
+    const user = await this.publicUser(username);
+    const data = await this.request<any>("/v1/user/tag/medias/chunk", { user_id: String(user.pk) });
+    return itemsOf(data).map(toPost);
+  }
+
+  /** /v1/user/stories — what's up right now (last 24h). */
+  async getStories(username: string): Promise<StoryItem[]> {
+    const user = await this.publicUser(username);
+    const data = await this.request<any>("/v1/user/stories", { user_id: String(user.pk) });
+    return itemsOf(data).map((s: any) => ({
+      id: String(s?.pk ?? s?.id ?? ""),
+      takenAt: toIso(s?.taken_at),
+      kind: Number(s?.media_type) === 2 ? ("video" as const) : ("photo" as const),
+      thumbnailUrl: thumbOf(s),
+      mentions: (s?.mentions ?? []).map((x: any) => userOf(x?.user)).filter(Boolean) as FollowerEntry[],
+    }));
+  }
+
+  /** /v1/user/highlights — the saved story circles. */
+  async getHighlights(username: string): Promise<HighlightItem[]> {
+    const user = await this.publicUser(username);
+    const data = await this.request<any>("/v1/user/highlights", { user_id: String(user.pk) });
+    return itemsOf(data).map((h: any) => ({
+      id: String(h?.pk ?? h?.id ?? ""),
+      title: String(h?.title ?? ""),
+      coverUrl: h?.cover_media?.cropped_image_version?.url ?? h?.cover_media?.url ?? thumbOf(h?.cover_media) ?? null,
+      count: Number(h?.media_count ?? h?.items?.length ?? 0),
+    }));
+  }
+
+  /**
+   * /gql/user/reposts — provider-dependent: the GraphQL shape isn't documented,
+   * so media objects are found by their fields rather than a fixed path.
+   */
+  async getReposts(username: string): Promise<PostItem[]> {
+    const user = await this.publicUser(username);
+    const data = await this.request<any>("/gql/user/reposts", { user_id: String(user.pk) });
+    return collect(data, (o) => (o.code || o.shortcode) && (o.taken_at || o.taken_at_timestamp), 30).map(toPost);
+  }
+
+  /** /v2/user/suggested/profiles — provider-dependent shape, read defensively. */
+  async getSuggested(username: string): Promise<FollowerEntry[]> {
+    const user = await this.resolveUser(username);
+    const data = await this.request<any>("/v2/user/suggested/profiles", { user_id: String(user.pk) });
+    const users = collect(data, (o) => typeof o.username === "string" && (o.pk || o.id || o.pk_id), 40);
+    return [...new Map(users.filter((u) => u.username !== user.username).map((u) => [u.username, toEntry(u)])).values()];
   }
 
   async getFollowers(username: string, opts: GetFollowersOptions = {}): Promise<GetFollowersResult> {

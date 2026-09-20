@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Bell, Check, Loader2, Lock, Pin, TrendingUp, UserMinus, UserPlus } from "lucide-react";
+import { Bell, Check, Clapperboard, Clock3, ImageIcon, Loader2, Lock, Pin, Sparkles, Tag, TrendingUp, UserMinus, UserPlus } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Avatar } from "@/components/ui/avatar";
@@ -29,8 +29,21 @@ interface AlertItem {
   text: string;
 }
 
+interface NewsItem {
+  kind: string;
+  detectedAt: string;
+  data: {
+    takenAt: string | null;
+    thumbnailUrl: string | null;
+    code: string | null;
+    caption: string | null;
+    people: string[];
+  };
+}
+
 interface History {
   saved: boolean;
+  news?: NewsItem[];
   analyses: number;
   lastAnalyzedAt: string | null;
   series: SeriesPoint[];
@@ -46,6 +59,16 @@ const EMPTY: History = {
   timeline: [],
   alerts: [],
 };
+
+const NEWS: Record<string, { icon: React.ElementType; label: (n: NewsItem) => string }> = {
+  post: { icon: ImageIcon, label: () => "Post novo" },
+  reel: { icon: Clapperboard, label: () => "Reel novo" },
+  story: { icon: Clock3, label: (n) => (n.data.people.length ? `Story novo · marcou @${n.data.people.join(", @")}` : "Story novo") },
+  tagged: { icon: Tag, label: (n) => (n.data.people[0] ? `Marcado(a) por @${n.data.people[0]}` : "Marcado(a) num post") },
+};
+
+const thumb = (url: string | null) =>
+  url && /(?:\.fbcdn\.net|\.cdninstagram\.com)/i.test(url) ? `/api/img?url=${encodeURIComponent(url)}` : url;
 
 function ago(iso: string) {
   try {
@@ -264,6 +287,55 @@ export function HistoryPanel({
 
       {h?.saved && (
         <>
+          <Panel title="Novidades do Faro" icon={Sparkles}>
+            {!h.news || h.news.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                🐾 O Faro olha este perfil todo dia e mostra aqui só o que for novo: posts, reels, stories e
+                marcações que aparecerem daqui pra frente.
+              </p>
+            ) : (
+              <ul className="divide-y divide-border">
+                {h.news.map((n, i) => {
+                  const meta = NEWS[n.kind] ?? NEWS.post;
+                  const Icon = meta.icon;
+                  const src = thumb(n.data.thumbnailUrl);
+                  const href = n.data.code ? `https://www.instagram.com/${n.kind === "reel" ? "reel" : "p"}/${n.data.code}/` : null;
+                  const row = (
+                    <div className="flex items-center gap-3 py-2.5">
+                      <span className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-pink/50 to-purple/40">
+                        {src ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={src} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <Icon className="h-5 w-5 text-vinho/50" />
+                        )}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="flex items-center gap-1.5 text-sm font-semibold">
+                          <Icon className="h-3.5 w-3.5 shrink-0 text-accent" />
+                          <span className="truncate">{meta.label(n)}</span>
+                        </p>
+                        {n.data.caption && <p className="truncate text-xs text-muted-foreground">{n.data.caption}</p>}
+                      </div>
+                      <span className="shrink-0 text-[11px] text-muted-foreground">{ago(n.detectedAt)}</span>
+                    </div>
+                  );
+                  return (
+                    <li key={n.kind + i}>
+                      {href ? (
+                        <a href={href} target="_blank" rel="noreferrer" className="block hover:opacity-80">
+                          {row}
+                        </a>
+                      ) : (
+                        row
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </Panel>
+
           <Panel title="Rastro recente" icon={UserPlus}>
             {h.timeline.length === 0 ? (
               <p className="text-xs text-muted-foreground">

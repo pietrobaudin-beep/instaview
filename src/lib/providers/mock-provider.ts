@@ -13,7 +13,11 @@
  *     how the real "read the top of the list" technique works.
  */
 import {
+  AboutInfo,
   FollowerEntry,
+  HighlightItem,
+  PostItem,
+  StoryItem,
   GetFollowersOptions,
   GetFollowersResult,
   InstagramDataProvider,
@@ -22,6 +26,7 @@ import {
 
 const EPOCH = Date.UTC(2024, 0, 1); // fixed reference point
 const HOUR = 3600_000;
+const DAY = 24 * HOUR;
 
 function hashSeed(str: string): number {
   let h = 2166136261 >>> 0;
@@ -147,5 +152,85 @@ export class MockProvider implements InstagramDataProvider {
       followers.push(makeFollower(`${username}#following`, i));
     }
     return { followers, mode: want >= model.following ? "full" : "head", truncated: want < model.following };
+  }
+
+  // ——— Raio-X (fictional, deterministic; new posts and stories appear over time) ———
+
+  /** A post published `n` posts ago; one new post every ~2 days. */
+  private post(username: string, n: number, kind: PostItem["kind"], ownerOf?: string): PostItem {
+    const rng = mulberry32(hashSeed(`${username}:${kind}:${n}`));
+    const serial = Math.floor((this.now() - EPOCH) / (2 * DAY)) - n; // stable id as time passes
+    const owner = ownerOf ? makeFollower(ownerOf, serial) : { username, displayName: null, avatarUrl: null, isVerified: false };
+    return {
+      id: `${username}-${kind}-${serial}`,
+      code: null,
+      kind,
+      takenAt: new Date(this.now() - n * 2 * DAY - Math.floor(rng() * DAY)).toISOString(),
+      caption: pick(rng, ["☀️", "fim de semana", "com quem importa", "📍", "sem legenda", "dia bom"]),
+      thumbnailUrl: null,
+      likeCount: Math.floor(40 + rng() * 900),
+      commentCount: Math.floor(rng() * 60),
+      viewCount: kind === "reel" || kind === "video" ? Math.floor(500 + rng() * 20000) : null,
+      owner,
+      tagged: rng() > 0.5 ? [makeFollower(`${username}#tag`, serial % 7)] : [],
+    };
+  }
+
+  async getAbout(username: string): Promise<AboutInfo> {
+    const rng = mulberry32(hashSeed(username + ":about"));
+    const months = ["janeiro", "março", "maio", "agosto", "outubro"];
+    return {
+      joined: `${pick(rng, months)} de ${2013 + Math.floor(rng() * 10)}`,
+      country: "Brasil",
+      formerUsernames: Math.floor(rng() * 3),
+    };
+  }
+
+  async getPosts(username: string): Promise<PostItem[]> {
+    return Array.from({ length: 9 }, (_, i) => this.post(username, i, i % 4 === 1 ? "carousel" : "photo"));
+  }
+
+  async getPinned(username: string): Promise<PostItem[]> {
+    return [this.post(username, 30, "photo")];
+  }
+
+  async getReels(username: string): Promise<PostItem[]> {
+    return Array.from({ length: 6 }, (_, i) => this.post(username, i, "reel"));
+  }
+
+  async getTaggedIn(username: string): Promise<PostItem[]> {
+    return Array.from({ length: 6 }, (_, i) => this.post(`${username}#tagged`, i, "photo", `${username}#tagger`));
+  }
+
+  async getStories(username: string): Promise<StoryItem[]> {
+    // A new batch every day, spread over the last hours.
+    const day = Math.floor((this.now() - EPOCH) / DAY);
+    const rng = mulberry32(hashSeed(`${username}:stories:${day}`));
+    const count = 1 + Math.floor(rng() * 4);
+    return Array.from({ length: count }, (_, i) => ({
+      id: `${username}-story-${day}-${i}`,
+      takenAt: new Date(this.now() - (i + 1) * (2 + Math.floor(rng() * 4)) * HOUR).toISOString(),
+      kind: rng() > 0.6 ? ("video" as const) : ("photo" as const),
+      thumbnailUrl: null,
+      mentions: rng() > 0.5 ? [makeFollower(`${username}#mention`, day % 9)] : [],
+    }));
+  }
+
+  async getHighlights(username: string): Promise<HighlightItem[]> {
+    const titles = ["viagens", "amigos", "🐶", "2025", "rolês", "trabalho"];
+    return titles.slice(0, 4 + (hashSeed(username) % 3)).map((title, i) => ({
+      id: `${username}-hl-${i}`,
+      title,
+      coverUrl: null,
+      count: 3 + ((hashSeed(username + title) >>> 0) % 25),
+    }));
+  }
+
+  async getReposts(username: string): Promise<PostItem[]> {
+    return Array.from({ length: 4 }, (_, i) => this.post(`${username}#repost`, i, "reel", `${username}#creator`));
+  }
+
+  async getSuggested(username: string): Promise<FollowerEntry[]> {
+    return Array.from({ length: 8 }, (_, i) => makeFollower(`${username}#similar`, i));
   }
 }

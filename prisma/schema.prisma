@@ -132,6 +132,7 @@ model TrackedProfile {
   changes   FollowerChange[]
   job       MonitoringJob?
   alertRules AlertRule[]
+  events     ProfileEvent[]
 
   // A given user cannot track the same handle twice.
   @@unique([userId, username])
@@ -266,6 +267,57 @@ model ProfileUnlock {
 // ---------------------------------------------------------------------------
 // Sign-in codes
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Raio-X
+// ---------------------------------------------------------------------------
+
+// One provider answer per (profile, section) — stories, reels, tags… — shared by
+// everyone who opens that profile, so the same data is never paid for twice
+// within its freshness window (a few hours for stories, a day for the rest).
+model SectionCache {
+  username  String
+  section   String
+  data      Json
+  fetchedAt DateTime @default(now())
+
+  @@id([username, section])
+  @@map("section_cache")
+}
+
+// Something the Faro found on a profile it watches: a new post, reel, story,
+// tag or highlight. Items that already existed when the profile was pinned are
+// stored as the baseline and never shown as news — the Faro only reports what
+// is new from then on.
+model ProfileEvent {
+  id         String   @id @default(cuid())
+  profileId  String
+  kind       String // "post" | "reel" | "story" | "tagged" | "highlight"
+  refId      String
+  data       Json
+  baseline   Boolean  @default(false)
+  detectedAt DateTime @default(now())
+
+  profile TrackedProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, kind, refId])
+  @@index([profileId, baseline, detectedAt])
+  @@map("profile_events")
+}
+
+// A failed attempt at a protected door (for now, the admin login), kept for a
+// day so repeated guessing can be slowed down. `key` is a keyed hash of where
+// the attempt came from — never the raw IP.
+model AuthFailure {
+  id        String   @id @default(cuid())
+  scope     String // "admin"
+  key       String
+  createdAt DateTime @default(now())
+
+  @@index([scope, createdAt])
+  @@index([scope, key, createdAt])
+  @@map("auth_failures")
+}
 
 // A one-time sign-in code sent by email or WhatsApp. Only a keyed hash of the
 // code is stored, never the code itself. A code dies when it is used, when it

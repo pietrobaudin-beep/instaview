@@ -12,6 +12,7 @@ import { prisma } from "@/lib/db";
 import { peekProfileCached } from "@/lib/profile-cache";
 import { checkAllowance, claimAnalysis, usageKey } from "@/lib/usage";
 import { accessFor } from "@/lib/access";
+import { mayRecordFor } from "@/lib/sandbox";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
 import { logger } from "@/lib/logger";
 import { ProviderError, type FollowerEntry } from "@/lib/providers/types";
@@ -98,7 +99,7 @@ export async function GET(req: Request) {
   // profile was just pinned and has no baseline yet — in that case the cached
   // page is good enough, so the baseline costs no provider request.
   let recent: { started: RecentItem[]; stopped: RecentItem[] } = { started: [], stopped: [] };
-  if (user && access === "pro" && !isPrivate) {
+  if (user && access === "pro" && !isPrivate && mayRecordFor(user.email)) {
     try {
       const tracked = await prisma.trackedProfile.findUnique({
         where: { userId_username: { userId: user.id, username } },

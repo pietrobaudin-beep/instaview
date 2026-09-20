@@ -7,6 +7,7 @@
  */
 import { prisma } from "@/lib/db";
 import { FOLLOWING_KIND } from "@/lib/following-tracker";
+import type { EventData } from "@/lib/faro-watch";
 
 export interface SeriesPoint {
   at: string;
@@ -29,12 +30,20 @@ export interface AlertItem {
   text: string;
 }
 
+/** Something new the daily Faro found (post, reel, story, tag). */
+export interface NewsItem {
+  kind: string;
+  detectedAt: string;
+  data: EventData;
+}
+
 export interface ProfileHistory {
   analyses: number;
   lastAnalyzedAt: string | null;
   series: SeriesPoint[];
   timeline: TimelineItem[];
   alerts: AlertItem[];
+  news: NewsItem[];
 }
 
 export const EMPTY_HISTORY: ProfileHistory = {
@@ -43,10 +52,11 @@ export const EMPTY_HISTORY: ProfileHistory = {
   series: [],
   timeline: [],
   alerts: [],
+  news: [],
 };
 
 export async function getProfileHistory(profileId: string): Promise<ProfileHistory> {
-  const [snapshots, changes] = await Promise.all([
+  const [snapshots, changes, events] = await Promise.all([
     prisma.followerSnapshot.findMany({
       where: { profileId, kind: FOLLOWING_KIND, status: "SUCCESS" },
       orderBy: { startedAt: "asc" },
@@ -65,7 +75,19 @@ export async function getProfileHistory(profileId: string): Promise<ProfileHisto
       orderBy: { detectedAt: "desc" },
       take: 20,
     }),
+    // What the daily Faro found — never the baseline it started from.
+    prisma.profileEvent.findMany({
+      where: { profileId, baseline: false },
+      orderBy: { detectedAt: "desc" },
+      take: 30,
+    }),
   ]);
+
+  const news: NewsItem[] = events.map((e) => ({
+    kind: e.kind,
+    detectedAt: e.detectedAt.toISOString(),
+    data: e.data as unknown as EventData,
+  }));
 
   const series: SeriesPoint[] = snapshots
     .filter((s) => s.followersCount > 0 || s.followingCount > 0)
@@ -102,6 +124,14 @@ export async function getProfileHistory(profileId: string): Promise<ProfileHisto
       text: `🐾 O Faro esteve ocupado hoje. Encontramos ${today} mudanças.`,
     });
   }
+
+  const fresh = (kind: string) => events.filter((e) => e.kind === kind && e.detectedAt.getTime() >= dayAgo).length;
+  const plural = (n: number, one: string, many: string) => (n === 1 ? one : many.replace("#", String(n)));
+  const [posts, reels, stories, tags] = [fresh("post"), fresh("reel"), fresh("story"), fresh("tagged")];
+  if (posts) alerts.push({ tone: "accent", text: plural(posts, "📸 Postou algo novo.", "📸 # posts novos.") });
+  if (reels) alerts.push({ tone: "accent", text: plural(reels, "🎬 Reel novo no ar.", "🎬 # reels novos.") });
+  if (stories) alerts.push({ tone: "accent", text: plural(stories, "⏱️ Story novo nas últimas 24h.", "⏱️ # stories novos nas últimas 24h.") });
+  if (tags) alerts.push({ tone: "success", text: plural(tags, "🏷️ Foi marcado(a) num post novo.", "🏷️ Foi marcado(a) em # posts novos.") });
 
   if (followsToday.length > 0) {
     alerts.push({
@@ -159,5 +189,6 @@ export async function getProfileHistory(profileId: string): Promise<ProfileHisto
     series,
     timeline,
     alerts,
+    news,
   };
 }

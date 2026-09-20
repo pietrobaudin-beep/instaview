@@ -62,6 +62,54 @@ export interface MediaPost {
   tagged: FollowerEntry[];
 }
 
+// ---------------------------------------------------------------------------
+// Raio-X: the rest of a public profile (all public data, provider-dependent)
+// ---------------------------------------------------------------------------
+
+/** A post, reel or repost, reduced to what the Raio-X shows. */
+export interface PostItem {
+  id: string;
+  /** Shortcode for the public link instagram.com/p/<code>. */
+  code: string | null;
+  kind: "photo" | "video" | "carousel" | "reel";
+  /** ISO date. */
+  takenAt: string | null;
+  caption: string | null;
+  thumbnailUrl: string | null;
+  likeCount: number | null;
+  commentCount: number | null;
+  viewCount: number | null;
+  /** Who posted it (differs from the profile for tags and reposts). */
+  owner: FollowerEntry | null;
+  /** Accounts tagged in it. */
+  tagged: FollowerEntry[];
+}
+
+/** A story from the last 24h. */
+export interface StoryItem {
+  id: string;
+  takenAt: string | null;
+  kind: "photo" | "video";
+  thumbnailUrl: string | null;
+  /** Accounts mentioned with @ stickers. */
+  mentions: FollowerEntry[];
+}
+
+export interface HighlightItem {
+  id: string;
+  title: string;
+  coverUrl: string | null;
+  count: number;
+}
+
+export interface AboutInfo {
+  /** When the account was created, as Instagram words it (e.g. "May 2016"). */
+  joined: string | null;
+  country: string | null;
+  /** How many times it changed its @, when Instagram says. */
+  formerUsernames: number | null;
+}
+
 /** Raised by adapters so callers can react to auth/rate/unavailable distinctly. */
 export class ProviderError extends Error {
   constructor(
@@ -93,4 +141,17 @@ export interface InstagramDataProvider {
   getMediaCommenters?(mediaId: string): Promise<FollowerEntry[]>;
   getFollowers(username: string, opts?: GetFollowersOptions): Promise<GetFollowersResult>;
   getFollowing(username: string, opts?: GetFollowersOptions): Promise<GetFollowersResult>;
+
+  // Raio-X sections — one request each (plus the cached user lookup).
+  getAbout?(username: string): Promise<AboutInfo>;
+  getPosts?(username: string): Promise<PostItem[]>;
+  getPinned?(username: string): Promise<PostItem[]>;
+  getReels?(username: string): Promise<PostItem[]>;
+  /** Posts by others where this profile is tagged. */
+  getTaggedIn?(username: string): Promise<PostItem[]>;
+  getStories?(username: string): Promise<StoryItem[]>;
+  getHighlights?(username: string): Promise<HighlightItem[]>;
+  getReposts?(username: string): Promise<PostItem[]>;
+  /** "Similar accounts" Instagram suggests for this profile. */
+  getSuggested?(username: string): Promise<FollowerEntry[]>;
 }
