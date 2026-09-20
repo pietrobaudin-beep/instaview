@@ -17,6 +17,7 @@ import { getProvider } from "@/lib/providers";
 import { recordFollowing } from "@/lib/following-tracker";
 import { logger } from "@/lib/logger";
 import { getSection, type Section } from "@/lib/raio-x";
+import { keepImage } from "@/lib/img-store";
 import { TEST_EMAIL_DOMAIN, usingMockData } from "@/lib/sandbox";
 import type { PostItem, StoryItem } from "@/lib/providers/types";
 
@@ -96,6 +97,15 @@ export async function watchProfile(profile: { id: string; username: string; user
       skipDuplicates: true,
     });
     if (!baseline) news += created.count;
+
+    // Story expira em 24h no Instagram. Como o perfil está no Faro, a
+    // miniatura é guardada AGORA — é ela que vai sustentar a tela depois,
+    // dentro do prazo do plano. Sem custo de provedor: é só baixar a imagem.
+    if (section === "stories") {
+      for (const x of items.slice(0, 20)) {
+        await keepImage((x as StoryItem).thumbnailUrl);
+      }
+    }
   }
 
   // Follows: the same tracker the analysis page uses, one page of "following".

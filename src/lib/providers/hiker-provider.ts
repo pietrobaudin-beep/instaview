@@ -34,6 +34,7 @@ import {
   MediaPost,
   ProfileData,
   ProviderError,
+  SearchHit,
 } from "./types";
 
 const log = logger.scope("hikerapi");
@@ -371,6 +372,29 @@ export class HikerApiProvider implements InstagramDataProvider {
     const data = await this.request<any>("/v2/user/suggested/profiles", { user_id: String(user.pk) });
     const users = collect(data, (o) => typeof o.username === "string" && (o.pk || o.id || o.pk_id), 40);
     return [...new Map(users.filter((u) => u.username !== user.username).map((u) => [u.username, toEntry(u)])).values()];
+  }
+
+  /**
+   * /v2/fbsearch/accounts — a busca de contas do próprio Instagram.
+   *
+   * Uma requisição devolve a página toda (~20 contas), então mostrar 3 e
+   * guardar o resto custa o mesmo que mostrar 20. O endpoint está no OpenAPI
+   * do HikerAPI; os que o substituíram (/v1/search/users, /v2/search/accounts)
+   * estão marcados lá como a caminho da aposentadoria.
+   */
+  async searchUsers(query: string): Promise<SearchHit[]> {
+    const data = await this.request<any>("/v2/fbsearch/accounts", { query });
+    const users: any[] = Array.isArray(data?.users) ? data.users : [];
+    const hits = users
+      .filter((u) => typeof u?.username === "string")
+      .map((u) => ({
+        username: String(u.username),
+        displayName: u.full_name ?? null,
+        avatarUrl: u.profile_pic_url ?? null,
+        isVerified: Boolean(u.is_verified),
+        isPrivate: Boolean(u.is_private),
+      }));
+    return [...new Map(hits.map((h) => [h.username, h])).values()].slice(0, 20);
   }
 
   async getFollowers(username: string, opts: GetFollowersOptions = {}): Promise<GetFollowersResult> {

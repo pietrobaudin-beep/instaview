@@ -10,6 +10,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { PLANS } from "@/lib/plans";
 import { initials } from "@/lib/utils";
+import { PlanLimits } from "@/components/plan-limits";
+import { consultsUsed, peekUsageKey } from "@/lib/usage";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +24,7 @@ export default async function PerfilPage() {
   const plan = PLANS[user.plan];
   const isPaid = user.plan !== "FREE";
 
+  const consultados = await consultsUsed(peekUsageKey(user));
   const [tracked, detected] = await Promise.all([
     prisma.trackedProfile.count({ where: { userId: user.id } }),
     prisma.followerChange.count({
@@ -55,6 +58,9 @@ export default async function PerfilPage() {
             <StatBox value={detected} label="pistas encontradas" />
           </div>
         </Panel>
+
+        {/* O que já foi usado do plano, antes de a pessoa esbarrar no limite. */}
+        <PlanLimits plan={user.plan} consultados={consultados} noFaro={tracked} className="mt-5" />
 
         {!isPaid && (
           <div className="mt-5">

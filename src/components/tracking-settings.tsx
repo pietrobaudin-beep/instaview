@@ -1,12 +1,32 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Bell, Camera, Check, Heart, Loader2, UserMinus, UserPlus } from "lucide-react";
+import {
+  ArrowUpRight,
+  Bell,
+  Camera,
+  Check,
+  ChevronDown,
+  Clock,
+  Heart,
+  Loader2,
+  Pause,
+  UserMinus,
+  UserPlus,
+} from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
+import { RefreshButton, completa, quando } from "@/components/refresh-card";
+import { NotificationsFeed, type Notification } from "@/components/notifications-feed";
+import { SavedStories, type SavedStory } from "@/components/saved-stories";
+import { PlanLimits } from "@/components/plan-limits";
+import { planFor } from "@/lib/plans";
+import type { Plan } from "@prisma/client";
 import { AppHeader, SettingRow, Toggle } from "@/components/ui/app-chrome";
 import { NoteBox, Panel, StatusPill } from "@/components/ui/brand";
 import { SniffingDog } from "@/components/ui/dog";
+import { HistoryPanel } from "@/components/history-panel";
 
 import type { TrackingPrefs } from "@/lib/tracking-prefs";
 
@@ -29,24 +49,73 @@ const ROWS = [
   },
 ];
 
-/** The tracking screen from the references: toggles plus the yellow reminder. */
+interface Status {
+  usadas: number;
+  limite: number;
+  podeAtualizar: boolean;
+  ultima: string | null;
+  proxima: string | null;
+}
+
+/** Data curta: "12 de set." */
+function dia(iso: string | null): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+}
+
+/**
+ * "No seu Faro": a tela de um perfil acompanhado.
+ *
+ * A ordem segue o que se quer saber, nesta sequência: **quem** é o perfil,
+ * **quando** o Faro olhou pela última vez (com o botão de atualizar ao lado,
+ * não num cartão perdido), **o que mudou** na semana, os **stories guardados**,
+ * as **pistas** e, por último, os **ajustes**. Os limites do plano ficam no
+ * topo, porque limite que só aparece quando estoura vira surpresa ruim.
+ */
 export function TrackingSettings({
   username,
   displayName,
   avatarUrl,
   initial,
   active,
+  profileId,
+  refresh,
+  pistas = [],
+  stories = [],
+  plan = "FREE",
+  desde,
+  ultimaMudanca,
+  semana,
+  limites,
 }: {
   username: string;
   displayName: string | null;
   avatarUrl: string | null;
   initial: TrackingPrefs;
   active: boolean;
+  profileId?: string;
+  /** As pistas deste perfil — nunca as de outros. */
+  pistas?: Notification[];
+  /** Stories que o Faro guardou deste perfil. */
+  stories?: SavedStory[];
+  plan?: Plan;
+  /** Quando este perfil entrou no Faro. */
+  desde?: string;
+  /** Quando o Faro encontrou a última mudança. */
+  ultimaMudanca?: string | null;
+  /** O movimento dos últimos 7 dias. */
+  semana?: { follows: number; unfollows: number; interacoes: number };
+  /** Para a faixa de limites do plano. */
+  limites?: { consultados: number; noFaro: number };
+  /** Estado das atualizações do dia, para o botão "Atualizar agora". */
+  refresh?: Status;
 }) {
   const router = useRouter();
   const [prefs, setPrefs] = React.useState(initial);
   const [saving, setSaving] = React.useState(false);
   const [saved, setSaved] = React.useState(false);
+  const [status, setStatus] = React.useState<Status | undefined>(refresh);
+  const [ajustesAbertos, setAjustesAbertos] = React.useState(false);
 
   function set<K extends keyof TrackingPrefs>(key: K, value: boolean) {
     setPrefs((p) => ({ ...p, [key]: value }));
@@ -70,8 +139,11 @@ export function TrackingSettings({
     }
   }
 
+  const janela = planFor(plan).storiesHours;
+  const totalSemana = semana ? semana.follows + semana.unfollows + semana.interacoes : 0;
+
   return (
-    <main className="mx-auto max-w-4xl px-6 py-6 md:pl-[15.5rem]">
+    <main className="mx-auto max-w-5xl px-5 py-6 md:pl-[15.5rem]">
       <AppHeader
         title="No seu Faro"
         backHref="/rastros"
@@ -84,68 +156,275 @@ export function TrackingSettings({
         }
       />
 
-      <div className="grid items-start gap-5 md:grid-cols-2">
-        <div className="space-y-5">
+      {limites && (
+        <PlanLimits
+          plan={plan}
+          consultados={limites.consultados}
+          noFaro={limites.noFaro}
+          className="mb-5"
+        />
+      )}
+
+      {/* 1. Quem é, desde quando, e o botão que muda o "última verificação". */}
       <Panel>
-        <div className="flex items-center gap-3">
-          <div className="shrink-0 rounded-full p-0.5 ring-2 ring-pink">
-            <Avatar src={avatarUrl} name={displayName ?? username} size={48} />
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <div className="shrink-0 rounded-full p-0.5 ring-2 ring-pink">
+              <Avatar src={avatarUrl} name={displayName ?? username} size={56} />
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-lg font-bold">@{username}</p>
+              {displayName && (
+                <p className="truncate text-sm text-muted-foreground">{displayName}</p>
+              )}
+              <Link
+                href={`/p/${encodeURIComponent(username)}`}
+                className="mt-0.5 inline-flex items-center gap-1 text-xs font-bold text-accent transition hover:opacity-80"
+              >
+                Abrir o perfil completo <ArrowUpRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
           </div>
-          <div className="min-w-0">
-            <p className="truncate font-bold">{username}</p>
-            {displayName && (
-              <p className="truncate text-xs text-muted-foreground">{displayName}</p>
+
+          {profileId && status && (
+            <div className="shrink-0">
+              <RefreshButton profileId={profileId} inicial={status} onStatus={setStatus} />
+            </div>
+          )}
+        </div>
+
+        {/* As três datas que respondem "o Faro está trabalhando?". */}
+        <dl className="mt-5 grid grid-cols-3 gap-3 border-t border-border pt-4">
+          <div>
+            <dt className="text-[11px] text-muted-foreground">No Faro desde</dt>
+            <dd className="text-sm font-bold" title={completa(desde ?? null)}>
+              {dia(desde ?? null)}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-[11px] text-muted-foreground">Última verificação</dt>
+            <dd className="text-sm font-bold" title={completa(status?.ultima ?? null)}>
+              {quando(status?.ultima ?? null)}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-[11px] text-muted-foreground">Última mudança</dt>
+            <dd className="text-sm font-bold" title={completa(ultimaMudanca ?? null)}>
+              {ultimaMudanca ? quando(ultimaMudanca) : "nenhuma ainda"}
+            </dd>
+          </div>
+        </dl>
+
+        {status?.proxima && (
+          <p
+            className="mt-3 flex items-center gap-1.5 text-[11px] text-muted-foreground"
+            title={completa(status.proxima)}
+          >
+            <Clock className="h-3 w-3" /> Próximo farejo automático{" "}
+            {quando(status.proxima).replace("há", "em")}.
+          </p>
+        )}
+      </Panel>
+
+      {/* 2. O que mudou na semana, em três números. */}
+      {semana && (
+        <>
+          <p className="mb-2 mt-5 text-[11px] font-bold uppercase tracking-[0.14em] text-plum/50">
+            Últimos 7 dias
+          </p>
+          <div className="grid grid-cols-3 gap-3">
+            <Numero valor={semana.follows} label="novos follows" tom="follow" />
+            <Numero valor={semana.unfollows} label="unfollows" tom="unfollow" />
+            <Numero valor={semana.interacoes} label="interações" tom="interacao" />
+          </div>
+        </>
+      )}
+
+      <div className="mt-5 grid items-start gap-5 lg:grid-cols-[1.4fr_1fr]">
+        <div className="min-w-0 space-y-5">
+          {stories.length > 0 && (
+            <SavedStories
+              stories={stories}
+              plan={plan}
+              username={username}
+              avatarUrl={avatarUrl}
+            />
+          )}
+
+          {/* 3. As pistas deste perfil. */}
+          <section>
+            <h2 className="mb-3 text-lg font-bold tracking-tight">Pistas de @{username}</h2>
+            {pistas.length > 0 ? (
+              <NotificationsFeed items={pistas} />
+            ) : (
+              <NoteBox className="items-center" icon={<SniffingDog className="h-12 text-ink" />}>
+                <span className="hand text-lg">
+                  {totalSemana === 0 && active
+                    ? "Ainda não achei nada por aqui. Eu aviso!"
+                    : "O Faro te avisa quando encontrar algo novo!"}
+                </span>
+              </NoteBox>
             )}
-          </div>
-        </div>
-      </Panel>
-
-      <NoteBox className="items-center" icon={<SniffingDog className="h-12 text-ink" />}>
-        <span className="hand text-lg">
-          O Faro te avisa quando encontrar algo novo!
-        </span>
-      </NoteBox>
+          </section>
         </div>
 
-        <div>
-      <Panel bodyClassName="px-5 py-1">
-        <ul className="divide-y divide-border">
-          {ROWS.map((r) => (
-            <li key={r.key}>
-              <SettingRow
-                icon={r.icon}
-                title={r.title}
-                hint={r.hint}
-                right={
-                  <Toggle
-                    label={r.title}
-                    checked={prefs[r.key]}
-                    disabled={r.disabled}
-                    onChange={(v) => set(r.key, v)}
-                  />
-                }
+        <div className="min-w-0 space-y-5">
+          {/* O histórico deste perfil: só banco, nenhuma chamada paga. */}
+          <HistoryPanel username={username} loggedIn isPro={plan !== "FREE"} />
+
+          {stories.length === 0 && (
+            <Panel title="Stories">
+              <p className="text-sm text-muted-foreground">
+                Nenhum story guardado ainda.{" "}
+                {janela === Number.POSITIVE_INFINITY
+                  ? "Quando o Faro encontrar um, ele fica guardado desde a entrada no Faro."
+                  : janela > 0
+                    ? `Quando o Faro encontrar um, ele fica guardado por ${janela} horas pelo seu plano.`
+                    : "Seu plano não guarda stories."}
+              </p>
+            </Panel>
+          )}
+
+          {/* 4. Ajustes, fechados por padrão: quem entra aqui quer ver pistas. */}
+          <Panel bodyClassName="px-5 py-1">
+            <button
+              type="button"
+              onClick={() => setAjustesAbertos((a) => !a)}
+              aria-expanded={ajustesAbertos}
+              className="flex w-full items-center justify-between py-4 text-left"
+            >
+              <span className="text-sm font-bold">Alertas deste perfil</span>
+              <ChevronDown
+                className={`h-4 w-4 transition ${ajustesAbertos ? "rotate-180" : ""}`}
               />
-            </li>
-          ))}
-        </ul>
-      </Panel>
+            </button>
 
-      <button
-        type="button"
-        onClick={save}
-        disabled={saving}
-        className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-pink px-6 py-4 text-base font-bold text-ink transition hover:opacity-90 disabled:opacity-60"
-      >
-        {saving ? (
-          <Loader2 className="h-5 w-5 animate-spin" />
-        ) : saved ? (
-          <Check className="h-5 w-5" />
-        ) : null}
-        {saved ? "Faro atualizado 🐶" : "Salvar"}
-      </button>
+            {ajustesAbertos && (
+              <>
+                <ul className="divide-y divide-border border-t border-border">
+                  {ROWS.map((r) => (
+                    <li key={r.key}>
+                      <SettingRow
+                        icon={r.icon}
+                        title={r.title}
+                        hint={r.hint}
+                        right={
+                          <Toggle
+                            label={r.title}
+                            checked={prefs[r.key]}
+                            disabled={r.disabled}
+                            onChange={(v) => set(r.key, v)}
+                          />
+                        }
+                      />
+                    </li>
+                  ))}
+                </ul>
 
+                <button
+                  type="button"
+                  onClick={save}
+                  disabled={saving}
+                  className="my-4 flex w-full items-center justify-center gap-2 rounded-full bg-pink px-6 py-3 text-sm font-bold text-ink transition hover:opacity-90 disabled:opacity-60"
+                >
+                  {saving ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : saved ? (
+                    <Check className="h-4 w-4" />
+                  ) : null}
+                  {saved ? "Faro atualizado 🐶" : "Salvar"}
+                </button>
+
+                {profileId && (
+                  <div className="border-t border-border py-4">
+                    <PausarFaro profileId={profileId} ativo={active} username={username} />
+                  </div>
+                )}
+              </>
+            )}
+          </Panel>
         </div>
       </div>
     </main>
+  );
+}
+
+/** Um número da semana, com a cor do tipo de pista. */
+function Numero({
+  valor,
+  label,
+  tom,
+}: {
+  valor: number;
+  label: string;
+  tom: "follow" | "unfollow" | "interacao";
+}) {
+  // As mesmas cores por tipo que as pistas usam: follow azul, unfollow
+  // vermelho, interação amarelo.
+  const cor =
+    tom === "follow"
+      ? "bg-sky-50 text-sky-700"
+      : tom === "unfollow"
+        ? "bg-rose-50 text-rose-700"
+        : "bg-yellow/40 text-ink";
+  return (
+    <div className={`rounded-2xl px-3 py-3 text-center ${cor}`}>
+      <div className="text-xl font-bold tabular-nums">{valor}</div>
+      <div className="mt-0.5 text-[11px] leading-tight opacity-80">{label}</div>
+    </div>
+  );
+}
+
+/**
+ * Tirar o perfil do Faro — pausando, não apagando.
+ *
+ * Pausar interrompe as leituras diárias e **guarda** as pistas já encontradas;
+ * é reversível com um clique. Apagar de verdade (com o histórico junto) ainda
+ * não existe: precisa de uma rota própria e de uma confirmação, porque leva
+ * embora dados que a pessoa pagou para ter.
+ */
+function PausarFaro({
+  profileId,
+  ativo,
+  username,
+}: {
+  profileId: string;
+  ativo: boolean;
+  username: string;
+}) {
+  const router = useRouter();
+  const [busy, setBusy] = React.useState(false);
+
+  async function trocar() {
+    setBusy(true);
+    try {
+      await fetch(`/api/profiles/${profileId}/stop`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ enabled: !ativo }),
+      });
+      router.refresh();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={trocar}
+        disabled={busy}
+        className="flex w-full items-center justify-center gap-2 rounded-full border border-border px-6 py-2.5 text-sm font-bold transition hover:bg-muted/50 disabled:opacity-60"
+      >
+        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pause className="h-4 w-4" />}
+        {ativo ? "Pausar o Faro neste perfil" : "Voltar a farejar"}
+      </button>
+      <p className="mt-2 text-center text-[11px] text-muted-foreground">
+        {ativo
+          ? `Pausado, o Faro para de olhar @${username} todo dia. As pistas já encontradas ficam guardadas.`
+          : `O Faro não está olhando @${username} no momento.`}
+      </p>
+    </>
   );
 }

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Bell, Check, Clapperboard, Clock3, ImageIcon, Loader2, Lock, Pin, Sparkles, Tag, TrendingUp, UserMinus, UserPlus } from "lucide-react";
+import { Bell, Check, ChevronDown, Clapperboard, Clock3, ImageIcon, Loader2, Lock, Pin, Sparkles, Tag, TrendingUp, UserMinus, UserPlus } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Avatar } from "@/components/ui/avatar";
@@ -98,8 +98,41 @@ function Panel({
         <h2 className="font-semibold">{title}</h2>
         <span className="ml-auto">{action}</span>
       </header>
-      <div className="p-5">{children}</div>
+      <div className="flex min-h-[13.5rem] flex-col p-5">{children}</div>
     </section>
+  );
+}
+
+/**
+ * A altura que cada cartão mostra antes do "Ver mais".
+ *
+ * É o que mantém os cartões do mesmo tamanho: contar linhas não bastava, já
+ * que uma linha do "Rastro recente" é mais alta que uma de "Novidades" — 4 de
+ * cada davam cartões de alturas diferentes. Aqui o teto é o mesmo em pixels.
+ */
+const ALTURA = "max-h-[9.5rem]";
+/** Acima disto já há o que esconder, então o "Ver mais" aparece. */
+const LINHAS = 3;
+
+function VerMais({
+  total,
+  aberto,
+  onToggle,
+}: {
+  total: number;
+  aberto: boolean;
+  onToggle: () => void;
+}) {
+  if (total <= LINHAS) return null;
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="mt-auto flex w-full items-center justify-center gap-1 pt-3 text-xs font-bold text-accent transition hover:opacity-80"
+    >
+      {aberto ? "Ver menos" : `Ver mais ${total - LINHAS}`}
+      <ChevronDown className={`h-3.5 w-3.5 transition ${aberto ? "rotate-180" : ""}`} />
+    </button>
   );
 }
 
@@ -181,6 +214,9 @@ export function HistoryPanel({
   isPro?: boolean;
 }) {
   const router = useRouter();
+  // Cada cartão abre e fecha sozinho.
+  const [abertos, setAbertos] = React.useState<Record<string, boolean>>({});
+  const abrir = (k: string) => setAbertos((a) => ({ ...a, [k]: !a[k] }));
   const [history, setHistory] = React.useState<History | null>(null);
   const [saving, setSaving] = React.useState(false);
   const [saveError, setSaveError] = React.useState<string | null>(null);
@@ -294,7 +330,9 @@ export function HistoryPanel({
                 marcações que aparecerem daqui pra frente.
               </p>
             ) : (
-              <ul className="divide-y divide-border">
+              <ul
+                className={`divide-y divide-border ${abertos.news ? "" : `${ALTURA} overflow-hidden`}`}
+              >
                 {h.news.map((n, i) => {
                   const meta = NEWS[n.kind] ?? NEWS.post;
                   const Icon = meta.icon;
@@ -334,6 +372,7 @@ export function HistoryPanel({
                 })}
               </ul>
             )}
+            <VerMais total={h.news?.length ?? 0} aberto={!!abertos.news} onToggle={() => abrir("news")} />
           </Panel>
 
           <Panel title="Rastro recente" icon={UserPlus}>
@@ -342,7 +381,11 @@ export function HistoryPanel({
                 😴 Nada passou pelo Faro ainda. Cada nova análise compara com a anterior.
               </p>
             ) : (
-              <ol className="relative space-y-4 border-l border-border pl-5">
+              <ol
+                className={`relative space-y-4 border-l border-border pl-5 ${
+                  abertos.timeline ? "" : `${ALTURA} overflow-hidden`
+                }`}
+              >
                 {h.timeline.map((t, i) => (
                   <li key={t.username + i} className="relative">
                     <span
@@ -372,6 +415,11 @@ export function HistoryPanel({
                 ))}
               </ol>
             )}
+            <VerMais
+              total={h.timeline.length}
+              aberto={!!abertos.timeline}
+              onToggle={() => abrir("timeline")}
+            />
           </Panel>
 
           <Panel title="Seguidores e seguindo ao longo do tempo" icon={TrendingUp}>

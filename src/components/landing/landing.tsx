@@ -670,9 +670,10 @@ export function Landing({ demo }: { demo: boolean }) {
                 {brl(pro.priceMonthly)}
                 <span className="text-lg font-medium text-cream/60">/mês</span>
               </p>
-              {pro.priceYearly && (
-                <p className="mt-1 text-sm text-cream/60">ou {brl(pro.priceYearly)} por ano</p>
-              )}
+              <p className="mt-1 text-sm text-cream/60">
+                ou {brl(PLANS.AGENCY.priceYearly ?? 0)} por ano no{" "}
+                <b className="font-semibold text-cream/80">{PLANS.AGENCY.name}</b>
+              </p>
               <ul className="mt-6 flex-1 space-y-3">
                 {PRO_INCLUDES.map((f) => (
                   <li key={f} className="flex items-center gap-3">

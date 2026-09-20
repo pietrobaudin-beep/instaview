@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { refreshStatusFor } from "@/lib/refresh-limit";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { collectProfile } from "@/lib/monitoring/snapshot";
@@ -17,6 +18,19 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
   // A manual refresh is a real provider collection. Never let repeated taps
   // bypass the per-profile schedule and burn Hiker credits. The dashboard can
   // render this exact time as "Próximo farejo" without making another call.
+  // Teto de atualizações do dia: cada uma é uma coleta paga.
+  const status = await refreshStatusFor(profile.id);
+  if (!status.podeAtualizar) {
+    return NextResponse.json(
+      {
+        error: "Limite diário de atualizações atingido. Volte amanhã.",
+        code: "daily_limit",
+        ...status,
+      },
+      { status: 429 },
+    );
+  }
+
   const now = new Date();
   if (profile.job?.nextRunAt && profile.job.nextRunAt > now) {
     return NextResponse.json(
@@ -49,7 +63,8 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     });
   }
 
-  return NextResponse.json({ ...summary, nextRunAt: profile.job
+  const depois = await refreshStatusFor(profile.id);
+  return NextResponse.json({ ...summary, refresh: depois, nextRunAt: profile.job
     ? new Date(completedAt.getTime() + profile.job.intervalMinutes * 60_000).toISOString()
     : null });
 }

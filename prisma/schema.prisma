@@ -16,6 +16,9 @@ datasource db {
 
 enum Plan {
   FREE
+  // Faro de Cão — semanal. Acrescentado em 20/09; só acrescenta valor ao enum,
+  // não mexe em nenhuma linha existente.
+  WEEK
   PRO
   AGENCY
 }

@@ -4,7 +4,7 @@ import { ProviderError } from "@/lib/providers/types";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
 import { logger } from "@/lib/logger";
 import { getCurrentUser } from "@/lib/auth";
-import { checkAllowance, usageKey } from "@/lib/usage";
+import { checkAllowance, consultLimitFor, usageKey } from "@/lib/usage";
 import { accessFor } from "@/lib/access";
 
 const log = logger.scope("api:preview");
@@ -22,7 +22,7 @@ export async function GET(req: Request) {
   // A one-off unlock of this profile bypasses the free allowance.
   const user = await getCurrentUser();
   if ((await accessFor(user, username)) === "free") {
-    const allowance = await checkAllowance(usageKey(user), username);
+    const allowance = await checkAllowance(usageKey(user), username, consultLimitFor(user));
     if (!allowance.allowed) {
       return NextResponse.json(
         { error: "limit_reached", spentOn: allowance.spentOn },

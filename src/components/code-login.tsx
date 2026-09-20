@@ -196,6 +196,9 @@ export function CodeLogin({ channels }: { channels: Channel[] }) {
                   {cooldown > 0 ? `Aguarde ${cooldown}s` : "Receber código"}
                 </Button>
                 {error && <p className="text-sm text-destructive">{error}</p>}
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  Ao continuar, você declara ter 18 anos ou mais.
+                </p>
               </form>
             </>
           )}

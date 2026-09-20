@@ -7,11 +7,20 @@ import type { Plan } from "@prisma/client";
 export interface PlanConfig {
   id: Plan;
   name: string;
+  /** Uma linha dizendo para quem é. */
+  para?: string;
+  /** Como é cobrado — a tela lê daqui em vez de supor "por mês". */
+  billing?: "free" | "weekly" | "monthly" | "yearly";
   priceMonthly: number; // BRL, display only — Stripe charges what its price id says
   /** BRL for a year up front, when the plan offers it. Display only. */
   priceYearly?: number;
-  /** Max profiles a user/org can monitor simultaneously. */
+  /** Quantos perfis podem entrar no Faro (acompanhamento diário). */
   maxProfiles: number;
+  /** Quantos perfis diferentes o plano deixa consultar por completo. */
+  maxConsults: number;
+  /** Por quantas horas os stories encontrados ficam guardados. Infinity = desde
+   *  a entrada do perfil no Faro. */
+  storiesHours: number;
   /** Minimum minutes between collections (smaller = more frequent). */
   minIntervalMinutes: number;
   /** How many days of history are queryable. Infinity = unlimited. */
@@ -29,27 +38,62 @@ export interface PlanConfig {
 export const PLANS: Record<Plan, PlanConfig> = {
   FREE: {
     id: "FREE",
-    name: "Grátis",
+    name: "Curioso",
+    para: "Para quem quer matar uma curiosidade.",
+    billing: "free",
     priceMonthly: 0,
-    maxProfiles: 1,
+    // O Curioso não coloca ninguém no Faro: ele vê um farejo de demonstração,
+    // com tudo borrado, e escolhe UMA pista depois de criar conta.
+    maxProfiles: 0,
+    // É sempre O MESMO farejo. Criar conta não dá um perfil novo: dá o direito
+    // de revelar UMA informação daquele mesmo perfil.
+    maxConsults: 1,
+    storiesHours: 0,
     minIntervalMinutes: 24 * 60, // once a day
     historyDays: 7,
     alerts: false,
     team: false,
     exportAndApi: false,
     features: [
-      "1 perfil analisado",
-      "Atualizações diárias",
+      "1 farejo, com tudo borrado",
       "Contagem de mulheres e homens",
-      "Histórico de 7 dias",
+      "Com conta: 1 informação à sua escolha, no mesmo perfil",
+      "Sem acompanhamento e sem atualização",
     ],
   },
+  WEEK: {
+    id: "WEEK",
+    name: "Faro de Cão",
+    para: "Para deixar o Faro de olho em uma pista.",
+    billing: "weekly",
+    priceMonthly: 14.9, // cobrado por semana
+    maxProfiles: 1,
+    maxConsults: 3,
+    storiesHours: 48,
+    minIntervalMinutes: 24 * 60,
+    historyDays: 90,
+    alerts: true,
+    team: false,
+    exportAndApi: false,
+    stripePriceEnv: "NEXT_PUBLIC_STRIPE_PRICE_WEEK",
+    features: [
+      "Até 3 perfis para consultar",
+      "1 perfil no Faro, com tudo liberado",
+      "Alertas quando o Faro encontrar algo",
+      "Stories guardados por 48 horas",
+    ],
+  },
+
   PRO: {
     id: "PRO",
-    name: "Pro",
+    name: "Farejo PRO",
+    para: "Para deixar o Faro trabalhando por você.",
+    billing: "monthly",
     priceMonthly: 29.9,
     priceYearly: 239.9,
-    maxProfiles: 10,
+    maxProfiles: 5,
+    maxConsults: 10,
+    storiesHours: 72,
     // Once a day, on purpose. A story lasts 24h, so a daily pass catches every
     // one of them — reading every six hours finds nothing extra and costs four
     // times as much (R$ 46/month of data for a R$ 29,90 plan). The UI shows the
@@ -61,20 +105,30 @@ export const PLANS: Record<Plan, PlanConfig> = {
     exportAndApi: false,
     stripePriceEnv: "NEXT_PUBLIC_STRIPE_PRICE_PRO",
     features: [
-      "Quem começou a seguir, sem censura",
-      "Quem deixou de seguir",
-      "Interações em posts específicos",
-      "Até 10 perfis no Faro",
-      "Histórico e relatórios completos",
-      "Alertas de novas conexões",
-      "Último farejo e mudanças desde a última atualização",
+      "Até 10 perfis para consultar",
+      "Até 5 perfis no Faro",
+      "Alertas de follows, unfollows e interações",
+      "Histórico desde a entrada no Faro",
+      "Stories guardados por 72 horas",
+      "Área Meu Faro",
     ],
   },
   AGENCY: {
     id: "AGENCY",
-    name: "Agency",
-    priceMonthly: 149.9,
-    maxProfiles: 30,
+    name: "Faro Detetive",
+    para: "Para quem não deixa pista passar.",
+    // Cobrado UMA vez por ano: R$ 99,90. Preço definido pelo dono do produto.
+    //
+    // Margem: 15 perfis no Faro lidos todo dia custam ~R$ 120/ano de HikerAPI,
+    // acima do preço. Duas saídas sem mexer no preço: ler 3 seções por dia em
+    // vez de 4 (~R$ 92) ou baixar o Faro para 10 perfis (~R$ 82). Ver
+    // "Custos e preços" no cofre — decisão pendente.
+    billing: "yearly",
+    priceMonthly: 99.9 / 12,
+    priceYearly: 99.9,
+    maxProfiles: 15,
+    maxConsults: 30,
+    storiesHours: Number.POSITIVE_INFINITY,
     // The paid-for extra: four passes a day instead of one. Costs ~4x per
     // profile, which the Agency price covers and the Pro price does not.
     minIntervalMinutes: 6 * 60,
@@ -84,12 +138,12 @@ export const PLANS: Record<Plan, PlanConfig> = {
     exportAndApi: true,
     stripePriceEnv: "NEXT_PUBLIC_STRIPE_PRICE_AGENCY",
     features: [
-      "Até 30 perfis no Faro",
-      "Farejo a cada 6 horas",
-      "Histórico ilimitado",
-      "Membros de equipe",
-      "Exportar CSV + API",
-      "Todos os canais de alerta",
+      "Até 30 perfis para consultar",
+      "Até 15 perfis no Faro",
+      "Alertas de conexões, interações e mudanças",
+      "Histórico contínuo desde a entrada no Faro",
+      "Arquivo de stories desde a entrada no Faro",
+      "Área Meu Faro completa",
     ],
   },
 };
@@ -99,14 +153,17 @@ export const PLANS: Record<Plan, PlanConfig> = {
  * subscription. Display price only — Stripe charges what its price id says.
  */
 export const SINGLE_UNLOCK = {
-  name: "Uso único",
+  name: "Farejador",
+  para: "Para descobrir tudo sobre 1 perfil, sem assinatura.",
   price: 9.9,
+  /** Stories do momento da consulta: as últimas 24 horas. */
+  storiesHours: 24,
   stripePriceEnv: "NEXT_PUBLIC_STRIPE_PRICE_SINGLE",
   features: [
-    "Análise completa de 1 perfil",
-    "Nomes e fotos sem censura",
-    "Interações desse perfil",
-    "Sem assinatura",
+    "Desbloqueio completo de 1 perfil",
+    "Conexões, interações e mudanças daquele momento",
+    "Stories públicos das últimas 24 horas",
+    "Sem assinatura e sem renovação",
   ],
 } as const;
 

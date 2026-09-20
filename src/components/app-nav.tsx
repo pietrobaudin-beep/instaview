@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, PawPrint, Search, User } from "lucide-react";
+import { Bell, History, Search, User } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
+import type { Plan } from "@prisma/client";
 import { cn } from "@/lib/utils";
 
 /**
@@ -18,18 +19,46 @@ import { cn } from "@/lib/utils";
  */
 const TABS = [
   { href: "/", label: "Farejar", icon: Search },
-  { href: "/rastros", label: "Meus rastros", icon: PawPrint },
+  // O Faro é onde ficam os perfis acompanhados — por isso leva a cara do cão.
+  { href: "/rastros", label: "Faro", icon: FaroIcon },
+  { href: "/pesquisados", label: "Pesquisados", icon: History },
   { href: "/pistas", label: "Pistas", icon: Bell },
 ] as const;
 
+/**
+ * O ícone do Faro: o quadradinho rosa com a carinha, como no app.
+ *
+ * É colorido, então entra como imagem — máscara CSS só serve para desenho de
+ * uma cor. O arquivo vem de public/mascote, nunca redesenhado em código.
+ */
+function FaroIcon({ className }: { className?: string }) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/mascote/faro-app.svg"
+      alt=""
+      aria-hidden
+      className={cn("shrink-0 rounded-[6px]", className)}
+    />
+  );
+}
+
 const ACCOUNT = { href: "/perfil", label: "Perfil", icon: User } as const;
+
+/** O nome curto do plano, como a pessoa o conhece. */
+const PLAN_LABEL: Record<Plan, string> = {
+  FREE: "CURIOSO",
+  WEEK: "FARO DE CÃO",
+  PRO: "FAREJO PRO",
+  AGENCY: "DETETIVE",
+};
 const ALL = [...TABS, ACCOUNT];
 
 function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
 }
 
-export function AppNav({ plan }: { plan?: "FREE" | "PRO" | "AGENCY" }) {
+export function AppNav({ plan }: { plan?: Plan }) {
   const pathname = usePathname() || "/";
 
   return (
@@ -56,7 +85,18 @@ export function AppNav({ plan }: { plan?: "FREE" | "PRO" | "AGENCY" }) {
                     : "font-medium text-plum/60 hover:bg-plum/5 hover:text-plum",
                 )}
               >
-                <t.icon className={cn("h-[18px] w-[18px]", active ? "text-blush" : "opacity-70")} />
+                <t.icon
+                  className={cn(
+                    "h-[18px] w-[18px]",
+                    t.href === "/rastros"
+                      ? active
+                        ? ""
+                        : "opacity-80"
+                      : active
+                        ? "text-blush"
+                        : "opacity-70",
+                  )}
+                />
                 {t.label}
               </Link>
             );
@@ -77,10 +117,16 @@ export function AppNav({ plan }: { plan?: "FREE" | "PRO" | "AGENCY" }) {
           >
             <ACCOUNT.icon className="h-[18px] w-[18px] opacity-70" />
             {ACCOUNT.label}
-            {/* Só aparece quando a página sabe o plano — nunca chutado. */}
-            {plan && plan !== "FREE" && (
-              <span className="ml-auto rounded-full border border-plum/15 px-2 py-0.5 text-[10px] font-bold tracking-[0.12em] text-plum/60">
-                {plan === "AGENCY" ? "AGENCY" : "PRO"}
+            {/* O plano fica sempre à vista — inclusive o grátis. */}
+            {plan && (
+              <span
+                className={`ml-auto rounded-full px-2 py-0.5 text-[10px] font-bold tracking-[0.1em] ${
+                  plan === "FREE"
+                    ? "border border-plum/15 text-plum/55"
+                    : "bg-plum text-white"
+                }`}
+              >
+                {PLAN_LABEL[plan]}
               </span>
             )}
           </Link>
@@ -108,7 +154,13 @@ export function AppNav({ plan }: { plan?: "FREE" | "PRO" | "AGENCY" }) {
                     <t.icon
                       className={cn(
                         "h-[18px] w-[18px]",
-                        active ? "text-magenta" : "text-plum/45",
+                        t.href === "/rastros"
+                          ? active
+                            ? ""
+                            : "opacity-80"
+                          : active
+                            ? "text-magenta"
+                            : "text-plum/45",
                       )}
                     />
                   </span>
@@ -118,7 +170,7 @@ export function AppNav({ plan }: { plan?: "FREE" | "PRO" | "AGENCY" }) {
                       active ? "font-semibold text-plum" : "font-medium text-plum/45",
                     )}
                   >
-                    {t.label}
+                    {t.href === ACCOUNT.href && plan ? PLAN_LABEL[plan].toLowerCase() : t.label}
                   </span>
                 </Link>
               </li>

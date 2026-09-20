@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { Panel, PersonRow } from "@/components/ui/brand";
 import { Mascot } from "@/components/ui/mascot";
+import { StoryViewer } from "@/components/story-viewer";
 import { cn } from "@/lib/utils";
 import type { Section, SectionData, Ranked } from "@/lib/raio-x";
 import type { FollowerEntry, PostItem, StoryItem } from "@/lib/providers/types";
@@ -203,7 +204,9 @@ function People({ title, note, items, locked }: { title: string; note: string; i
   );
 }
 
-function Stories({ items, locked }: { items: StoryItem[]; locked: boolean }) {
+function Stories({ items, locked, username }: { items: StoryItem[]; locked: boolean; username: string }) {
+  // Qual story está aberto em tela cheia. -1 = nenhum.
+  const [aberto, setAberto] = React.useState(-1);
   if (!items.length)
     return (
       <div className="flex flex-col items-center gap-3 py-8 text-center">
@@ -213,9 +216,15 @@ function Stories({ items, locked }: { items: StoryItem[]; locked: boolean }) {
     );
   return (
     <div className="flex gap-3 overflow-x-auto pb-2">
-      {items.map((s) => (
+      {items.map((s, i) => (
         <div key={s.id} className="w-40 shrink-0 sm:w-32">
-          <div className="relative aspect-[9/16] overflow-hidden rounded-2xl bg-gradient-to-br from-pink/50 to-yellow/50 ring-2 ring-pink ring-offset-2 ring-offset-background">
+          <button
+            type="button"
+            onClick={() => !locked && setAberto(i)}
+            aria-label={`Ver story de @${username}`}
+            disabled={locked}
+            className="relative block aspect-[9/16] w-full overflow-hidden rounded-2xl bg-gradient-to-br from-pink/50 to-yellow/50 ring-2 ring-pink ring-offset-2 ring-offset-background transition hover:opacity-90 disabled:cursor-not-allowed"
+          >
             {s.thumbnailUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={proxied(s.thumbnailUrl)!} alt="" className={cn("h-full w-full object-cover", locked && "scale-110 blur-md")} />
@@ -227,7 +236,7 @@ function Stories({ items, locked }: { items: StoryItem[]; locked: boolean }) {
             <span className="absolute left-2 top-2 rounded-full bg-ink/60 px-1.5 py-0.5 text-[10px] font-bold text-cream">
               {ago(s.takenAt)}
             </span>
-          </div>
+          </button>
           {s.mentions.length > 0 && (
             <p className="mt-1.5 truncate text-[11px] text-muted-foreground">
               <AtSign className="mr-0.5 inline h-3 w-3" />
@@ -236,6 +245,20 @@ function Stories({ items, locked }: { items: StoryItem[]; locked: boolean }) {
           )}
         </div>
       ))}
+      {aberto >= 0 && (
+        <StoryViewer
+          username={username}
+          stories={items.map((s) => ({
+            id: s.id,
+            imageUrl: proxied(s.thumbnailUrl),
+            takenAt: s.takenAt,
+            kind: s.kind,
+            mentions: s.mentions.map((m) => m.username),
+          }))}
+          startAt={aberto}
+          onClose={() => setAberto(-1)}
+        />
+      )}
     </div>
   );
 }
@@ -281,6 +304,58 @@ const INTRO: Record<Section, string> = {
   suggested: "Contas que o próprio Instagram sugere como parecidas com esta.",
   about: "O que o Instagram informa sobre a conta.",
 };
+
+/**
+ * O "Sobre" em letra miúda, no rodapé de qualquer seção.
+ *
+ * Deixou de ser aba: país, trocas de @ e data de criação são contexto, não
+ * destino. Custa **uma** requisição por perfil (guardada 7 dias e dividida
+ * entre todo mundo), pedida uma única vez por visita, não uma por aba — a
+ * resposta fica no mesmo `memo` que as seções usam.
+ */
+export function AboutLine({ username }: { username: string }) {
+  const key = `${username}:about`;
+  const [res, setRes] = React.useState<Result>(() => memo.get(key) ?? { kind: "loading" });
+
+  React.useEffect(() => {
+    if (memo.get(key)) return setRes(memo.get(key)!);
+    let vivo = true;
+    fetch(`/api/raio-x?username=${encodeURIComponent(username)}&section=about`)
+      .then(async (r) => {
+        const b = await r.json().catch(() => ({}));
+        const out: Result =
+          b.status === "ok"
+            ? { kind: "ok", data: b.data, locked: !!b.locked, fetchedAt: b.fetchedAt }
+            : { kind: "unsupported" };
+        memo.set(key, out);
+        if (vivo) setRes(out);
+      })
+      .catch(() => vivo && setRes({ kind: "unsupported" }));
+    return () => {
+      vivo = false;
+    };
+  }, [key, username]);
+
+  if (res.kind !== "ok" || res.data.section !== "about") return null;
+  const a = res.data.about;
+
+  const partes = [
+    a.country ? `País da conta: ${a.country}` : null,
+    a.formerUsernames == null
+      ? null
+      : a.formerUsernames === 0
+        ? "nunca trocou de @"
+        : `trocou de @ ${a.formerUsernames}×`,
+    a.joined ? `conta criada em ${a.joined}` : null,
+  ].filter(Boolean);
+  if (!partes.length) return null;
+
+  return (
+    <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+      {partes.join(" · ")}. <span className="opacity-70">O que o Instagram informa sobre a conta.</span>
+    </p>
+  );
+}
 
 /**
  * One Raio-X section of a profile, fetched when its tab opens. Free visitors
@@ -354,7 +429,7 @@ export function RaioX({ username, section, upgrade }: { username: string; sectio
     const { data, locked } = res;
     switch (data.section) {
       case "stories":
-        body = <Stories items={data.items} locked={locked} />;
+        body = <Stories items={data.items} locked={locked} username={username} />;
         break;
       case "posts":
         body = (
@@ -412,14 +487,20 @@ export function RaioX({ username, section, upgrade }: { username: string; sectio
       case "about": {
         const a = data.about;
         body = (
-          <div className="grid gap-3 sm:grid-cols-3">
-            <Fact icon={Calendar} label="Conta criada em" value={a.joined ?? "não informado"} />
-            <Fact icon={Globe} label="País da conta" value={a.country ?? "não informado"} />
-            <Fact
-              icon={UserRound}
-              label="Trocas de @"
-              value={a.formerUsernames == null ? "não informado" : a.formerUsernames === 0 ? "nunca trocou" : `${a.formerUsernames}×`}
-            />
+          <div className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Fact icon={Globe} label="País da conta" value={a.country ?? "não informado"} />
+              <Fact
+                icon={UserRound}
+                label="Trocas de @"
+                value={a.formerUsernames == null ? "não informado" : a.formerUsernames === 0 ? "nunca trocou" : `${a.formerUsernames}×`}
+              />
+            </div>
+            {/* A data de criação é nota de rodapé: interessa, mas não é o que
+                a pessoa veio ver. */}
+            <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
+              <Calendar className="h-3 w-3" /> Conta criada em {a.joined ?? "data não informada"}.
+            </p>
           </div>
         );
         break;

@@ -32,7 +32,7 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
 export function SiteFooter() {
   return (
     <footer id="rodape" className="bg-ink text-cream">
-      <div className="mx-auto grid max-w-6xl gap-10 px-6 py-16 sm:grid-cols-2 md:grid-cols-[1.2fr_repeat(3,1fr)]">
+      <div className="mx-auto grid max-w-6xl gap-10 px-6 py-16 sm:grid-cols-2 md:grid-cols-[1.2fr_repeat(4,1fr)]">
         <div>
           <Logo className="h-7 text-pink" />
           <p className="mt-4 max-w-xs text-sm text-cream/60">

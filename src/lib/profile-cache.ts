@@ -16,8 +16,16 @@ import { ProviderError, type ProfileData } from "@/lib/providers/types";
 import { cacheSectionKey } from "@/lib/sandbox";
 
 const TTL = 24 * 60 * 60 * 1000;
-/** A missing @ is usually a typo; a day is enough to stop the retries. */
-const MISSING_TTL = 24 * 60 * 60 * 1000;
+/**
+ * "Este @ não existe" vale por 1 hora, não por um dia.
+ *
+ * Guardar a ausência evita pagar 404 a cada tentativa de um @ digitado errado.
+ * Só que um "não encontrado" pode vir de uma falha passageira — provedor fora
+ * do ar, limite, ou um erro nosso. Com 24h, um tropeço de um segundo escondia
+ * um perfil real pelo resto do dia. Uma hora resolve o caso do erro de
+ * digitação sem sequestrar um perfil que existe.
+ */
+const MISSING_TTL = 60 * 60 * 1000;
 
 /** Same row shape as the Raio-X sections, under its own key. */
 const KEY = () => cacheSectionKey("profile");

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AppNav, NavSpacer } from "@/components/app-nav";
 import { NotificationsFeed, type Notification } from "@/components/notifications-feed";
+import { describe } from "@/lib/pista-text";
 import { Panel } from "@/components/ui/brand";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth";
@@ -16,12 +17,6 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Pistas · Farejo", description: "Tudo que o Faro encontrou nos perfis do seu Faro." };
 
 /** Turn a stored change row into the sentence shown in the feed. */
-function describe(kind: string, type: "FOLLOW" | "UNFOLLOW"): Notification["action"] {
-  if (kind === LIKES_KIND) return type === "FOLLOW" ? "curtiu_post" : "descurtiu_post";
-  if (kind === COMMENTS_KIND) return type === "FOLLOW" ? "comentou" : "apagou_comentario";
-  return type === "FOLLOW" ? "comecou_a_seguir" : "deixou_de_seguir";
-}
-
 export default async function NotificacoesPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login?next=/pistas");
@@ -79,7 +74,7 @@ export default async function NotificacoesPage() {
             </div>
           </Panel>
         ) : (
-          <NotificationsFeed items={items} />
+          <NotificationsFeed items={items} perfis={profiles.map((p) => ({ username: p.username, avatarUrl: p.avatarUrl }))} />
         )}
       </main>
       <NavSpacer />

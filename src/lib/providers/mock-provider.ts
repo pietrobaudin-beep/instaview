@@ -23,6 +23,7 @@ import {
   InstagramDataProvider,
   ProfileData,
   ProviderError,
+  SearchHit,
 } from "./types";
 
 /**
@@ -224,7 +225,8 @@ export class MockProvider implements InstagramDataProvider {
       id: `${username}-story-${day}-${i}`,
       takenAt: new Date(this.now() - (i + 1) * (2 + Math.floor(rng() * 4)) * HOUR).toISOString(),
       kind: rng() > 0.6 ? ("video" as const) : ("photo" as const),
-      thumbnailUrl: null,
+      // Imagem fictícia, só para o visualizador poder ser testado offline.
+      thumbnailUrl: `https://picsum.photos/seed/${encodeURIComponent(`${username}-story-${day}-${i}`)}/540/960`,
       mentions: rng() > 0.5 ? [makeFollower(`${username}#mention`, day % 9)] : [],
     }));
   }
@@ -241,6 +243,40 @@ export class MockProvider implements InstagramDataProvider {
 
   async getReposts(username: string): Promise<PostItem[]> {
     return Array.from({ length: 4 }, (_, i) => this.post(`${username}#repost`, i, "reel", `${username}#creator`));
+  }
+
+  /**
+   * Busca de contas, versão offline: o @ exato primeiro (quando existe) e
+   * depois variações plausíveis, para a lista de resultados ter o mesmo
+   * comportamento do provedor real sem gastar requisição.
+   */
+  async searchUsers(query: string): Promise<SearchHit[]> {
+    const q = query.trim().toLowerCase().replace(/^@/, "");
+    if (!q) return [];
+    const rng = mulberry32(hashSeed(q));
+    const hit = (username: string): SearchHit => ({
+      username,
+      displayName: username
+        .split(/[._]/)
+        .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+        .join(" "),
+      avatarUrl: `https://i.pravatar.cc/300?u=${encodeURIComponent(username)}`,
+      isVerified: hashSeed(username) % 5 === 0,
+      isPrivate: isPrivateHandle(username),
+    });
+
+    const nomes = isMissingHandle(q) ? [] : [q];
+    while (nomes.length < 20) {
+      const v = [
+        `${q}${Math.floor(rng() * 900 + 100)}`,
+        `${q}.${pick(rng, NOUN)}`,
+        `${pick(rng, ADJ)}.${q}`,
+        `${q}_${pick(rng, NOUN)}`,
+        `${q}oficial`,
+      ][Math.floor(rng() * 5)];
+      if (!nomes.includes(v)) nomes.push(v);
+    }
+    return nomes.map(hit);
   }
 
   async getSuggested(username: string): Promise<FollowerEntry[]> {

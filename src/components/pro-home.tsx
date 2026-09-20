@@ -1,3 +1,4 @@
+import * as React from "react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -38,16 +39,17 @@ function Card({
 }) {
   return (
     <section
-      className={`rounded-[1.75rem] border border-plum/10 bg-white p-6 shadow-[0_1px_2px_rgba(23,16,18,0.04),0_12px_32px_-24px_rgba(23,16,18,0.45)] ${className}`}
+      className={`flex h-full flex-col rounded-[1.75rem] border border-plum/10 bg-white p-6 shadow-[0_1px_2px_rgba(23,16,18,0.04),0_12px_32px_-24px_rgba(23,16,18,0.45)] ${className}`}
     >
-      <header className="mb-5 flex items-center justify-between gap-3">
+      <header className="mb-5 flex shrink-0 items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 text-[15px] font-bold tracking-tight text-plum">
           {icon}
           {title}
         </h2>
         {action}
       </header>
-      {children}
+      {/* min-h-0 para o filho poder rolar em vez de empurrar o cartão. */}
+      <div className="min-h-0 flex-1">{children}</div>
     </section>
   );
 }
@@ -61,7 +63,19 @@ function Card({
  * mint on white. Quieter than the landing's pink/purple/yellow, on purpose —
  * this is the screen a paying subscriber opens every morning.
  */
-export function ProHome({ data, hour }: { data: ProHomeData; hour: number }) {
+export function ProHome({
+  data,
+  hour,
+  planName = "Farejo PRO",
+  search,
+}: {
+  data: ProHomeData;
+  hour: number;
+  /** O nome do plano de quem está vendo — nada de "PRO" fixo na tela. */
+  planName?: string;
+  /** A busca entra entre a faixa e os cartões: farejar vem primeiro. */
+  search?: React.ReactNode;
+}) {
   const found = data.pistasSinceYesterday;
 
   const cards = [
@@ -75,7 +89,7 @@ export function ProHome({ data, hour }: { data: ProHomeData; hour: number }) {
       {/* Header band: the one dark surface, where the day's news lives. */}
       <header className="overflow-hidden rounded-[2rem] bg-plum px-7 py-8 text-white sm:px-9 sm:py-10">
         <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/50">
-          Farejo PRO
+          {planName}
         </p>
         <h1 className="mt-3 text-4xl font-extrabold leading-[1.02] tracking-tight sm:text-5xl">
           {greeting(hour)}
@@ -109,7 +123,11 @@ export function ProHome({ data, hour }: { data: ProHomeData; hour: number }) {
         </div>
       </header>
 
-      <div className="mt-6 grid items-start gap-5 lg:grid-cols-5">
+      {/* items-stretch: os dois cartões terminam na mesma linha, e é o conteúdo
+          que rola por dentro — antes o "Rastro recente" esticava a faixa toda. */}
+      {search && <div className="mt-6">{search}</div>}
+
+      <div className="mt-6 grid gap-5 lg:grid-cols-5 lg:items-stretch">
         <Card
           className="lg:col-span-2"
           icon={<Pin className="h-4 w-4 text-magenta" />}
@@ -123,7 +141,7 @@ export function ProHome({ data, hour }: { data: ProHomeData; hour: number }) {
             </Link>
           }
         >
-          <ul className="divide-y divide-plum/10">
+          <ul className="max-h-[22rem] divide-y divide-plum/10 overflow-y-auto pr-1">
             {data.profiles.slice(0, 6).map((p) => (
               <li key={p.username}>
                 <Link
@@ -155,14 +173,14 @@ export function ProHome({ data, hour }: { data: ProHomeData; hour: number }) {
 
         <Card className="lg:col-span-3" icon={<Nose className="h-4 text-magenta" />} title="Rastro recente">
           {data.recent.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 py-8 text-center">
-              <Mascot pose="dormindo" className="h-20 text-plum/70" bob />
+            <div className="flex h-full flex-col items-center justify-center gap-2 py-6 text-center">
+              <Mascot pose="dormindo" className="h-14 text-plum/70" bob />
               <p className="max-w-xs text-sm text-plum/50">
                 Nada passou pelo Faro ainda. As pistas aparecem aqui assim que algo mudar.
               </p>
             </div>
           ) : (
-            <ol className="space-y-4">
+            <ol className="max-h-[22rem] space-y-4 overflow-y-auto pr-1">
               {data.recent.map((r) => {
                 const h = pistaHeadline(r.kind);
                 return (

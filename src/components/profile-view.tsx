@@ -3,10 +3,10 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, BadgeCheck, Check, Loader2, Lock, Unlock } from "lucide-react";
+import { ArrowLeft, ArrowRight, BadgeCheck, Check, ChevronDown, Loader2, Lock, Unlock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
-import { Chips, Panel, PersonRow } from "@/components/ui/brand";
+import { Panel, PersonRow } from "@/components/ui/brand";
 import { ProfileHero, type HeroProfile } from "@/components/profile-hero";
 import {
   FollowsBreakdown,
@@ -26,7 +26,8 @@ import { SingleUnlockButton } from "@/components/single-unlock-button";
 import { PeekingFaro } from "@/components/ui/peeking-faro";
 import { NoteBox } from "@/components/ui/brand";
 import { Mascot } from "@/components/ui/mascot";
-import { RaioX } from "@/components/raio-x";
+import { AboutLine, RaioX } from "@/components/raio-x";
+import { ProfileStories } from "@/components/story-viewer";
 import { WheelPicker } from "@/components/ui/wheel-picker";
 import type { Section } from "@/lib/raio-x";
 
@@ -44,24 +45,109 @@ const MIN_SEARCH_MS = 9000;
 
 const TABS = [
   { value: "visao", label: "Visão geral" },
-  { value: "stories", label: "Stories" },
+  // Stories não é aba: abre em tela cheia pela foto do perfil, como no
+  // Instagram. A seção continua existindo na API, só não tem entrada aqui.
   { value: "posts", label: "Posts" },
   { value: "reels", label: "Reels" },
   { value: "seguindo", label: "Seguindo" },
   { value: "interacoes", label: "Interações" },
   { value: "tagged", label: "Marcações" },
   { value: "highlights", label: "Destaques" },
-  { value: "reposts", label: "Reposts" },
-  { value: "suggested", label: "Parecidos" },
-  { value: "about", label: "Sobre" },
+  // Reposts e "Parecidos" saíram da tela: pouca gente abria e cada uma era
+  // mais uma requisição paga. "Sobre" também deixou de ser aba — virou a linha
+  // em letra miúda no rodapé de todas as seções. As três seguem na API.
   { value: "historico", label: "Rastro" },
 ] as const;
 
 type Tab = (typeof TABS)[number]["value"];
 
+/**
+ * No computador, as abas em linha: as cinco que quase todo mundo abre, mais
+ * um "Mais" com o resto. Onze pílulas lado a lado viravam um muro — e a maior
+ * parte delas é consulta ocasional.
+ *
+ * Cada aba continua valendo **uma** requisição, aberta só quando escolhida:
+ * agrupar seções numa aba só faria o clique custar o dobro.
+ */
+const PRINCIPAIS: readonly Tab[] = ["visao", "posts", "reels", "seguindo", "interacoes", "historico"];
+
 // Tabs served by the Raio-X (one provider request each, fetched when opened).
 const RAIO_X_TABS: readonly Section[] = ["stories", "posts", "reels", "tagged", "highlights", "reposts", "suggested", "about"];
 const isRaioX = (t: Tab): t is Tab & Section => (RAIO_X_TABS as readonly string[]).includes(t);
+
+/** As abas do computador: as principais e um menu "Mais" com as demais. */
+function TabsDesktop({ value, onChange }: { value: Tab; onChange: (t: Tab) => void }) {
+  const [aberto, setAberto] = React.useState(false);
+  const principais = TABS.filter((t) => PRINCIPAIS.includes(t.value));
+  const outras = TABS.filter((t) => !PRINCIPAIS.includes(t.value));
+  const escolhidaFora = outras.find((t) => t.value === value);
+
+  React.useEffect(() => {
+    if (!aberto) return;
+    const fechar = () => setAberto(false);
+    window.addEventListener("click", fechar);
+    return () => window.removeEventListener("click", fechar);
+  }, [aberto]);
+
+  return (
+    <div className="mt-3 hidden flex-wrap items-center gap-2 sm:flex">
+      {principais.map((t) => (
+        <button
+          key={t.value}
+          type="button"
+          onClick={() => onChange(t.value)}
+          aria-pressed={value === t.value}
+          className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
+            value === t.value ? "bg-pink text-ink" : "bg-muted text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {t.label}
+        </button>
+      ))}
+
+      <div className="relative">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setAberto((a) => !a);
+          }}
+          aria-expanded={aberto}
+          className={`flex items-center gap-1 rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
+            escolhidaFora ? "bg-pink text-ink" : "bg-muted text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {escolhidaFora ? escolhidaFora.label : "Mais"}
+          <ChevronDown className="h-3.5 w-3.5" />
+        </button>
+
+        {aberto && (
+          <ul
+            onClick={(e) => e.stopPropagation()}
+            className="absolute left-0 top-full z-30 mt-1.5 w-44 overflow-hidden rounded-2xl border border-border bg-card py-1 shadow-lg"
+          >
+            {outras.map((t) => (
+              <li key={t.value}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChange(t.value);
+                    setAberto(false);
+                  }}
+                  className={`w-full px-4 py-2 text-left text-sm transition hover:bg-muted/50 ${
+                    value === t.value ? "font-bold text-accent" : ""
+                  }`}
+                >
+                  {t.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function GenderBadge({ gender }: { gender?: "f" | "m" | "u" }) {
   if (gender === "f")
@@ -162,6 +248,8 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
   });
 
   const [tab, setTab] = React.useState<Tab>("visao");
+  // Os stories abrem em tela cheia pela foto, não como aba.
+  const [storiesAbertos, setStoriesAbertos] = React.useState(false);
   const [step, setStep] = React.useState(0);
   const [analyzing, setAnalyzing] = React.useState(true);
   const [tracking, setTracking] = React.useState({ saved: false, busy: false });
@@ -541,9 +629,18 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
                 note={state.note}
                 tracking={tracking}
                 locked={!isPro}
+                onVerStories={() => setStoriesAbertos(true)}
                 onTrack={following.kind === "private" ? undefined : startTracking}
               />
             </PeekingFaro>
+
+            {storiesAbertos && (
+              <ProfileStories
+                username={state.data.username}
+                avatarUrl={state.data.avatarUrl}
+                onClose={() => setStoriesAbertos(false)}
+              />
+            )}
 
             {justPinned && (
               <NoteBox className="mt-4 items-center" icon={<Mascot pose="feliz" className="h-10 text-ink" decorative />}>
@@ -588,7 +685,7 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
                     aria-label="O que você quer ver"
                   />
                 </div>
-                <Chips options={TABS} value={tab} onChange={setTab} className="mt-3 hidden sm:flex" />
+                <TabsDesktop value={tab} onChange={setTab} />
 
                 {tab === "visao" && (
                   <div className="mt-5 space-y-5">
@@ -705,6 +802,11 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
                     <HistoryPanel username={state.data.username} loggedIn={loggedIn} isPro={isPro} />
                   </div>
                 )}
+
+                {/* O "Sobre" em letra miúda, embaixo de qualquer aba. */}
+                <div className="mt-3">
+                  <AboutLine username={state.data.username} />
+                </div>
               </>
             )}
           </>

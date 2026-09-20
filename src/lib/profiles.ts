@@ -40,9 +40,8 @@ export async function trackProfile(user: User, rawUsername: string): Promise<Tra
   const count = await prisma.trackedProfile.count({ where: { userId: user.id } });
   if (count >= plan.maxProfiles) {
     throw new PlanLimitError(
-      plan.id === "AGENCY"
-        ? `O Agency acompanha até ${plan.maxProfiles} perfis no Faro. Tire um da lista para colocar outro.`
-        : `O ${plan.name} acompanha até ${plan.maxProfiles} perfis no Faro. Tire um da lista, ou passe para o Agency (até ${PLANS.AGENCY.maxProfiles}).`,
+      `Seu Faro está cheio. O ${plan.name} acompanha até ${plan.maxProfiles} ` +
+        `perfis; troque um deles ou passe para um plano com mais vagas.`,
     );
   }
 

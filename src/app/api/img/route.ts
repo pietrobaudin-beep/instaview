@@ -1,14 +1,19 @@
 import { NextResponse } from "next/server";
+import { allowedImageHost, imageKey, readStored, writeStored } from "@/lib/img-store";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
-// Only proxy Instagram's CDN hosts (avoids an open proxy / SSRF).
-const ALLOWED = /(?:^|\.)(?:fbcdn\.net|cdninstagram\.com)$/i;
+const log = logger.scope("api:img");
 
 /**
- * Image proxy for Instagram profile pictures. The IG CDN blocks hotlinking from
- * other origins, so the browser can't load those URLs directly. This fetches
- * them server-side (which works) and serves the bytes from our own origin.
+ * Proxy das fotos do Instagram — perfil e story.
+ *
+ * O CDN bloqueia carregamento a partir de outro site, então quem busca é o
+ * servidor. E **o endereço vence**: vem assinado, com hora de validade. Por
+ * isso, na primeira vez que uma imagem é baixada, a cópia fica guardada — é ela
+ * que sustenta a tela quando o endereço morre, inclusive depois de um story
+ * expirar no Instagram. Ver `src/lib/img-store.ts`.
  */
 export async function GET(req: Request) {
   const raw = new URL(req.url).searchParams.get("url");
@@ -20,25 +25,43 @@ export async function GET(req: Request) {
   } catch {
     return new NextResponse("bad url", { status: 400 });
   }
-  if (target.protocol !== "https:" || !ALLOWED.test(target.hostname)) {
-    return new NextResponse("forbidden host", { status: 403 });
-  }
+  if (!allowedImageHost(target)) return new NextResponse("forbidden host", { status: 403 });
+
+  const key = imageKey(target);
+  const serve = (bytes: Buffer, type: string) =>
+    new NextResponse(bytes as unknown as BodyInit, {
+      status: 200,
+      headers: {
+        "content-type": type,
+        "cache-control": "public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400",
+      },
+    });
 
   try {
     const res = await fetch(target, {
-      headers: { "User-Agent": "Mozilla/5.0", accept: "image/*" },
+      headers: {
+        "user-agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36",
+        accept: "image/avif,image/webp,image/*,*/*;q=0.8",
+        referer: "https://www.instagram.com/",
+      },
       signal: AbortSignal.timeout(10_000),
     });
-    if (!res.ok) return new NextResponse("upstream error", { status: 502 });
-    const buf = await res.arrayBuffer();
-    return new NextResponse(buf, {
-      status: 200,
-      headers: {
-        "content-type": res.headers.get("content-type") || "image/jpeg",
-        "cache-control": "public, max-age=86400, s-maxage=86400",
-      },
-    });
+    if (res.ok) {
+      const type = res.headers.get("content-type") || "image/jpeg";
+      const bytes = Buffer.from(await res.arrayBuffer());
+      await writeStored(key, type, bytes);
+      return serve(bytes, type);
+    }
+    log.info("upstream recusou", { status: res.status, host: target.hostname });
   } catch {
-    return new NextResponse("fetch failed", { status: 502 });
+    log.info("upstream falhou", { host: target.hostname });
   }
+
+  // Deu errado lá fora (ou o story já expirou): usa a cópia.
+  const copy = await readStored(key);
+  if (copy) return serve(copy.bytes, copy.type);
+
+  // Sem cópia: 404 para o <img> cair direto no lugar reservado.
+  return new NextResponse("sem imagem", { status: 404 });
 }

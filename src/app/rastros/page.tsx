@@ -9,6 +9,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { FOLLOWING_KIND } from "@/lib/following-tracker";
 import { planFor } from "@/lib/plans";
+import { PlanLimits } from "@/components/plan-limits";
+import { consultsUsed, peekUsageKey } from "@/lib/usage";
 import { COMMENTS_KIND, LIKES_KIND } from "@/lib/post-activity";
 import { activityLevel, pistas } from "@/lib/voice";
 import { Mascot } from "@/components/ui/mascot";
@@ -16,7 +18,7 @@ import { Mascot } from "@/components/ui/mascot";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Meus rastros · Farejo",
+  title: "Faro · Farejo",
   description: "Os perfis que estão no seu Faro.",
 };
 
@@ -33,7 +35,7 @@ export default async function RastrosPage() {
       <>
         <AppNav plan={user.plan} />
         <main className="mx-auto max-w-3xl px-6 py-8 md:pl-[15.5rem]">
-          <h1 className="mb-6 text-3xl font-bold tracking-tight">Meus rastros</h1>
+          <h1 className="mb-6 text-3xl font-bold tracking-tight">Faro</h1>
           <Panel>
             <div className="flex flex-col items-center gap-3 py-10 text-center">
               <Mascot pose="feliz" className="h-24 text-vinho" bob />
@@ -72,6 +74,7 @@ export default async function RastrosPage() {
         _count: { _all: true },
       })
     : [];
+  const consultados = await consultsUsed(peekUsageKey(user));
   const weekBy = new Map(week.map((c) => [c.profileId, c._count._all]));
   const totalWeek = week.reduce((n, c) => n + c._count._all, 0);
 
@@ -80,13 +83,19 @@ export default async function RastrosPage() {
       <AppNav plan={user.plan} />
       <main className="mx-auto max-w-6xl px-6 py-8 md:pl-[15.5rem]">
         <div className="mb-2 flex flex-wrap items-center gap-3">
-          <h1 className="text-3xl font-bold tracking-tight">Meus rastros</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Faro</h1>
           {/* Says how much room is left, so the limit never arrives as a surprise. */}
           <StatusPill tone={profiles.length >= planFor(user.plan).maxProfiles ? "yellow" : "green"}>
             <span className="text-[8px]">●</span> {profiles.length} de{" "}
             {planFor(user.plan).maxProfiles} no Faro
           </StatusPill>
         </div>
+        <PlanLimits
+          plan={user.plan}
+          consultados={consultados}
+          noFaro={profiles.length}
+          className="mb-6 mt-4"
+        />
         {profiles.length > 0 && (
           <p className="mb-6 text-sm text-muted-foreground">
             {totalWeek > 0 ? (
@@ -103,13 +112,13 @@ export default async function RastrosPage() {
           <Panel>
             <div className="flex flex-col items-center gap-3 py-10 text-center">
               <Mascot pose="feliz" className="h-24 text-vinho" bob />
-              <p className="text-lg font-bold">Seu Faro está vazio</p>
+              <p className="text-lg font-bold">O Faro ainda não está farejando ninguém.</p>
               <p className="max-w-sm text-sm text-muted-foreground">
                 Fareje um @ e toque em <b>Colocar no Faro</b>. A partir daí o Farejo observa por
                 você e avisa quando algo mudar.
               </p>
               <Link href="/" className="mt-2">
-                <Button variant="accent">Farejar um perfil</Button>
+                <Button variant="accent">Escolher um perfil</Button>
               </Link>
             </div>
           </Panel>

@@ -10,7 +10,7 @@ import {
 } from "@/lib/following-tracker";
 import { prisma } from "@/lib/db";
 import { peekProfileCached } from "@/lib/profile-cache";
-import { checkAllowance, claimAnalysis, usageKey } from "@/lib/usage";
+import { checkAllowance, claimAnalysis, consultLimitFor, usageKey } from "@/lib/usage";
 import { accessFor } from "@/lib/access";
 import { mayRecordFor } from "@/lib/sandbox";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
@@ -55,7 +55,7 @@ export async function GET(req: Request) {
   // analysis never costs credits.
   if (!paid) {
     const key = usageKey(user);
-    const allowance = await checkAllowance(key, username);
+    const allowance = await checkAllowance(key, username, consultLimitFor(user));
     if (!allowance.allowed) {
       return NextResponse.json(
         { limited: true, used: allowance.used, limit: allowance.limit, spentOn: allowance.spentOn },

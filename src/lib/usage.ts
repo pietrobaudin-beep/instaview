@@ -1,5 +1,5 @@
 /**
- * Free-plan allowance: a free identity may analyse ONE profile.
+ * Quantos perfis diferentes uma pessoa pode consultar, pelo plano dela.
  *
  * Enforced on the server, not in the UI — otherwise it would both be trivially
  * bypassed and, worse, still spend provider credits on every extra analysis.
@@ -15,8 +15,19 @@ import { createHmac, randomBytes } from "crypto";
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
 import type { User } from "@prisma/client";
+import { planFor } from "@/lib/plans";
 
 export const FREE_ANALYSIS_LIMIT = 1;
+
+/**
+ * O teto de consultas de quem está pedindo. Vem do plano; quem não tem conta
+ * é tratado como Curioso.
+ */
+export function consultLimitFor(user: User | null): number {
+  // O Curioso tem 1 farejo, com ou sem conta: criar conta não dá um perfil
+  // novo, dá o direito de revelar uma informação do mesmo perfil.
+  return planFor(user?.plan ?? "FREE").maxConsults;
+}
 
 /**
  * The limit only applies on the live site. On localhost the owner tests freely
@@ -85,26 +96,40 @@ export interface Allowance {
   spentOn: string | null;
 }
 
-/** Whether this identity may analyse `username`, without recording anything. */
-export async function checkAllowance(key: string, username: string): Promise<Allowance> {
+/**
+ * Se esta identidade pode consultar `username`, sem registrar nada.
+ *
+ * `limit` vem do plano (Curioso 1, Farejador 1, Cão 3, Pro 10, Detetive 30).
+ * Um perfil já consultado **nunca** conta de novo: reabrir o mesmo @ é grátis.
+ */
+export async function checkAllowance(
+  key: string,
+  username: string,
+  limit: number = FREE_ANALYSIS_LIMIT,
+): Promise<Allowance> {
   if (!FREE_LIMIT_ENFORCED) {
-    return { allowed: true, used: 0, limit: FREE_ANALYSIS_LIMIT, claimed: false, spentOn: null };
+    return { allowed: true, used: 0, limit, claimed: false, spentOn: null };
   }
   const rows = await prisma.analysisUsage.findMany({
     where: { key },
     orderBy: { createdAt: "asc" },
     select: { username: true },
-    take: FREE_ANALYSIS_LIMIT + 1,
   });
 
   const claimed = rows.some((r) => r.username === username);
   return {
-    allowed: claimed || rows.length < FREE_ANALYSIS_LIMIT,
+    allowed: claimed || rows.length < limit,
     used: rows.length,
-    limit: FREE_ANALYSIS_LIMIT,
+    limit,
     claimed,
     spentOn: rows[0]?.username ?? null,
   };
+}
+
+/** Quantos perfis esta identidade já consultou — para os contadores da conta. */
+export async function consultsUsed(key: string | null): Promise<number> {
+  if (!key) return 0;
+  return prisma.analysisUsage.count({ where: { key } });
 }
 
 /** Record that this identity spent its allowance on `username`. Idempotent. */

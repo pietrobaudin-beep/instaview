@@ -95,3 +95,31 @@ export function greeting(hour: number): string {
   if (hour < 18) return "Boa tarde 👀";
   return "Boa noite 👀";
 }
+
+/**
+ * Textos de bloqueio. A regra: dizer o que a pessoa ganha ao desbloquear, não
+ * apenas que está bloqueado.
+ */
+export const BLOQUEIOS = {
+  pista: {
+    titulo: "Esta pista está guardada.",
+    corpo: "Desbloqueie este perfil com o Farejador e veja tudo o que o Faro encontrou.",
+    acao: "Desbloquear perfil completo",
+  },
+  foraDoFaro: {
+    titulo: "Este perfil ainda não está no Faro.",
+    corpo: "Coloque-o no Faro para receber as mudanças e os alertas todo dia.",
+    acao: "Ver planos com Faro",
+  },
+  faroCheio: {
+    titulo: "Seu Faro está cheio.",
+    corpo: "Troque um perfil acompanhado ou passe para um plano com mais vagas.",
+    acao: "Gerenciar meu Faro",
+  },
+  semConta: {
+    titulo: "Não deixe essa pista escapar.",
+    corpo: "Crie sua conta grátis para guardar este perfil e desbloquear 1 pista à sua escolha.",
+    acao: "Criar conta e escolher minha pista",
+    alternativa: "Continuar sem conta",
+  },
+} as const;

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { accessFor } from "@/lib/access";
-import { checkAllowance, usageKey } from "@/lib/usage";
+import { checkAllowance, consultLimitFor, usageKey } from "@/lib/usage";
 import { SECTIONS, getCachedSection, getSection, previewOf, type Section } from "@/lib/raio-x";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
 
@@ -41,7 +41,7 @@ export async function GET(req: Request) {
   }
 
   if (!paid) {
-    const allowance = await checkAllowance(usageKey(user), username);
+    const allowance = await checkAllowance(usageKey(user), username, consultLimitFor(user));
     if (!allowance.allowed) {
       return NextResponse.json({ limited: true, spentOn: allowance.spentOn }, { status: 402 });
     }

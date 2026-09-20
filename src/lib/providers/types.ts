@@ -156,4 +156,23 @@ export interface InstagramDataProvider {
   getReposts?(username: string): Promise<PostItem[]>;
   /** "Similar accounts" Instagram suggests for this profile. */
   getSuggested?(username: string): Promise<FollowerEntry[]>;
+
+  /**
+   * Busca de contas por texto — a lista que aparece enquanto se digita o @.
+   *
+   * Uma requisição devolve a página inteira (o Instagram manda ~20), por isso
+   * a tela mostra 3 e guarda o resto: abrir "ver mais" não custa nada a mais.
+   * Opcional: provedor que não busca simplesmente não define o método, e a
+   * tela cai no perfil exato.
+   */
+  searchUsers?(query: string): Promise<SearchHit[]>;
+}
+
+/** Uma conta na lista de resultados da busca. */
+export interface SearchHit {
+  username: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+  isVerified: boolean;
+  isPrivate: boolean;
 }

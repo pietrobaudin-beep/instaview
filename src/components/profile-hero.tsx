@@ -117,6 +117,7 @@ export function ProfileHero({
   onTrack,
   locked = false,
   tier,
+  onVerStories,
 }: {
   profile: HeroProfile;
   premium?: boolean;
@@ -127,6 +128,12 @@ export function ProfileHero({
   locked?: boolean;
   /** Which badge to show beside the name. */
   tier?: "free" | "single" | "pro";
+  /**
+   * Abre a aba de stories. A foto com anel é o lugar onde todo mundo procura
+   * story — sem isto, ele ficava escondido atrás do seletor de seções.
+   * Não pede nada ao provedor: só troca de aba.
+   */
+  onVerStories?: () => void;
 }) {
   return (
     <section className="overflow-hidden rounded-3xl border border-border bg-card">
@@ -135,13 +142,31 @@ export function ProfileHero({
       )}
       <div className="flex flex-col items-center gap-5 p-6 text-center md:flex-row md:items-start md:gap-7 md:text-left">
         <div className="relative shrink-0">
-          <div className="rounded-full p-1 ring-[3px] ring-pink">
-            <Avatar
-              src={profile.avatarUrl}
-              name={profile.displayName ?? profile.username}
-              size={104}
-            />
-          </div>
+          {onVerStories ? (
+            <button
+              type="button"
+              onClick={onVerStories}
+              title="Ver stories"
+              className="block rounded-full bg-gradient-to-tr from-yellow via-pink to-purple p-[3px] transition hover:opacity-90"
+            >
+              <span className="block rounded-full bg-card p-1">
+                <Avatar
+                  src={profile.avatarUrl}
+                  name={profile.displayName ?? profile.username}
+                  size={104}
+                />
+              </span>
+              <span className="mt-1.5 block text-[11px] font-bold text-accent">Ver stories</span>
+            </button>
+          ) : (
+            <div className="rounded-full p-1 ring-[3px] ring-pink">
+              <Avatar
+                src={profile.avatarUrl}
+                name={profile.displayName ?? profile.username}
+                size={104}
+              />
+            </div>
+          )}
           {tracking?.saved && (
             <span
               className="absolute -right-1 top-1 flex h-8 w-8 items-center justify-center rounded-full bg-pink shadow"
