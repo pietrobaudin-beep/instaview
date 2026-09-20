@@ -7,59 +7,90 @@ import { Logo } from "@/components/ui/logo";
 import { cn } from "@/lib/utils";
 
 /**
- * App navigation. On phones it is the bottom tab bar from the designs; from
- * `md` up the same destinations move into a top bar, which is what the layout
- * wants on a desktop screen.
+ * App navigation.
+ *
+ * Two groups, not one row of four: on the left the places you go to *work*
+ * (farejar, os perfis no Faro, as pistas); on the right the account. Separating
+ * them means "Perfil" stops competing with the daily destinations, and the bar
+ * reads left to right like the app is used.
+ *
+ * On phones the same destinations become the bottom tab bar from the designs.
  */
 const TABS = [
   { href: "/", label: "Farejar", icon: Search },
   { href: "/rastros", label: "Meus rastros", icon: PawPrint },
   { href: "/pistas", label: "Pistas", icon: Bell },
-  { href: "/perfil", label: "Perfil", icon: User },
 ] as const;
+
+const ACCOUNT = { href: "/perfil", label: "Perfil", icon: User } as const;
+const ALL = [...TABS, ACCOUNT];
 
 function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
 }
 
-export function AppNav() {
+export function AppNav({ plan }: { plan?: "FREE" | "PRO" | "AGENCY" }) {
   const pathname = usePathname() || "/";
 
   return (
     <>
-      {/* Desktop / tablet: top bar */}
-      <header className="sticky top-0 z-40 hidden border-b border-border bg-background/85 backdrop-blur md:block">
-        <div className="mx-auto flex max-w-6xl items-center gap-8 px-6 py-4">
-          <Link href="/" aria-label="Farejo">
-            <Logo className="h-7" />
+      {/* Desktop: barra lateral fixa — é o que faz o Farejo parecer um app,
+          e não uma landing com menu. */}
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-56 flex-col border-r border-plum/10 bg-white/70 px-4 py-6 backdrop-blur md:flex">
+        <Link href="/" aria-label="Farejo" className="mb-8 px-2 transition hover:opacity-80">
+          <Logo className="h-6" />
+        </Link>
+
+        <nav className="flex flex-1 flex-col gap-1" aria-label="Seções">
+          {TABS.map((t) => {
+            const active = isActive(pathname, t.href);
+            return (
+              <Link
+                key={t.href}
+                href={t.href}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm transition",
+                  active
+                    ? "bg-plum font-semibold text-white"
+                    : "font-medium text-plum/60 hover:bg-plum/5 hover:text-plum",
+                )}
+              >
+                <t.icon className={cn("h-[18px] w-[18px]", active ? "text-blush" : "opacity-70")} />
+                {t.label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* A conta fica no pé da barra, como em todo app. */}
+        <div className="mt-6 border-t border-plum/10 pt-4">
+          <Link
+            href={ACCOUNT.href}
+            aria-current={isActive(pathname, ACCOUNT.href) ? "page" : undefined}
+            className={cn(
+              "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm transition",
+              isActive(pathname, ACCOUNT.href)
+                ? "bg-plum font-semibold text-white"
+                : "font-medium text-plum/60 hover:bg-plum/5 hover:text-plum",
+            )}
+          >
+            <ACCOUNT.icon className="h-[18px] w-[18px] opacity-70" />
+            {ACCOUNT.label}
+            {/* Só aparece quando a página sabe o plano — nunca chutado. */}
+            {plan && plan !== "FREE" && (
+              <span className="ml-auto rounded-full border border-plum/15 px-2 py-0.5 text-[10px] font-bold tracking-[0.12em] text-plum/60">
+                {plan === "AGENCY" ? "AGENCY" : "PRO"}
+              </span>
+            )}
           </Link>
-          <nav className="flex items-center gap-1">
-            {TABS.map((t) => {
-              const active = isActive(pathname, t.href);
-              return (
-                <Link
-                  key={t.href}
-                  href={t.href}
-                  className={cn(
-                    "flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition",
-                    active
-                      ? "bg-pink text-ink"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  <t.icon className="h-4 w-4" />
-                  {t.label}
-                </Link>
-              );
-            })}
-          </nav>
         </div>
-      </header>
+      </aside>
 
       {/* Phone: bottom tab bar */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-plum/10 bg-white/95 backdrop-blur md:hidden">
         <ul className="mx-auto flex max-w-lg items-stretch">
-          {TABS.map((t) => {
+          {ALL.map((t) => {
             const active = isActive(pathname, t.href);
             return (
               <li key={t.href} className="flex-1">
@@ -71,20 +102,20 @@ export function AppNav() {
                   <span
                     className={cn(
                       "flex h-8 w-12 items-center justify-center rounded-full transition",
-                      active && "bg-pink",
+                      active && "bg-blush",
                     )}
                   >
                     <t.icon
                       className={cn(
                         "h-[18px] w-[18px]",
-                        active ? "text-ink" : "text-muted-foreground",
+                        active ? "text-magenta" : "text-plum/45",
                       )}
                     />
                   </span>
                   <span
                     className={cn(
-                      "text-[10px] font-semibold",
-                      active ? "text-foreground" : "text-muted-foreground",
+                      "text-[10px]",
+                      active ? "font-semibold text-plum" : "font-medium text-plum/45",
                     )}
                   >
                     {t.label}

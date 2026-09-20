@@ -40,19 +40,22 @@ export default async function Home() {
   if (user) {
     return (
       <>
-        <AppNav />
+        <AppNav plan={user.plan} />
         {/* Faro out for a stroll along the top of the home page. */}
-        <div className="mx-auto max-w-6xl px-6">
+        <div className="mx-auto max-w-6xl px-6 md:pl-[15.5rem]">
           <HeaderStroll />
         </div>
-        <main className="mx-auto max-w-5xl px-6 pb-10 pt-8">
+        <main className="mx-auto max-w-5xl px-6 pb-10 pt-8 md:pl-[15.5rem]">
           <DemoBadge tone="yellow" />
 
           {proHome ? (
             <>
               <ProHome data={proHome} hour={brazilHour()} />
-              <section className="mt-10">
-                <h2 className="mb-3 text-lg font-bold">Farejar outro @</h2>
+              {/* Same premium card as the rest of the Pro area. */}
+              <section className="mt-6 rounded-[1.75rem] border border-plum/10 bg-white p-6 shadow-[0_1px_2px_rgba(23,16,18,0.04),0_12px_32px_-24px_rgba(23,16,18,0.45)]">
+                <h2 className="mb-4 text-[15px] font-bold tracking-tight text-plum">
+                  Farejar outro @
+                </h2>
                 <SearchBlock />
               </section>
             </>

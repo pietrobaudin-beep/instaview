@@ -115,7 +115,7 @@ export async function GET(req: Request) {
           // Profile totals come from the preview lookup already cached — never
           // a new provider request — so the history chart and the "alterou a
           // bio" / "ficou privada" alerts have something to compare.
-          const p = peekProfileCached(username);
+          const p = await peekProfileCached(username);
           await recordFollowing(
             user.id,
             {

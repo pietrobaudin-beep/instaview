@@ -26,7 +26,10 @@ export function FloatingSearch({ hideWhenVisible }: { hideWhenVisible: string[] 
   // footer) is on screen.
   React.useEffect(() => {
     const onScroll = () => {
-      const past = window.scrollY > window.innerHeight * 0.8;
+      // Só depois que o hero sai INTEIRO da tela: antes disso a busca do hero
+      // ainda está ali, e a barra flutuante só atrapalharia.
+      const hero = document.getElementById("buscar")?.getBoundingClientRect();
+      const past = hero ? hero.bottom < 0 : window.scrollY > window.innerHeight;
       const blocked = hideWhenVisible.some((id) => {
         const r = document.getElementById(id)?.getBoundingClientRect();
         return !!r && r.top < window.innerHeight && r.bottom > 0;
@@ -59,7 +62,7 @@ export function FloatingSearch({ hideWhenVisible }: { hideWhenVisible: string[] 
   return (
     <div
       className={cn(
-        "fixed inset-x-0 bottom-4 z-40 flex justify-center px-4 transition duration-300 [padding-bottom:env(safe-area-inset-bottom)]",
+        "fixed inset-x-0 bottom-3 z-40 flex justify-center px-4 transition duration-300 [padding-bottom:env(safe-area-inset-bottom)]",
         shown ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-6 opacity-0",
       )}
       aria-hidden={!shown}
@@ -67,7 +70,7 @@ export function FloatingSearch({ hideWhenVisible }: { hideWhenVisible: string[] 
       <form
         onSubmit={onSubmit}
         className={cn(
-          "flex w-full max-w-md items-center gap-2 rounded-full border bg-card/95 py-1.5 pl-5 pr-1.5 shadow-[0_18px_50px_-18px_hsl(var(--vinho)/0.55)] backdrop-blur",
+          "flex w-full max-w-sm items-center gap-2 rounded-full border bg-card/95 py-1 pl-4 pr-1 shadow-[0_14px_40px_-16px_hsl(var(--vinho)/0.5)] backdrop-blur",
           error ? "border-destructive" : "border-border",
         )}
       >
@@ -81,12 +84,12 @@ export function FloatingSearch({ hideWhenVisible }: { hideWhenVisible: string[] 
             }}
             tabIndex={shown ? 0 : -1}
             aria-label="@username do Instagram"
-            className="h-10 w-full bg-transparent text-[15px] outline-none"
+            className="h-9 w-full bg-transparent text-sm outline-none"
           />
           {!value && (
-            <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center gap-px text-[15px] text-muted-foreground">
+            <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center gap-px text-sm text-muted-foreground">
               {typed}
-              <span className="caret h-4 w-px bg-muted-foreground" />
+              <span className="caret h-3.5 w-px bg-muted-foreground" />
             </span>
           )}
         </div>

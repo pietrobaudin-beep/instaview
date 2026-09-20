@@ -304,3 +304,113 @@ export function StepAlert() {
     </Mini>
   );
 }
+
+/**
+ * Hero — o resultado, logo abaixo do campo de busca.
+ *
+ * A pessoa entende o produto antes de ler: um perfil, a pista que o Faro achou
+ * e quando. Gente fictícia e desenhada, como em todos os mockups.
+ */
+export function HeroResult() {
+  return (
+    <Frame className="mx-auto w-full max-w-md text-left">
+      <div className="flex items-center gap-3">
+        <span className="block rounded-full p-0.5 ring-2 ring-pink">
+          <FakeAvatar person={PEOPLE.julia} size={44} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-bold leading-tight">@{PEOPLE.julia.handle}</p>
+          <p className="truncate text-xs text-muted-foreground">{PEOPLE.julia.name}</p>
+        </div>
+        <span className="shrink-0 rounded-full bg-mint px-2.5 py-1 text-[11px] font-bold text-vinho">
+          público
+        </span>
+      </div>
+
+      <div
+        className="rise mt-4 flex items-center gap-3 rounded-2xl bg-muted/70 px-3 py-2.5"
+        style={{ "--d": "700ms" } as React.CSSProperties}
+      >
+        <FakeAvatar person={PEOPLE.theo} size={30} />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[13px] font-semibold">
+            começou a seguir @{PEOPLE.theo.handle}
+          </p>
+          <p className="text-[11px] text-muted-foreground">há 2 horas</p>
+        </div>
+        <span className="shrink-0 rounded-full bg-yellow px-2 py-0.5 text-[10px] font-bold text-ink">
+          novo
+        </span>
+      </div>
+
+      <div
+        className="rise mt-2 flex items-center gap-3 rounded-2xl px-3 py-2"
+        style={{ "--d": "1300ms" } as React.CSSProperties}
+      >
+        <FakeAvatar person={PEOPLE.duda} size={26} />
+        <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+          curtiu 3 publicações desta semana
+        </p>
+      </div>
+    </Frame>
+  );
+}
+
+/**
+ * PRO — a narrativa visual do bloco vinho: a linha do tempo do que mudou e o
+ * aviso que chega, um em cima do outro, com o Faro espiando por trás.
+ */
+export function ProNarrative() {
+  const events = [
+    { person: PEOPLE.theo, text: "começou a seguir", when: "hoje, 08h", tag: "novo" },
+    { person: PEOPLE.marina, text: "deixou de seguir", when: "ontem", tag: undefined },
+    { person: PEOPLE.duda, text: "curtiu 3 posts", when: "seg", tag: undefined },
+  ];
+  return (
+    <div className="relative">
+      <div className="rounded-[2rem] border border-cream/12 bg-cream/[0.06] p-6 backdrop-blur-sm">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-bold text-cream">O que mudou em @{PEOPLE.julia.handle}</p>
+          <span className="rounded-full bg-cream/10 px-2.5 py-1 text-[10px] font-semibold text-cream/70">
+            últimos 7 dias
+          </span>
+        </div>
+        <ol className="mt-5 space-y-3">
+          {events.map((e, i) => (
+            <li
+              key={e.person.handle}
+              className="rise flex items-center gap-3 rounded-2xl bg-cream/[0.06] px-3.5 py-3"
+              style={{ "--d": `${400 + i * 260}ms` } as React.CSSProperties}
+            >
+              <FakeAvatar person={e.person} size={30} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[13px] font-semibold text-cream">
+                  {e.text} @{e.person.handle}
+                </p>
+                <p className="text-[11px] text-cream/50">{e.when}</p>
+              </div>
+              {e.tag && (
+                <span className="shrink-0 rounded-full bg-yellow px-2 py-0.5 text-[10px] font-bold text-ink">
+                  {e.tag}
+                </span>
+              )}
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      {/* O aviso que chega, sobreposto ao cartão. */}
+      <div
+        className="rise mt-4 w-full rounded-2xl bg-cream p-3.5 text-ink shadow-[0_24px_60px_-20px_rgba(0,0,0,0.6)] sm:absolute sm:-bottom-12 sm:-left-10 sm:mt-0 sm:w-[15rem]"
+        style={{ "--d": "1500ms" } as React.CSSProperties}
+      >
+        <p className="flex items-center gap-2 text-[13px] font-bold">
+          <Bell className="h-3.5 w-3.5 text-accent" /> Faro encontrou algo novo
+        </p>
+        <p className="mt-0.5 text-[11px] text-muted-foreground">
+          @{PEOPLE.julia.handle} começou a seguir alguém.
+        </p>
+      </div>
+    </div>
+  );
+}

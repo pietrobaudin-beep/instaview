@@ -18,25 +18,29 @@ import {
 import { ProDashboard } from "@/components/pro-dashboard";
 import { HistoryPanel } from "@/components/history-panel";
 import { AppNav, NavSpacer } from "@/components/app-nav";
-import { AnalysisLoading } from "@/components/analysis-loading";
+import { AnalysisLoading, type RevealProfile } from "@/components/analysis-loading";
 import { markSeen, wasSeenRecently } from "@/lib/seen-profiles";
-import { BRAND, LOADING_DONE, LOADING_LINES } from "@/lib/voice";
+import { BRAND, LOADING_LINES } from "@/lib/voice";
 import { FaroUpsell } from "@/components/faro-upsell";
 import { SingleUnlockButton } from "@/components/single-unlock-button";
 import { PeekingFaro } from "@/components/ui/peeking-faro";
 import { NoteBox } from "@/components/ui/brand";
 import { Mascot } from "@/components/ui/mascot";
 import { RaioX } from "@/components/raio-x";
+import { WheelPicker } from "@/components/ui/wheel-picker";
 import type { Section } from "@/lib/raio-x";
 
 interface RecentItem extends Person {
   detectedAt: string;
 }
 
-// Faro's loading lines, ending on the "Achei!" beat.
-const STEPS = [...LOADING_LINES, LOADING_DONE];
-/** ~2.4s per line keeps the whole sequence around 17s. */
+// Faro's loading lines. They cycle while the provider answers — the sequence
+// ends when the profile arrives, not on a clock.
+const STEPS = LOADING_LINES;
+/** One line every ~2.4s while Faro searches. */
 const STEP_MS = 2400;
+/** Faro always gets this long to search, even when the answer is instant. */
+const MIN_SEARCH_MS = 9000;
 
 const TABS = [
   { value: "visao", label: "Visão geral" },
@@ -165,13 +169,24 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
   const [justPinned, setJustPinned] = React.useState(false);
 
   // Is this profile already in the user's Faro? DB read only — no provider call.
+  // The answer also decides whether the search scene plays: a profile you
+  // already follow is not a new discovery, so it opens straight away.
+  const [inFaro, setInFaro] = React.useState<boolean | null>(loggedIn ? null : false);
   React.useEffect(() => {
-    if (!loggedIn) return;
+    if (!loggedIn) {
+      setInFaro(false);
+      return;
+    }
     let alive = true;
+    setInFaro(null);
     fetch(`/api/profile-history?username=${encodeURIComponent(username)}`)
       .then((r) => r.json())
-      .then((b) => alive && b.saved && setTracking({ saved: true, busy: false }))
-      .catch(() => {});
+      .then((b) => {
+        if (!alive) return;
+        if (b.saved) setTracking({ saved: true, busy: false });
+        setInFaro(!!b.saved);
+      })
+      .catch(() => alive && setInFaro(false));
     return () => {
       alive = false;
     };
@@ -180,10 +195,30 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
   // Already seen this @ recently? Then skip the scene and go straight to the
   // result. Decided after mount (storage is client-only) and before anything
   // is drawn, so a revisit never flashes the pink screen.
+  const [joined, setJoined] = React.useState<string | null>(null);
+  const [searchedEnough, setSearchedEnough] = React.useState(false);
   const [intro, setIntro] = React.useState<"pending" | "play" | "skip">("pending");
   React.useEffect(() => {
-    setIntro(wasSeenRecently(username) ? "skip" : "play");
-  }, [username]);
+    setIntro("pending");
+    if (wasSeenRecently(username)) {
+      setIntro("skip");
+      return;
+    }
+    // Profiles in the Faro open straight away — you already farejou this one,
+    // and the Faro reads it every day anyway.
+    if (inFaro === true) {
+      setIntro("skip");
+      return;
+    }
+    if (inFaro === false) {
+      setIntro("play");
+      return;
+    }
+    // Still asking: start the scene anyway if the answer takes too long, so a
+    // slow database never leaves the page blank.
+    const id = window.setTimeout(() => setIntro("play"), 900);
+    return () => window.clearTimeout(id);
+  }, [username, inFaro]);
 
   // Remember it once the scene has played through to the result. Only then:
   // a skipped revisit must not push the 24h window forward, or someone coming
@@ -192,7 +227,8 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
     if (intro === "play" && !analyzing && state.kind === "ok") markSeen(username);
   }, [intro, analyzing, state.kind, username]);
 
-  // Staged "analysis" animation shown before the result.
+  // Faro searching: the lines cycle while the provider is still answering. The
+  // scene no longer runs on a fixed clock — it ends when the profile arrives.
   React.useEffect(() => {
     if (intro !== "play") {
       if (intro === "skip") setAnalyzing(false);
@@ -200,19 +236,55 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
     }
     setStep(0);
     setAnalyzing(true);
+    setSearchedEnough(false);
+    const floor = window.setTimeout(() => setSearchedEnough(true), MIN_SEARCH_MS);
     let i = 0;
     const id = setInterval(() => {
-      i += 1;
-      if (i >= STEPS.length) {
-        clearInterval(id);
-        setStep(STEPS.length - 1);
-        setAnalyzing(false);
-      } else {
-        setStep(i);
-      }
+      i = (i + 1) % LOADING_LINES.length;
+      setStep(i);
     }, STEP_MS);
-    return () => clearInterval(id);
+    return () => {
+      clearInterval(id);
+      window.clearTimeout(floor);
+    };
   }, [intro, username]);
+
+  // The profile is in: hand the loading screen over to the reveal. The real
+  // picture only ever exists from here on.
+  const reveal: RevealProfile | null =
+    intro === "play" && analyzing && searchedEnough && state.kind === "ok"
+      ? {
+          username: state.data.username,
+          displayName: state.data.displayName,
+          avatarUrl: state.data.avatarUrl,
+          isPrivate: state.data.isPrivate,
+          joined,
+        }
+      : null;
+
+  // "No Instagram desde…" — only when it is already cached, so the reveal never
+  // costs a provider request of its own.
+  React.useEffect(() => {
+    if (intro !== "play" || state.kind !== "ok") return;
+    let alive = true;
+    fetch(`/api/raio-x?username=${encodeURIComponent(username)}&section=about&cached=1`)
+      .then((r) => r.json())
+      .then((b) => {
+        const j = b?.status === "ok" ? b.data?.about?.joined : null;
+        // Free visitors get it masked; a row of dots is not worth showing.
+        if (alive && typeof j === "string" && !j.includes("•")) setJoined(j);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [intro, state.kind, username]);
+
+  // A missing @ has nothing to reveal — but Faro still gets his moment of
+  // searching before giving up, or the pink screen just blinks.
+  React.useEffect(() => {
+    if (state.kind === "error" && (searchedEnough || intro !== "play")) setAnalyzing(false);
+  }, [state.kind, searchedEnough, intro]);
 
   React.useEffect(() => {
     let alive = true;
@@ -264,9 +336,9 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
     };
   }, [username]);
 
-  // Nothing to analyse if the profile is missing or the free analysis is spent.
+  // Nothing to analyse if the free analysis is spent.
   React.useEffect(() => {
-    if (state.kind === "limited" || state.kind === "error") setAnalyzing(false);
+    if (state.kind === "limited") setAnalyzing(false);
   }, [state.kind]);
 
   React.useEffect(() => {
@@ -369,7 +441,7 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
       {/* Clip at the SCREEN edge, not the content column: Faro peeks out beside
           the card, and clipping at the column cut him down to a sliver. */}
       <div className="overflow-x-clip">
-      <main className="mx-auto max-w-5xl px-6 py-8">
+      <main className={`mx-auto max-w-5xl px-6 py-8 ${loggedIn ? "md:pl-[15.5rem]" : ""}`}>
         {/* Tighter when the profile shows: Faro's peeking area sits just below. */}
         <div
           className={`flex items-center justify-between ${
@@ -386,7 +458,13 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
         </div>
 
         {intro === "play" && (analyzing || state.kind === "loading") && (
-          <AnalysisLoading step={step} steps={STEPS} username={username} />
+          <AnalysisLoading
+            step={step}
+            steps={STEPS}
+            username={username}
+            reveal={reveal}
+            onRevealDone={() => setAnalyzing(false)}
+          />
         )}
 
         {/* Revisit: no scene, just a quick beat while the (cached) data arrives. */}
@@ -437,10 +515,12 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
 
         {!analyzing && state.kind === "error" && (
           <div className="flex flex-col items-center gap-3 py-16 text-center">
-            <Mascot pose="lupa" className="h-24 text-vinho" bob />
-            <p className="mt-2 font-bold">@{username} não foi encontrado</p>
+            <Mascot pose="duvida" className="h-32 text-vinho" decorative />
+            <p className="mt-2 max-w-sm text-lg font-bold">
+              Não achei esse perfil. Confere o @ e tenta de novo.
+            </p>
             <p className="text-sm text-muted-foreground">
-              Confira se o usuário está certo. O Faro procurou, mas esse @ não existe.
+              O Faro procurou, mas não existe nenhuma conta com o @{username}.
             </p>
             <Link href="/">
               <Button variant="outline" size="sm">
@@ -480,8 +560,10 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
             {following.kind === "private" ? (
               <Panel className="mt-6">
                 <div className="flex flex-col items-center gap-2 py-6 text-center">
-                  <Lock className="h-7 w-7 text-muted-foreground" />
-                  <p className="text-lg font-bold">Esta conta é privada</p>
+                  <Mascot pose="duvida" className="h-28 text-vinho" decorative />
+                  <p className="mt-1 max-w-sm text-lg font-bold">
+                    Encontrei o perfil, mas não consigo farejar além daqui.
+                  </p>
                   <p className="max-w-sm text-sm text-muted-foreground">
                     O Instagram só mostra quem uma conta privada segue para os seguidores aprovados
                     dela. Não é possível analisar @{state.data.username}.
@@ -496,7 +578,17 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
             ) : (
               <>
                 <p className="mt-6 text-lg font-bold">{BRAND.phrases.achamosUmRastro} 👀</p>
-                <Chips options={TABS} value={tab} onChange={setTab} className="mt-3" />
+                {/* No celular, a roda do iPhone: arrasta para escolher o que ver.
+                    No computador, as pílulas continuam — roda com mouse é ruim. */}
+                <div className="mt-3 rounded-2xl border border-plum/10 bg-white px-3 py-1 sm:hidden">
+                  <WheelPicker
+                    options={TABS}
+                    value={tab}
+                    onChange={setTab}
+                    aria-label="O que você quer ver"
+                  />
+                </div>
+                <Chips options={TABS} value={tab} onChange={setTab} className="mt-3 hidden sm:flex" />
 
                 {tab === "visao" && (
                   <div className="mt-5 space-y-5">

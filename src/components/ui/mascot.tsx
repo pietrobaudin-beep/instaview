@@ -65,9 +65,8 @@ export function Mascot({
 }
 
 /**
- * One pose turning into another with a springy "pop": the outgoing Faro
- * squashes and tips away while the next one bounces in, with a small sparkle
- * burst at the swap.
+ * One pose turning into another with a quiet crossfade. The motion is kept
+ * deliberately small so it reads as feedback, not decoration.
  *
  * - Controlled: pass `active` (e.g. "the user is typing") and it swaps on change.
  * - `loop`: alternates on its own, for showcase spots such as onboarding.
@@ -89,10 +88,6 @@ export function FaroSwap({
 }) {
   const [auto, setAuto] = React.useState(false);
   const on = loop ? auto : !!active;
-  // Replays the sparkle burst on every swap (skipped on first render).
-  const [burst, setBurst] = React.useState(0);
-  const first = React.useRef(true);
-
   React.useEffect(() => {
     if (!loop) return;
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
@@ -100,14 +95,6 @@ export function FaroSwap({
     const id = setInterval(() => setAuto((v) => !v), interval);
     return () => clearInterval(id);
   }, [loop, interval]);
-
-  React.useEffect(() => {
-    if (first.current) {
-      first.current = false;
-      return;
-    }
-    setBurst((n) => n + 1);
-  }, [on]);
 
   return (
     <span className={cn("relative inline-grid place-items-center", className)} aria-live="off">
@@ -117,14 +104,6 @@ export function FaroSwap({
       <span className={cn("faro-layer", on ? "faro-in" : "faro-out")}>
         <Mascot pose={to} className="h-full" bob={on} decorative={!on} />
       </span>
-      {burst > 0 && (
-        <span key={burst} className="faro-burst" aria-hidden>
-          <i />
-          <i />
-          <i />
-          <i />
-        </span>
-      )}
     </span>
   );
 }

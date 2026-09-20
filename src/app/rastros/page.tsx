@@ -8,6 +8,7 @@ import { Panel, StatusPill } from "@/components/ui/brand";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { FOLLOWING_KIND } from "@/lib/following-tracker";
+import { planFor } from "@/lib/plans";
 import { COMMENTS_KIND, LIKES_KIND } from "@/lib/post-activity";
 import { activityLevel, pistas } from "@/lib/voice";
 import { Mascot } from "@/components/ui/mascot";
@@ -30,8 +31,8 @@ export default async function RastrosPage() {
   if (user.plan === "FREE") {
     return (
       <>
-        <AppNav />
-        <main className="mx-auto max-w-3xl px-6 py-8">
+        <AppNav plan={user.plan} />
+        <main className="mx-auto max-w-3xl px-6 py-8 md:pl-[15.5rem]">
           <h1 className="mb-6 text-3xl font-bold tracking-tight">Meus rastros</h1>
           <Panel>
             <div className="flex flex-col items-center gap-3 py-10 text-center">
@@ -76,12 +77,14 @@ export default async function RastrosPage() {
 
   return (
     <>
-      <AppNav />
-      <main className="mx-auto max-w-6xl px-6 py-8">
+      <AppNav plan={user.plan} />
+      <main className="mx-auto max-w-6xl px-6 py-8 md:pl-[15.5rem]">
         <div className="mb-2 flex flex-wrap items-center gap-3">
           <h1 className="text-3xl font-bold tracking-tight">Meus rastros</h1>
-          <StatusPill tone="green">
-            <span className="text-[8px]">●</span> {profiles.length} no Faro
+          {/* Says how much room is left, so the limit never arrives as a surprise. */}
+          <StatusPill tone={profiles.length >= planFor(user.plan).maxProfiles ? "yellow" : "green"}>
+            <span className="text-[8px]">●</span> {profiles.length} de{" "}
+            {planFor(user.plan).maxProfiles} no Faro
           </StatusPill>
         </div>
         {profiles.length > 0 && (

@@ -191,17 +191,19 @@ export function SearchBlock({
 
       {showRecent && recent.length > 0 && (
         <div className="mt-8 text-left">
-          <h2 className="mb-2 text-sm font-bold">Farejados recentemente</h2>
-          <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
+          <h2 className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-plum/45">
+            Farejados recentemente
+          </h2>
+          <ul className="divide-y divide-plum/10 overflow-hidden rounded-2xl border border-plum/10 bg-white">
             {recent.map((r) => (
               <li key={r.username}>
                 <Link
                   href={`/p/${encodeURIComponent(r.username)}`}
-                  className="flex items-center gap-3 px-4 py-3 transition hover:bg-muted/50"
+                  className="flex items-center gap-3 px-4 py-3 transition hover:bg-blush/50"
                 >
                   <Avatar src={r.avatarUrl} name={r.displayName ?? r.username} size={36} />
-                  <span className="min-w-0 flex-1 truncate text-sm font-semibold">
-                    {r.username}
+                  <span className="min-w-0 flex-1 truncate text-sm font-semibold text-plum">
+                    @{r.username}
                   </span>
                   <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                 </Link>

@@ -59,8 +59,8 @@ export default async function NotificacoesPage() {
 
   return (
     <>
-      <AppNav />
-      <main className="mx-auto max-w-3xl px-6 py-8">
+      <AppNav plan={user.plan} />
+      <main className="mx-auto max-w-3xl px-6 py-8 md:pl-[15.5rem]">
         <h1 className="text-3xl font-bold tracking-tight">Pistas</h1>
         <p className="mb-6 mt-1 text-muted-foreground">{BRAND.phrases.despercebido}</p>
 

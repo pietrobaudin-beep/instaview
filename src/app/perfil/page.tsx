@@ -31,8 +31,8 @@ export default async function PerfilPage() {
 
   return (
     <>
-      <AppNav />
-      <main className="mx-auto max-w-3xl px-6 py-8">
+      <AppNav plan={user.plan} />
+      <main className="mx-auto max-w-3xl px-6 py-8 md:pl-[15.5rem]">
         <h1 className="mb-6 text-3xl font-extrabold tracking-tight">Perfil</h1>
 
         <Panel>

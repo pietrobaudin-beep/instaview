@@ -7,7 +7,7 @@
  * Pink #F6A8D2 · Roxo #B7A6FF · Amarelo #FFE257 · Creme #F7F4EE · Preto #1A0F14
  */
 :root {
-  --font-sans: var(--font-grotesk), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+  --font-sans: var(--font-sans-ui), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
     Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
 
   --radius: 1.25rem;
@@ -20,6 +20,14 @@
   --ink: 333 27% 8%;
   /* Vinho #4A0827 — the dark brand surface for the landing's Pro moments. */
   --vinho: 332 81% 16%;
+
+  /* Premium — a paleta do PRO: vinho profundo, magenta fechado, blush, menta
+     e um preto mais quente. Mais sóbria que a da landing, de propósito. */
+  --plum: 335 60% 14%;      /* #3B0F20 */
+  --magenta: 331 46% 53%;   /* #C04B82 */
+  --blush: 351 32% 92%;     /* #F2E3E5 */
+  --mint: 146 66% 89%;      /* #CDF7DE */
+  --onyx: 340 12% 8%;       /* #171012 */
   /* Alias so existing hsl(var(--maroon)) usages keep working. */
   --maroon: var(--ink);
 
@@ -53,6 +61,7 @@ body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
   font-family: var(--font-sans);
+  font-feature-settings: "cv11", "ss01";
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -131,16 +140,15 @@ h3 {
    Faro pose swap (see FaroSwap)
    --------------------------------------------------------------------------- */
 
-/* Both poses share one grid cell and trade places. The incoming one springs
-   in with a little overshoot; the outgoing one tips over and shrinks away. */
+/* Both poses share one grid cell and trade places with a small, stable fade. */
 .faro-layer {
   grid-area: 1 / 1;
   display: inline-flex;
   height: 100%;
   transform-origin: 50% 90%;
   transition:
-    transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
-    opacity 0.28s ease;
+    transform 0.32s ease-out,
+    opacity 0.24s ease-out;
 }
 .faro-in {
   opacity: 1;
@@ -148,32 +156,31 @@ h3 {
 }
 .faro-out {
   opacity: 0;
-  transform: scale(0.72) rotate(-9deg) translateY(6%);
+  transform: translateY(3px);
   pointer-events: none;
 }
 
-/* Gentle idle bounce while a pose is on screen. */
+/* A barely-there idle breath; no squashing or bouncing. */
 @keyframes mascot-bob {
-  0%, 100% { transform: translateY(0) scale(1, 1); }
-  45% { transform: translateY(-4%) scale(0.98, 1.02); }
-  60% { transform: translateY(0) scale(1.02, 0.98); }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
 }
 .mascot-bob {
   transform-origin: 50% 100%;
-  animation: mascot-bob 2.4s ease-in-out infinite;
+  animation: mascot-bob 3.6s ease-in-out infinite;
 }
 
 /* Sleeping Faro: a slow breath, anchored at the ground. */
 @keyframes mascot-breathe {
   0%, 100% { transform: scale(1, 1); }
-  50% { transform: scale(1.015, 1.035); }
+  50% { transform: scale(1.01); }
 }
 .mascot-breathe {
   transform-origin: 50% 100%;
   animation: mascot-breathe 3.6s ease-in-out infinite;
 }
 
-/* Four sparks thrown out at the moment of the swap. */
+/* Kept for the one-off completion state in the loading scene. */
 .faro-burst {
   position: absolute;
   inset: 0;
@@ -188,7 +195,7 @@ h3 {
   border-radius: 9999px;
   background: hsl(var(--accent));
   opacity: 0;
-  animation: faro-spark 0.6s ease-out forwards;
+  animation: faro-spark 0.45s ease-out forwards;
 }
 .faro-burst i:nth-child(2) { background: hsl(var(--yellow)); --dx: 34px; --dy: -26px; }
 .faro-burst i:nth-child(3) { background: hsl(var(--purple)); --dx: -30px; --dy: -22px; }
@@ -212,50 +219,50 @@ h3 {
    Loading scene (see LoadingScene) — one small gesture per pose.
    --------------------------------------------------------------------------- */
 
-.scene-pop { animation: scene-pop 0.28s ease-out both; }
+.scene-pop { animation: scene-pop 0.22s ease-out both; }
 @keyframes scene-pop {
-  from { opacity: 0; transform: scale(0.92) translateY(4%); }
+  from { opacity: 0; transform: translateY(3px); }
   to { opacity: 1; transform: none; }
 }
 
-/* Running: a light gallop. */
-.scene-run { transform-origin: 50% 100%; animation: scene-run 0.34s ease-in-out infinite; }
+/* Small gestures only: position changes already communicate movement. */
+.scene-run { transform-origin: 50% 100%; animation: scene-run 0.65s ease-in-out infinite; }
 @keyframes scene-run {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-7%); }
+  50% { transform: translateY(-2px); }
 }
 
 /* Sniffing the ground: nose wiggling close to the floor. */
-.scene-sniff { transform-origin: 80% 100%; animation: scene-sniff 0.55s ease-in-out infinite alternate; }
+.scene-sniff { transform-origin: 80% 100%; animation: scene-sniff 1.4s ease-in-out infinite alternate; }
 @keyframes scene-sniff {
-  from { transform: rotate(-1.5deg); }
-  to { transform: rotate(1.5deg) translateY(1%); }
+  from { transform: rotate(-0.8deg); }
+  to { transform: rotate(0.8deg) translateY(1px); }
 }
 
 /* Magnifier: a slow sweep. */
-.scene-scan { transform-origin: 50% 100%; animation: scene-scan 1.3s ease-in-out infinite alternate; }
+.scene-scan { transform-origin: 50% 100%; animation: scene-scan 2s ease-in-out infinite alternate; }
 @keyframes scene-scan {
-  from { transform: rotate(-4deg); }
-  to { transform: rotate(4deg); }
+  from { transform: rotate(-1.5deg); }
+  to { transform: rotate(1.5deg); }
 }
 
-/* Alert: one small hop. */
-.scene-perk { transform-origin: 50% 100%; animation: scene-perk 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+/* Alert: a single lift, with no elastic overshoot. */
+.scene-perk { transform-origin: 50% 100%; animation: scene-perk 0.4s ease-out both; }
 @keyframes scene-perk {
-  0% { transform: translateY(0) scaleY(0.94); }
-  40% { transform: translateY(-12%) scaleY(1.04); }
+  0% { transform: translateY(2px); }
+  60% { transform: translateY(-3px); }
   100% { transform: none; }
 }
 
 /* Doubt: head tilted. */
-.scene-tilt { transform-origin: 50% 100%; animation: scene-tilt 0.45s ease-out both; }
-@keyframes scene-tilt { to { transform: rotate(7deg); } }
+.scene-tilt { transform-origin: 50% 100%; animation: scene-tilt 0.4s ease-out both; }
+@keyframes scene-tilt { to { transform: rotate(4deg); } }
 
 /* Found it: the bone arrives with a springy pop. */
-.scene-found { transform-origin: 50% 100%; animation: scene-found 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.scene-found { transform-origin: 50% 100%; animation: scene-found 0.45s ease-out both; }
 @keyframes scene-found {
-  0% { transform: scale(0.6) translateY(10%); }
-  60% { transform: scale(1.08); }
+  0% { opacity: 0; transform: translateY(4px); }
+  60% { opacity: 1; transform: scale(1.03); }
   100% { transform: none; }
 }
 
@@ -297,20 +304,22 @@ h3 {
    Scroll reveal (see Reveal) and the mockups that come alive inside it.
    --------------------------------------------------------------------------- */
 
+/* Entrada discreta: 10px de subida, rápida. Blocos grandes não podem passar
+   segundos apagados — dá impressão de página ainda carregando. */
 .reveal {
-  opacity: 0;
-  transform: translateY(28px);
+  opacity: 0.001;
+  transform: translateY(10px);
   transition:
-    opacity 0.7s ease-out var(--reveal-delay, 0ms),
-    transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) var(--reveal-delay, 0ms);
+    opacity 0.28s ease-out var(--reveal-delay, 0ms),
+    transform 0.34s cubic-bezier(0.2, 0.7, 0.2, 1) var(--reveal-delay, 0ms);
 }
 .reveal.is-in { opacity: 1; transform: none; }
 
 /* Pieces that arrive one after another once revealed: style="--d: 300ms". */
 .reveal .rise { opacity: 0; }
-.reveal.is-in .rise { animation: rise 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) calc(var(--reveal-delay, 0ms) + var(--d, 0ms)) both; }
+.reveal.is-in .rise { animation: rise 0.34s cubic-bezier(0.2, 0.7, 0.2, 1) calc(var(--reveal-delay, 0ms) + var(--d, 0ms)) both; }
 @keyframes rise {
-  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: none; }
 }
 
@@ -347,4 +356,58 @@ h3 {
     opacity: 1 !important; transform: none !important; transition: none !important; animation: none !important;
   }
   .caret { animation: none; }
+}
+
+/* Loading reveal: each fact of the profile arrives after the one before it. */
+@keyframes reveal-line-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.reveal-line {
+  opacity: 0;
+  animation: reveal-line-in 520ms cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal-line {
+    opacity: 1;
+    animation: none;
+  }
+}
+
+
+/* ---------------------------------------------------------------------------
+   Tipografia da marca: títulos em Bricolage Grotesque, texto e números em Inter
+   --------------------------------------------------------------------------- */
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-display), var(--font-sans);
+  letter-spacing: -0.02em;
+}
+h1,
+.font-display-strong {
+  font-weight: 800;
+}
+h2,
+h3 {
+  font-weight: 700;
+}
+/* Números de painel: Inter, tabular, para as colunas não dançarem. */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Roda de seleção no estilo iOS: sem barra de rolagem visível. */
+.wheel-scroll {
+  scrollbar-width: none;
+}
+.wheel-scroll::-webkit-scrollbar {
+  display: none;
 }

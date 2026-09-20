@@ -71,7 +71,7 @@ export function TrackingSettings({
   }
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-6">
+    <main className="mx-auto max-w-4xl px-6 py-6 md:pl-[15.5rem]">
       <AppHeader
         title="No seu Faro"
         backHref="/rastros"

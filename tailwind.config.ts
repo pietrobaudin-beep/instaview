@@ -51,6 +51,12 @@ const config: Config = {
         cream: "hsl(var(--cream))",
         ink: "hsl(var(--ink))",
         vinho: "hsl(var(--vinho))",
+        // Premium — usada na área PRO.
+        plum: "hsl(var(--plum))",
+        magenta: "hsl(var(--magenta))",
+        blush: "hsl(var(--blush))",
+        mint: "hsl(var(--mint))",
+        onyx: "hsl(var(--onyx))",
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -59,6 +65,7 @@ const config: Config = {
       },
       fontFamily: {
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],
+        display: ["var(--font-display)", "var(--font-sans)", "sans-serif"],
       },
       keyframes: {
         "fade-in": {

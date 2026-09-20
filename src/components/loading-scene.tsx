@@ -70,7 +70,14 @@ interface Trail {
   dir: 1 | -1;
 }
 
-export function LoadingScene({ done }: { done: boolean }) {
+export function LoadingScene({
+  done,
+  outcome = "found",
+}: {
+  done: boolean;
+  /** What he is holding at the end: the bone, or a puzzled look. */
+  outcome?: "found" | "private";
+}) {
   const [i, setI] = React.useState(-1); // -1 = standing at the start
   const [x, setX] = React.useState(START_X);
   const [z, setZ] = React.useState(START_Z);
@@ -135,7 +142,8 @@ export function LoadingScene({ done }: { done: boolean }) {
   }, [done]);
 
   const beat = i >= 0 ? BEATS[i] : null;
-  const pose: Pose = done ? "osso" : reduced ? "lupa" : beat?.pose ?? "sentado";
+  const finalPose: Pose = outcome === "private" ? "duvida" : "osso";
+  const pose: Pose = done ? finalPose : reduced ? "lupa" : beat?.pose ?? "sentado";
   const move = done ? "found" : reduced ? "" : beat?.move ?? "";
   const facing = NO_FLIP.includes(pose) ? 1 : dir;
 
@@ -205,7 +213,7 @@ export function LoadingScene({ done }: { done: boolean }) {
             </div>
           </div>
         </div>
-        {done && (
+        {done && outcome === "found" && (
           <span className="faro-burst" aria-hidden>
             <i />
             <i />

@@ -1,13 +1,31 @@
 /**
- * Shared 24h cache for profile lookups, so the several places that need a
- * profile's photo / name / bio / totals never charge the provider twice for the
- * same handle within a day.
+ * Shared cache for profile lookups.
+ *
+ * Every analysis starts with one of these, and several routes need the same
+ * profile — so this is the single most repeated provider request in the app.
+ * The copy lives in the database, not in memory: on Vercel each route runs in
+ * its own instance, so an in-memory cache was being missed constantly and the
+ * same @ was paid for again and again.
+ *
+ * A miss is cached too ("this @ does not exist"), because the provider charges
+ * for 404s, and a wrong @ tends to be retried.
  */
+import { prisma } from "@/lib/db";
 import { getProvider } from "@/lib/providers";
-import type { ProfileData } from "@/lib/providers/types";
+import { ProviderError, type ProfileData } from "@/lib/providers/types";
+import { cacheSectionKey } from "@/lib/sandbox";
 
-const cache = new Map<string, { at: number; data: ProfileData }>();
 const TTL = 24 * 60 * 60 * 1000;
+/** A missing @ is usually a typo; a day is enough to stop the retries. */
+const MISSING_TTL = 24 * 60 * 60 * 1000;
+
+/** Same row shape as the Raio-X sections, under its own key. */
+const KEY = () => cacheSectionKey("profile");
+
+type Stored = { missing: true } | { missing?: false; profile: ProfileData };
+
+// Within one instance, skip even the database round-trip.
+const memory = new Map<string, { at: number; value: Stored }>();
 
 export interface CachedProfile {
   profile: ProfileData;
@@ -15,22 +33,65 @@ export interface CachedProfile {
   fetchedAt: Date;
 }
 
-/** Cached profile, fetching it (one provider request) only when stale. */
+function fresh(at: number, value: Stored): boolean {
+  return Date.now() - at < (value.missing ? MISSING_TTL : TTL);
+}
+
+async function read(username: string): Promise<{ at: number; value: Stored } | null> {
+  const local = memory.get(username);
+  if (local && fresh(local.at, local.value)) return local;
+
+  const row = await prisma.sectionCache
+    .findUnique({ where: { username_section: { username, section: KEY() } } })
+    .catch(() => null);
+  if (!row) return null;
+
+  const hit = { at: row.fetchedAt.getTime(), value: row.data as unknown as Stored };
+  if (!fresh(hit.at, hit.value)) return null;
+  memory.set(username, hit);
+  return hit;
+}
+
+async function write(username: string, value: Stored): Promise<Date> {
+  const data = value as unknown as Parameters<typeof prisma.sectionCache.create>[0]["data"]["data"];
+  const row = await prisma.sectionCache
+    .upsert({
+      where: { username_section: { username, section: KEY() } },
+      create: { username, section: KEY(), data },
+      update: { data, fetchedAt: new Date() },
+    })
+    .catch(() => null);
+  const at = row?.fetchedAt ?? new Date();
+  memory.set(username, { at: at.getTime(), value });
+  return at;
+}
+
+/** Cached profile, charging the provider only when there is nothing fresh. */
 export async function getProfileCached(username: string): Promise<CachedProfile> {
-  const hit = cache.get(username);
-  if (hit && Date.now() - hit.at < TTL) return { profile: hit.data, fetchedAt: new Date(hit.at) };
+  const hit = await read(username);
+  if (hit) {
+    if (hit.value.missing) throw new ProviderError("cached: profile not found", "NOT_FOUND");
+    return { profile: hit.value.profile, fetchedAt: new Date(hit.at) };
+  }
 
   const provider = getProvider();
-  const data = provider.getProfileBasic
-    ? await provider.getProfileBasic(username)
-    : await provider.getProfile(username);
-  const at = Date.now();
-  cache.set(username, { at, data });
-  return { profile: data, fetchedAt: new Date(at) };
+  try {
+    const data = provider.getProfileBasic
+      ? await provider.getProfileBasic(username)
+      : await provider.getProfile(username);
+    const at = await write(username, { profile: data });
+    return { profile: data, fetchedAt: at };
+  } catch (e) {
+    // Remember the miss: the provider charges for it, and people retry.
+    if (e instanceof ProviderError && e.code === "NOT_FOUND") {
+      await write(username, { missing: true });
+    }
+    throw e;
+  }
 }
 
 /** The cached profile if we already have it — never triggers a request. */
-export function peekProfileCached(username: string): ProfileData | null {
-  const hit = cache.get(username);
-  return hit && Date.now() - hit.at < TTL ? hit.data : null;
+export async function peekProfileCached(username: string): Promise<ProfileData | null> {
+  const hit = await read(username);
+  return hit && !hit.value.missing ? hit.value.profile : null;
 }

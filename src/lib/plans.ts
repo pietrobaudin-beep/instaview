@@ -38,7 +38,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     team: false,
     exportAndApi: false,
     features: [
-      "1 perfil acompanhado",
+      "1 perfil analisado",
       "Atualizações diárias",
       "Contagem de mulheres e homens",
       "Histórico de 7 dias",
@@ -48,13 +48,13 @@ export const PLANS: Record<Plan, PlanConfig> = {
     id: "PRO",
     name: "Pro",
     priceMonthly: 29.9,
-    priceYearly: 199.9,
+    priceYearly: 239.9,
     maxProfiles: 10,
-    // Six-hour snapshots make the Pro history useful without turning a
-    // subscription into dozens of provider calls per profile every day.
-    // The UI shows the next scheduled "farejo" so this feels intentional,
-    // rather than like stale data.
-    minIntervalMinutes: 6 * 60,
+    // Once a day, on purpose. A story lasts 24h, so a daily pass catches every
+    // one of them — reading every six hours finds nothing extra and costs four
+    // times as much (R$ 46/month of data for a R$ 29,90 plan). The UI shows the
+    // next scheduled "farejo", so the rhythm reads as intentional.
+    minIntervalMinutes: 24 * 60,
     historyDays: 365,
     alerts: true,
     team: false,
@@ -64,7 +64,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
       "Quem começou a seguir, sem censura",
       "Quem deixou de seguir",
       "Interações em posts específicos",
-      "Acompanhe vários perfis",
+      "Até 10 perfis no Faro",
       "Histórico e relatórios completos",
       "Alertas de novas conexões",
       "Último farejo e mudanças desde a última atualização",
@@ -73,17 +73,19 @@ export const PLANS: Record<Plan, PlanConfig> = {
   AGENCY: {
     id: "AGENCY",
     name: "Agency",
-    priceMonthly: 99.9,
-    maxProfiles: 100,
-    minIntervalMinutes: 30,
+    priceMonthly: 149.9,
+    maxProfiles: 30,
+    // The paid-for extra: four passes a day instead of one. Costs ~4x per
+    // profile, which the Agency price covers and the Pro price does not.
+    minIntervalMinutes: 6 * 60,
     historyDays: Number.POSITIVE_INFINITY,
     alerts: true,
     team: true,
     exportAndApi: true,
     stripePriceEnv: "NEXT_PUBLIC_STRIPE_PRICE_AGENCY",
     features: [
-      "100 perfis acompanhados",
-      "Atualizações a cada 30 min",
+      "Até 30 perfis no Faro",
+      "Farejo a cada 6 horas",
       "Histórico ilimitado",
       "Membros de equipe",
       "Exportar CSV + API",

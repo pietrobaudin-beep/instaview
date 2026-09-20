@@ -18,6 +18,9 @@
  * The followers endpoint needs the numeric user_id, so we resolve it from the
  * username first (cached per instance).
  */
+import type { Prisma } from "@prisma/client";
+import { prisma } from "@/lib/db";
+import { cacheSectionKey } from "@/lib/sandbox";
 import { logger } from "@/lib/logger";
 import {
   AboutInfo,
@@ -143,6 +146,10 @@ interface HikerUser {
   is_private?: boolean;
 }
 
+/** Same freshness window as the profile cache. */
+const USER_TTL = 24 * 60 * 60 * 1000;
+const USER_KEY = () => cacheSectionKey("hiker-user");
+
 export class HikerApiProvider implements InstagramDataProvider {
   readonly name = "hikerapi";
   readonly supportsFollowerList = true;
@@ -174,14 +181,43 @@ export class HikerApiProvider implements InstagramDataProvider {
     return (await res.json()) as T;
   }
 
+  /**
+   * Username → user, the request every other endpoint depends on.
+   *
+   * It is kept in the database, not only in memory: on Vercel each route is
+   * its own instance, so an in-memory copy was missed on nearly every call and
+   * each Raio-X tab was paying twice — once to find the id, once for the data.
+   * The window matches the profile cache, so nothing here is staler than what
+   * the rest of the app already shows.
+   */
   private async resolveUser(username: string): Promise<HikerUser> {
     const key = username.toLowerCase();
     const cached = this.userCache.get(key);
     if (cached) return cached;
+
+    const stored = await prisma.sectionCache
+      .findUnique({ where: { username_section: { username: key, section: USER_KEY() } } })
+      .catch(() => null);
+    if (stored && Date.now() - stored.fetchedAt.getTime() < USER_TTL) {
+      const user = stored.data as unknown as HikerUser;
+      if (user?.pk) {
+        this.userCache.set(key, user);
+        return user;
+      }
+    }
+
     const data = await this.request<any>("/v1/user/by/username", { username });
     const user: HikerUser = data?.user ?? data ?? {};
     if (!user.pk) throw new ProviderError("HikerAPI returned no user id", "UNKNOWN");
     this.userCache.set(key, user);
+    const json = user as unknown as Prisma.InputJsonValue;
+    await prisma.sectionCache
+      .upsert({
+        where: { username_section: { username: key, section: USER_KEY() } },
+        create: { username: key, section: USER_KEY(), data: json },
+        update: { data: json, fetchedAt: new Date() },
+      })
+      .catch(() => null);
     return user;
   }
 

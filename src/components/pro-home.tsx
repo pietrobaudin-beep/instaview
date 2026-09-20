@@ -3,7 +3,6 @@ import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ArrowUpRight, Heart, PawPrint, Pin, Undo2 } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
-import { Panel } from "@/components/ui/brand";
 import { Nose } from "@/components/ui/doodles";
 import type { ProHome as ProHomeData } from "@/lib/pro-home";
 import { BRAND, greeting, novidades, pistaHeadline, pistas } from "@/lib/voice";
@@ -23,84 +22,127 @@ function ago(iso: string) {
   }
 }
 
+/** Quiet card used across the Pro home — white, thin border, generous padding. */
+function Card({
+  title,
+  icon,
+  action,
+  children,
+  className = "",
+}: {
+  title: string;
+  icon?: React.ReactNode;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <section
+      className={`rounded-[1.75rem] border border-plum/10 bg-white p-6 shadow-[0_1px_2px_rgba(23,16,18,0.04),0_12px_32px_-24px_rgba(23,16,18,0.45)] ${className}`}
+    >
+      <header className="mb-5 flex items-center justify-between gap-3">
+        <h2 className="flex items-center gap-2 text-[15px] font-bold tracking-tight text-plum">
+          {icon}
+          {title}
+        </h2>
+        {action}
+      </header>
+      {children}
+    </section>
+  );
+}
+
 /**
  * The Pro home: Farejo stops being a lookup tool and becomes something you open
  * every day — what Faro found since yesterday, who is in your Faro, and the
  * trail of recent changes.
+ *
+ * The Pro area wears the premium palette: deep plum, closed magenta, blush and
+ * mint on white. Quieter than the landing's pink/purple/yellow, on purpose —
+ * this is the screen a paying subscriber opens every morning.
  */
 export function ProHome({ data, hour }: { data: ProHomeData; hour: number }) {
   const found = data.pistasSinceYesterday;
 
   const cards = [
-    { icon: PawPrint, value: data.follows, label: "novos follows", tone: "bg-pink" },
-    { icon: Undo2, value: data.unfollows, label: "unfollows", tone: "bg-purple" },
-    { icon: Heart, value: data.interactions, label: "interações", tone: "bg-yellow" },
+    { icon: PawPrint, value: data.follows, label: "novos follows", tone: "bg-blush text-plum" },
+    { icon: Undo2, value: data.unfollows, label: "unfollows", tone: "bg-mint text-plum" },
+    { icon: Heart, value: data.interactions, label: "interações", tone: "bg-magenta text-white" },
   ];
 
   return (
     <div>
-      <h1 className="text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl">
-        {greeting(hour)}
-      </h1>
-      <p className="mt-3 text-lg">
-        {found > 0 ? (
-          <>
-            Faro encontrou <b>{pistas(found)}</b> desde ontem.
-            {data.follows > 0 && (
-              <span className="mt-1 block text-base font-semibold text-accent">
-                {BRAND.phrases.alguemNovo}
-              </span>
-            )}
-          </>
-        ) : (
-          <>😴 Faro pode descansar. Nenhuma mudança detectada desde ontem.</>
-        )}
-      </p>
+      {/* Header band: the one dark surface, where the day's news lives. */}
+      <header className="overflow-hidden rounded-[2rem] bg-plum px-7 py-8 text-white sm:px-9 sm:py-10">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/50">
+          Farejo PRO
+        </p>
+        <h1 className="mt-3 text-4xl font-extrabold leading-[1.02] tracking-tight sm:text-5xl">
+          {greeting(hour)}
+        </h1>
+        <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-white/75">
+          {found > 0 ? (
+            <>
+              Faro encontrou{" "}
+              <b className="font-semibold text-white">{pistas(found)}</b> desde ontem.
+              {data.follows > 0 && (
+                <span className="mt-1.5 block font-semibold text-blush">
+                  {BRAND.phrases.alguemNovo}
+                </span>
+              )}
+            </>
+          ) : (
+            <>Faro pode descansar. Nenhuma mudança detectada desde ontem.</>
+          )}
+        </p>
 
-      <div className="mt-6 grid grid-cols-3 gap-3">
-        {cards.map((c) => (
-          <div key={c.label} className={`rounded-3xl p-5 text-ink ${c.tone}`}>
-            <c.icon className="h-5 w-5" />
-            <div className="mt-3 text-3xl font-bold tabular-nums">{c.value}</div>
-            <div className="text-sm opacity-75">{c.label}</div>
-          </div>
-        ))}
-      </div>
+        <div className="mt-8 grid grid-cols-3 gap-3 sm:gap-4">
+          {cards.map((c) => (
+            <div key={c.label} className={`rounded-2xl px-4 py-5 ${c.tone}`}>
+              <c.icon className="h-[18px] w-[18px] opacity-70" />
+              <div className="mt-3 text-[28px] font-bold leading-none tabular-nums sm:text-[32px]">
+                {c.value}
+              </div>
+              <div className="mt-1.5 text-[13px] opacity-70">{c.label}</div>
+            </div>
+          ))}
+        </div>
+      </header>
 
-      <div className="mt-8 grid items-start gap-5 lg:grid-cols-5">
-        <Panel
+      <div className="mt-6 grid items-start gap-5 lg:grid-cols-5">
+        <Card
           className="lg:col-span-2"
-          title={
-            <h2 className="flex items-center gap-2 text-base font-bold">
-              <Pin className="h-4 w-4 text-accent" /> No seu Faro
-            </h2>
-          }
+          icon={<Pin className="h-4 w-4 text-magenta" />}
+          title="No seu Faro"
           action={
-            <Link href="/rastros" className="text-xs font-semibold text-accent hover:underline">
+            <Link
+              href="/rastros"
+              className="text-xs font-semibold text-magenta transition hover:opacity-70"
+            >
               Ver todos
             </Link>
           }
         >
-          <ul className="divide-y divide-border">
+          <ul className="divide-y divide-plum/10">
             {data.profiles.slice(0, 6).map((p) => (
               <li key={p.username}>
                 <Link
                   href={`/p/${encodeURIComponent(p.username)}`}
-                  className="flex items-center gap-3 py-3 transition hover:opacity-80"
+                  className="flex items-center gap-3 py-3.5 transition hover:opacity-70"
                 >
                   <div className="relative shrink-0">
                     <Avatar src={p.avatarUrl} name={p.displayName ?? p.username} size={40} />
-                    <Pin className="absolute -right-1 -top-1 h-4 w-4 fill-pink text-accent" />
+                    <Pin className="absolute -right-1 -top-1 h-4 w-4 fill-blush text-magenta" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold">@{p.username}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="truncate text-sm font-semibold text-plum">@{p.username}</p>
+                    <p className="text-xs text-plum/50">
                       {p.level.emoji} {p.level.label}
                     </p>
                   </div>
                   <span
-                    className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${
-                      p.novidades > 0 ? "bg-pink text-ink" : "bg-muted text-muted-foreground"
+                    className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold tabular-nums ${
+                      p.novidades > 0 ? "bg-magenta text-white" : "bg-plum/5 text-plum/50"
                     }`}
                   >
                     {novidades(p.novidades)}
@@ -109,20 +151,13 @@ export function ProHome({ data, hour }: { data: ProHomeData; hour: number }) {
               </li>
             ))}
           </ul>
-        </Panel>
+        </Card>
 
-        <Panel
-          className="lg:col-span-3"
-          title={
-            <h2 className="flex items-center gap-2 text-base font-bold">
-              <Nose className="h-4" /> Rastro recente
-            </h2>
-          }
-        >
+        <Card className="lg:col-span-3" icon={<Nose className="h-4 text-magenta" />} title="Rastro recente">
           {data.recent.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 py-6 text-center">
-              <Mascot pose="dormindo" className="h-20 text-vinho" bob />
-              <p className="text-sm text-muted-foreground">
+            <div className="flex flex-col items-center gap-2 py-8 text-center">
+              <Mascot pose="dormindo" className="h-20 text-plum/70" bob />
+              <p className="max-w-xs text-sm text-plum/50">
                 Nada passou pelo Faro ainda. As pistas aparecem aqui assim que algo mudar.
               </p>
             </div>
@@ -132,29 +167,30 @@ export function ProHome({ data, hour }: { data: ProHomeData; hour: number }) {
                 const h = pistaHeadline(r.kind);
                 return (
                   <li key={r.id} className="flex items-start gap-3">
-                    <span className="mt-0.5 text-lg leading-none" aria-hidden>
+                    <span
+                      className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blush text-base leading-none"
+                      aria-hidden
+                    >
                       {h.emoji}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold">{h.title}</p>
+                      <p className="text-sm font-semibold text-plum">{h.title}</p>
                       {/* Interactions are done by someone else ON the tracked profile. */}
-                      <p className="text-sm text-muted-foreground">
-                        <b className="text-foreground">
+                      <p className="text-sm text-plum/60">
+                        <b className="font-semibold text-plum">
                           @{r.kind === "interaction" ? r.target : r.subject}
                         </b>{" "}
                         {VERB[r.kind]}{" "}
-                        <b className="text-foreground">
+                        <b className="font-semibold text-plum">
                           @{r.kind === "interaction" ? r.subject : r.target}
                         </b>
                       </p>
-                      <p className="mt-0.5 text-[11px] text-muted-foreground">
-                        {ago(r.detectedAt)}
-                      </p>
+                      <p className="mt-1 text-[11px] text-plum/40">{ago(r.detectedAt)}</p>
                     </div>
                     <Link
                       href={`/p/${encodeURIComponent(r.subject)}`}
                       aria-label={`Abrir @${r.subject}`}
-                      className="shrink-0 text-muted-foreground hover:text-foreground"
+                      className="shrink-0 text-plum/30 transition hover:text-magenta"
                     >
                       <ArrowUpRight className="h-4 w-4" />
                     </Link>
@@ -163,7 +199,7 @@ export function ProHome({ data, hour }: { data: ProHomeData; hour: number }) {
               })}
             </ol>
           )}
-        </Panel>
+        </Card>
       </div>
     </div>
   );

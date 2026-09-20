@@ -22,7 +22,16 @@ import {
   GetFollowersResult,
   InstagramDataProvider,
   ProfileData,
+  ProviderError,
 } from "./types";
+
+/**
+ * Two @s with special meaning, so the three endings of the search screen can be
+ * tried on localhost without spending a provider request:
+ * anything containing "privado" comes back private, and "naoexiste" is missing.
+ */
+const isPrivateHandle = (u: string) => /privad[oa]/i.test(u);
+const isMissingHandle = (u: string) => /naoexiste|inexistente/i.test(u);
 
 const EPOCH = Date.UTC(2024, 0, 1); // fixed reference point
 const HOUR = 3600_000;
@@ -102,6 +111,7 @@ export class MockProvider implements InstagramDataProvider {
   constructor(private now: () => number = Date.now) {}
 
   async getProfile(username: string): Promise<ProfileData> {
+    if (isMissingHandle(username)) throw new ProviderError("mock: no such profile", "NOT_FOUND");
     const model = modelFor(username);
     const total = totalFollowers(model, this.now());
     return {
@@ -112,7 +122,7 @@ export class MockProvider implements InstagramDataProvider {
         .join(" "),
       avatarUrl: `https://i.pravatar.cc/300?u=${encodeURIComponent(username)}`,
       bio: null,
-      isPrivate: false,
+      isPrivate: isPrivateHandle(username),
       isVerified: model.verified,
       followersCount: total,
       followingCount: model.following,
@@ -143,6 +153,8 @@ export class MockProvider implements InstagramDataProvider {
   }
 
   async getFollowing(username: string, opts: GetFollowersOptions = {}): Promise<GetFollowersResult> {
+    if (isPrivateHandle(username)) throw new ProviderError("mock: private account", "PRIVATE");
+    if (isMissingHandle(username)) throw new ProviderError("mock: no such profile", "NOT_FOUND");
     const model = modelFor(username);
     const pageSize = opts.pageSize ?? 50;
     const maxPages = opts.maxPages ?? 5;

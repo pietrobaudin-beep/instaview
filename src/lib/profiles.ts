@@ -6,7 +6,7 @@
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
-import { clampInterval, planFor } from "@/lib/plans";
+import { PLANS, clampInterval, planFor } from "@/lib/plans";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
 import type { TrackedProfile, User } from "@prisma/client";
 
@@ -40,7 +40,9 @@ export async function trackProfile(user: User, rawUsername: string): Promise<Tra
   const count = await prisma.trackedProfile.count({ where: { userId: user.id } });
   if (count >= plan.maxProfiles) {
     throw new PlanLimitError(
-      `Your ${plan.name} plan allows ${plan.maxProfiles} tracked profile(s). Upgrade to add more.`,
+      plan.id === "AGENCY"
+        ? `O Agency acompanha até ${plan.maxProfiles} perfis no Faro. Tire um da lista para colocar outro.`
+        : `O ${plan.name} acompanha até ${plan.maxProfiles} perfis no Faro. Tire um da lista, ou passe para o Agency (até ${PLANS.AGENCY.maxProfiles}).`,
     );
   }
 

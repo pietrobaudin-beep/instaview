@@ -104,6 +104,19 @@ async function fetchSection(username: string, section: Section): Promise<Section
 }
 
 /**
+ * The section only if a fresh copy is already in the shared cache. Never calls
+ * the provider, so callers can show something extra (the loading card's "no
+ * Instagram desde…") without paying a request for it.
+ */
+export async function getCachedSection(username: string, section: Section): Promise<SectionResult | null> {
+  const cached = await prisma.sectionCache.findUnique({
+    where: { username_section: { username, section: cacheSectionKey(section) } },
+  });
+  if (!cached || Date.now() - cached.fetchedAt.getTime() >= TTL_MS[section]) return null;
+  return { status: "ok", data: cached.data as unknown as SectionData, fetchedAt: cached.fetchedAt.toISOString() };
+}
+
+/**
  * The section, from the shared cache when it's still fresh. `maxAgeMs` lets the
  * daily Faro ask for something newer than the usual window, so a copy cached
  * yesterday at the same hour doesn't hide today's posts.

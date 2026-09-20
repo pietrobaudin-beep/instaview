@@ -28,6 +28,7 @@ import type { FollowerEntry, PostItem, StoryItem } from "@/lib/providers/types";
 type Result =
   | { kind: "loading" }
   | { kind: "ok"; data: SectionData; locked: boolean; fetchedAt: string }
+  | { kind: "locked" }
   | { kind: "private" }
   | { kind: "unsupported" }
   | { kind: "limited" }
@@ -48,13 +49,61 @@ function ago(iso: string | null): string {
   if (s < 3600) return `há ${Math.max(1, Math.round(s / 60))} min`;
   if (s < 86400) return `há ${Math.round(s / 3600)} h`;
   if (s < 30 * 86400) return `há ${Math.round(s / 86400)} d`;
-  return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
+  // Curto de propósito: "21 jul 26" cabe numa linha da miniatura; a data por
+  // extenso quebrava em quatro linhas e cobria a foto.
+  return new Date(iso)
+    .toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "2-digit" })
+    .replace(/\.?\s?de\s?/g, " ")
+    .replace(/\./g, "")
+    .trim();
 }
 
 const postLink = (p: PostItem) =>
   p.code ? `https://www.instagram.com/${p.kind === "reel" ? "reel" : "p"}/${p.code}/` : null;
 
 const KIND_ICON = { photo: ImageIcon, video: Play, carousel: Layers, reel: Clapperboard } as const;
+
+const LOCKED_TEXT: Partial<Record<Section, string>> = {
+  stories: "Os stories das últimas 24h",
+  posts: "As publicações recentes",
+  reels: "Os reels recentes",
+};
+
+/**
+ * O que quem é grátis vê nas seções pagas.
+ *
+ * Os quadros são enfeite, não conteúdo: nenhum dado real é pedido ao provedor
+ * aqui, e nada finge ser uma publicação de verdade. É um cadeado honesto.
+ */
+function LockedSection({ section, username }: { section: Section; username: string }) {
+  const vertical = section !== "posts";
+  return (
+    <div className="relative">
+      <div
+        aria-hidden
+        className={cn("grid gap-2.5 blur-[2px]", vertical ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2 sm:grid-cols-3")}
+      >
+        {Array.from({ length: vertical ? 4 : 6 }).map((_, i) => (
+          <div
+            key={i}
+            className={cn(
+              "rounded-2xl bg-gradient-to-br from-blush to-mint/70",
+              vertical ? "aspect-[9/16]" : "aspect-square",
+            )}
+          />
+        ))}
+      </div>
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-center">
+        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-plum text-white shadow-lg">
+          <Lock className="h-5 w-5" />
+        </span>
+        <p className="max-w-[16rem] text-sm font-semibold text-plum">
+          {LOCKED_TEXT[section] ?? "Esta parte"} de @{username} abrem com o desbloqueio.
+        </p>
+      </div>
+    </div>
+  );
+}
 
 /** A post/reel tile: image (blurred when locked), kind, date and numbers. */
 function Tile({ post, locked, showOwner }: { post: PostItem; locked: boolean; showOwner?: boolean }) {
@@ -81,19 +130,25 @@ function Tile({ post, locked, showOwner }: { post: PostItem; locked: boolean; sh
       <span className="absolute right-2 top-2 rounded-full bg-ink/60 p-1 text-cream">
         <Icon className="h-3 w-3" />
       </span>
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/75 to-transparent px-2.5 pb-2 pt-6 text-[11px] font-semibold text-cream">
+      {/* A data fica aqui em cima: embaixo ela disputava espaço com os números
+          e acabava cortada nas miniaturas do celular. */}
+      {post.takenAt && (
+        <span className="absolute left-2 top-2 rounded-full bg-ink/60 px-1.5 py-0.5 text-[10px] font-bold text-cream">
+          {ago(post.takenAt)}
+        </span>
+      )}
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/80 to-transparent px-2.5 pb-2.5 pt-8 text-xs font-semibold text-cream">
         {showOwner && post.owner && <p className="truncate">@{post.owner.username}</p>}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 whitespace-nowrap">
           {post.likeCount != null && (
-            <span className="flex items-center gap-0.5"><Heart className="h-3 w-3" />{compact(post.likeCount)}</span>
+            <span className="flex items-center gap-1"><Heart className="h-3.5 w-3.5" />{compact(post.likeCount)}</span>
           )}
           {post.commentCount != null && (
-            <span className="flex items-center gap-0.5"><MessageCircle className="h-3 w-3" />{compact(post.commentCount)}</span>
+            <span className="flex items-center gap-1"><MessageCircle className="h-3.5 w-3.5" />{compact(post.commentCount)}</span>
           )}
           {post.viewCount != null && (
-            <span className="flex items-center gap-0.5"><Eye className="h-3 w-3" />{compact(post.viewCount)}</span>
+            <span className="flex items-center gap-1"><Eye className="h-3.5 w-3.5" />{compact(post.viewCount)}</span>
           )}
-          <span className="ml-auto font-medium opacity-80">{ago(post.takenAt)}</span>
         </div>
       </div>
     </div>
@@ -110,7 +165,14 @@ function Tile({ post, locked, showOwner }: { post: PostItem; locked: boolean; sh
 function Grid({ posts, locked, showOwner, reels }: { posts: PostItem[]; locked: boolean; showOwner?: boolean; reels?: boolean }) {
   if (!posts.length) return <Empty />;
   return (
-    <div className={cn("grid gap-2.5", reels ? "grid-cols-3 sm:grid-cols-5" : "grid-cols-3 lg:grid-cols-4")}>
+    // Duas colunas no celular: com três, cada miniatura ficava com ~90px e nem
+    // a imagem nem os números davam para ver.
+    <div
+      className={cn(
+        "grid gap-2.5",
+        reels ? "grid-cols-2 sm:grid-cols-4 xl:grid-cols-5" : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4",
+      )}
+    >
       {posts.map((p) => (
         <Tile key={p.id} post={p} locked={locked} showOwner={showOwner} />
       ))}
@@ -152,7 +214,7 @@ function Stories({ items, locked }: { items: StoryItem[]; locked: boolean }) {
   return (
     <div className="flex gap-3 overflow-x-auto pb-2">
       {items.map((s) => (
-        <div key={s.id} className="w-32 shrink-0">
+        <div key={s.id} className="w-40 shrink-0 sm:w-32">
           <div className="relative aspect-[9/16] overflow-hidden rounded-2xl bg-gradient-to-br from-pink/50 to-yellow/50 ring-2 ring-pink ring-offset-2 ring-offset-background">
             {s.thumbnailUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -243,6 +305,8 @@ export function RaioX({ username, section, upgrade }: { username: string; sectio
         const out: Result =
           r.status === 402
             ? { kind: "limited" }
+            : b.status === "locked"
+            ? { kind: "locked" }
             : b.status === "ok"
               ? { kind: "ok", data: b.data, locked: !!b.locked, fetchedAt: b.fetchedAt }
               : b.status === "private"
@@ -273,6 +337,8 @@ export function RaioX({ username, section, upgrade }: { username: string; sectio
     body = <Empty text={`@${username} é uma conta privada — essa parte só aparece para seguidores aprovados.`} />;
   } else if (res.kind === "unsupported") {
     body = <Empty text="Essa informação ainda não está disponível." />;
+  } else if (res.kind === "locked") {
+    body = <LockedSection section={section} username={username} />;
   } else if (res.kind === "limited") {
     body = <Empty text="Sua análise gratuita já foi usada em outro perfil." />;
   } else if (res.kind === "error") {
@@ -361,7 +427,7 @@ export function RaioX({ username, section, upgrade }: { username: string; sectio
     }
   }
 
-  const locked = res.kind === "ok" && res.locked;
+  const locked = (res.kind === "ok" && res.locked) || res.kind === "locked";
   return (
     <div className="space-y-5">
       <Panel>
@@ -369,7 +435,7 @@ export function RaioX({ username, section, upgrade }: { username: string; sectio
           <p className="text-sm text-muted-foreground">{INTRO[section]}</p>
           {locked && (
             <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-yellow px-2.5 py-1 text-[11px] font-bold text-ink">
-              <Lock className="h-3 w-3" /> prévia
+              <Lock className="h-3 w-3" /> {res.kind === "locked" ? "no PRO" : "prévia"}
             </span>
           )}
         </div>
