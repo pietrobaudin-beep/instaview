@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { AdminPanel, type Live, type Row, type Stats } from "@/components/admin/admin-panel";
+import { AdminPanel, type Infra, type Live, type Row, type Stats } from "@/components/admin/admin-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -85,5 +85,35 @@ export default function AdminPreviewPage() {
     ],
   };
 
-  return <AdminPanel adminEmail="" demo={{ rows, stats, live }} />;
+  const infra: Infra = {
+    hiker: {
+      requisicoesRestantes: 1491,
+      dinheiro: 29.96,
+      moeda: "USD",
+      porSegundo: 13,
+      consumoHoje: 128,
+      consumo7d: 980,
+      custoHoje: 0.128,
+    },
+    banco: {
+      bytes: 50 * 1024 ** 2,
+      limiteBytes: 8 * 1024 ** 3,
+      limiteGb: 8,
+      tabelas: [
+        { nome: "followers", bytes: 19 * 1024 ** 2 },
+        { nome: "section_cache", bytes: 12.7 * 1024 ** 2 },
+        { nome: "follower_changes", bytes: 5.3 * 1024 ** 2 },
+        { nome: "profile_events", bytes: 0.6 * 1024 ** 2 },
+        { nome: "live_visits", bytes: 0.1 * 1024 ** 2 },
+      ],
+      imagens: { bytes: 12 * 1024 ** 2, linhas: 214 },
+    },
+    usuarios: [
+      { id: "1", quem: "maria@exemplo.com", perfis: 4, bytes: 380 * 1024 },
+      { id: "2", quem: "joao@exemplo.com", perfis: 11, bytes: 240 * 1024 },
+      { id: "3", quem: "+5511999990000", perfis: 1, bytes: 26 * 1024 },
+    ],
+  };
+
+  return <AdminPanel adminEmail="" demo={{ rows, stats, live, infra }} />;
 }

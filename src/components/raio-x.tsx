@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import {
-  AtSign,
+  Search,
   Calendar,
   Clapperboard,
   Eye,
@@ -196,6 +197,7 @@ function People({ title, note, items, locked }: { title: string; note: string; i
               displayName={r.user.displayName}
               avatarUrl={r.user.avatarUrl}
               blurred={locked}
+              href={`/p/${encodeURIComponent(r.user.username)}`}
               size={36}
               right={<span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-bold">{r.count}×</span>}
             />
@@ -240,10 +242,19 @@ function Stories({ items, locked, username }: { items: StoryItem[]; locked: bool
             </span>
           </button>
           {s.mentions.length > 0 && (
-            <p className="mt-1.5 truncate text-[11px] text-muted-foreground">
-              <AtSign className="mr-0.5 inline h-3 w-3" />
-              {s.mentions.map((m) => m.username).join(", ")}
-            </p>
+            <div className="mt-1.5 space-y-1">
+              {s.mentions.map((m) => (
+                <Link
+                  key={m.username}
+                  href={`/p/${encodeURIComponent(m.username)}`}
+                  title={`Farejar @${m.username}`}
+                  className="flex items-center gap-1 truncate text-[11px] font-semibold text-accent hover:underline"
+                >
+                  <Search className="h-3 w-3 shrink-0" />
+                  <span className="truncate">Farejar @{m.username}</span>
+                </Link>
+              ))}
+            </div>
           )}
         </div>
       ))}
@@ -271,7 +282,14 @@ function Users({ users, locked }: { users: FollowerEntry[]; locked: boolean }) {
     <ul className="divide-y divide-border">
       {users.map((u) => (
         <li key={u.username + (u.avatarUrl ?? "")}>
-          <PersonRow username={u.username} displayName={u.displayName} avatarUrl={u.avatarUrl} blurred={locked} size={36} />
+          <PersonRow
+            username={u.username}
+            displayName={u.displayName}
+            avatarUrl={u.avatarUrl}
+            blurred={locked}
+            href={`/p/${encodeURIComponent(u.username)}`}
+            size={36}
+          />
         </li>
       ))}
     </ul>

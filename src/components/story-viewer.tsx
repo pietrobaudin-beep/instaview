@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { AtSign, ChevronLeft, ChevronRight, Clock, Pause as PauseIcon, Play, X } from "lucide-react";
+import Link from "next/link";
+import { ChevronLeft, ChevronRight, Clock, Pause as PauseIcon, Play, Search, X } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 
 /**
@@ -166,14 +167,28 @@ export function StoryViewer({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95"
+      className="fixed inset-0 z-[100] flex items-center justify-center gap-1.5 bg-black/95 sm:gap-3"
       role="dialog"
       aria-modal="true"
       aria-label={`Stories de @${username}`}
     >
-      {/* No celular ocupa a tela toda (dvh, que desconta a barra do navegador);
-          no computador vira o retângulo 9:16, como o Instagram na web. */}
-      <div className="relative h-[100dvh] w-full max-w-[26rem] overflow-hidden bg-neutral-900 sm:h-[92dvh] sm:aspect-[9/16] sm:w-auto sm:rounded-3xl">
+      {/* As setas ficam **fora** do story, nas bordas da tela: dentro dele
+          tapavam a imagem. No computador sobram nas laterais pretas; no
+          celular ficam rentes à borda, e tocar nos lados continua valendo. */}
+      <button
+        type="button"
+        onClick={voltar}
+        aria-label="Story anterior"
+        disabled={i === 0}
+        className="z-30 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/25 disabled:opacity-0"
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </button>
+
+      {/* O quadro deixa uma faixa livre dos dois lados, que é onde as setas
+          ficam — dentro dele elas tapavam a imagem. No computador vira o
+          retângulo 9:16, como o Instagram na web. */}
+      <div className="relative h-[94dvh] min-w-0 flex-1 overflow-hidden rounded-3xl bg-neutral-900 sm:h-[92dvh] sm:aspect-[9/16] sm:w-auto sm:max-w-[26rem] sm:flex-none">
         {/* As barrinhas: uma por story, a do meio enchendo. */}
         <div
           className="absolute inset-x-0 top-0 z-20 flex gap-1 px-3 pb-2"
@@ -244,26 +259,6 @@ export function StoryViewer({
           )}
         </div>
 
-        {/* Voltar e adiantar com o dedo: tocar dos lados funciona, mas um alvo
-            de 44px à vista evita a dúvida de "dá para adiantar?". */}
-        <button
-          type="button"
-          onClick={voltar}
-          aria-label="Story anterior"
-          disabled={i === 0}
-          className="absolute left-2 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur-sm transition hover:bg-black/55 disabled:opacity-0"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </button>
-        <button
-          type="button"
-          onClick={avancar}
-          aria-label="Próximo story"
-          className="absolute right-2 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur-sm transition hover:bg-black/55"
-        >
-          <ChevronRight className="h-5 w-5" />
-        </button>
-
         <div
           className="pointer-events-none absolute inset-x-0 bottom-0 z-20 space-y-1.5 bg-gradient-to-t from-black/70 to-transparent px-4 pt-10"
           style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1.25rem)" }}
@@ -279,13 +274,34 @@ export function StoryViewer({
             </p>
           )}
           {atual.mentions.length > 0 && (
-            <p className="truncate text-xs text-white">
-              <AtSign className="mr-0.5 inline h-3 w-3" />
-              {atual.mentions.join(", ")}
-            </p>
+            /* Quem foi marcado no story vira um convite: "Farejar @fulano".
+               Este pedaço recebe toque, ao contrário do resto do rodapé, que
+               é só legenda. */
+            <div className="pointer-events-auto flex flex-wrap gap-1.5">
+              {atual.mentions.map((m) => (
+                <Link
+                  key={m}
+                  href={`/p/${encodeURIComponent(m)}`}
+                  className="flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-xs font-bold text-ink transition hover:bg-white"
+                  title={`Farejar @${m}`}
+                >
+                  <Search className="h-3.5 w-3.5" />
+                  Farejar @{m}
+                </Link>
+              ))}
+            </div>
           )}
         </div>
       </div>
+
+      <button
+        type="button"
+        onClick={avancar}
+        aria-label="Próximo story"
+        className="z-30 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/25"
+      >
+        <ChevronRight className="h-4 w-4" />
+      </button>
     </div>
   );
 }

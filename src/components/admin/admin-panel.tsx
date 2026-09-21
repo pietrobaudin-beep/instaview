@@ -57,6 +57,26 @@ export interface Live {
   paisesDoDia: { nome: string; total: number }[];
 }
 
+export interface Infra {
+  hiker: {
+    requisicoesRestantes: number;
+    dinheiro: number;
+    moeda: string;
+    porSegundo: number;
+    consumoHoje: number | null;
+    consumo7d: number | null;
+    custoHoje: number | null;
+  } | null;
+  banco: {
+    bytes: number;
+    limiteBytes: number;
+    limiteGb: number;
+    tabelas: { nome: string; bytes: number }[];
+    imagens: { bytes: number; linhas: number };
+  };
+  usuarios: { id: string; quem: string; perfis: number; bytes: number }[];
+}
+
 export interface Stats {
   periodo?: PeriodoStat;
   planos: PlanoStat[];
@@ -114,14 +134,15 @@ export function AdminPanel({
    * desenvolvimento. Com `demo`, a tela não chama nenhuma rota e nenhum botão
    * muda nada — é só para olhar o desenho sem precisar do token de admin.
    */
-  demo?: { rows: Row[]; stats: Stats; live?: Live };
+  demo?: { rows: Row[]; stats: Stats; live?: Live; infra?: Infra };
 }) {
   // Faturamento primeiro: é o que se abre o admin para ver.
-  const [aba, setAba] = React.useState<"faturamento" | "pessoas">("faturamento");
+  const [aba, setAba] = React.useState<"faturamento" | "pessoas" | "api">("faturamento");
   const [periodo, setPeriodo] = React.useState("7d");
   const [rows, setRows] = React.useState<Row[]>(demo?.rows ?? []);
   const [stats, setStats] = React.useState<Stats | null>(demo?.stats ?? null);
   const [live, setLive] = React.useState<Live | null>(demo?.live ?? null);
+  const [infra, setInfra] = React.useState<Infra | null>(demo?.infra ?? null);
   const [loading, setLoading] = React.useState(!demo);
   const [q, setQ] = React.useState("");
   const [savingId, setSavingId] = React.useState<string | null>(null);
@@ -150,7 +171,13 @@ export function AdminPanel({
   React.useEffect(() => {
     load("");
     loadStats();
-  }, [load, loadStats]);
+    if (!demo) {
+      fetch("/api/admin/infra")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((b) => b && setInfra(b))
+        .catch(() => {});
+    }
+  }, [load, loadStats, demo]);
 
   // O "agora" se atualiza sozinho a cada 20s enquanto a aba estiver à vista.
   React.useEffect(() => {
@@ -240,7 +267,7 @@ export function AdminPanel({
       </div>
 
       <div className="mb-6 flex gap-2">
-        {(["faturamento", "pessoas"] as const).map((a) => (
+        {(["faturamento", "pessoas", "api"] as const).map((a) => (
           <button
             key={a}
             type="button"
@@ -251,7 +278,7 @@ export function AdminPanel({
               aba === a ? "bg-pink text-ink" : "bg-muted text-muted-foreground hover:text-foreground",
             )}
           >
-            {a === "pessoas" ? "Pessoas e planos" : "Faturamento"}
+            {a === "pessoas" ? "Pessoas e planos" : a === "api" ? "API" : "Faturamento"}
           </button>
         ))}
       </div>
@@ -262,7 +289,21 @@ export function AdminPanel({
         </p>
       )}
 
-      {aba === "pessoas" ? (
+      {aba === "api" ? (
+        <>
+          <h1 className="text-2xl font-bold tracking-tight">API e infraestrutura</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            O que a casa gasta: créditos do provedor de dados e espaço no banco.
+          </p>
+          {infra ? (
+            <Custos infra={infra} />
+          ) : (
+            <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Consultando o provedor…
+            </div>
+          )}
+        </>
+      ) : aba === "pessoas" ? (
         <>
           <h1 className="text-2xl font-bold tracking-tight">Pessoas e planos</h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -823,6 +864,131 @@ function Lista({
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+const tamanho = (bytes: number) => {
+  if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(2)} GB`;
+  if (bytes >= 1024 ** 2) return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
+  if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${bytes} B`;
+};
+
+/**
+ * O que a casa gasta: créditos do provedor e espaço no banco.
+ *
+ * Fica junto do faturamento de propósito — receita sem custo ao lado é meia
+ * conta.
+ */
+function Custos({ infra }: { infra: Infra }) {
+  const { hiker, banco, usuarios } = infra;
+  const usado = banco.limiteBytes > 0 ? Math.min(1, banco.bytes / banco.limiteBytes) : 0;
+  const diasRestantes =
+    hiker && hiker.consumoHoje && hiker.consumoHoje > 0
+      ? Math.floor(hiker.requisicoesRestantes / hiker.consumoHoje)
+      : null;
+
+  return (
+    <div className="mt-5 grid gap-3 lg:grid-cols-2">
+      <Card>
+        <CardContent className="p-5">
+          <h2 className="text-sm font-bold">Créditos da HikerAPI</h2>
+          {!hiker ? (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Sem chave configurada aqui — o saldo só aparece onde a HIKERAPI_KEY existe.
+            </p>
+          ) : (
+            <>
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <Numero titulo="Requisições restantes" valor={hiker.requisicoesRestantes.toLocaleString("pt-BR")} destaque />
+                <Numero
+                  titulo="Dinheiro na conta"
+                  valor={hiker.dinheiro.toLocaleString("pt-BR", { style: "currency", currency: hiker.moeda === "USD" ? "USD" : "BRL" })}
+                />
+                <Numero
+                  titulo="Gasto hoje"
+                  valor={
+                    hiker.consumoHoje == null
+                      ? "—"
+                      : `${hiker.consumoHoje.toLocaleString("pt-BR")} req`
+                  }
+                />
+                <Numero
+                  titulo="Custo de hoje"
+                  valor={hiker.custoHoje == null ? "—" : `US$ ${hiker.custoHoje.toFixed(3)}`}
+                />
+              </div>
+              <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
+                {diasRestantes != null ? (
+                  <>
+                    No ritmo de hoje, o saldo dura cerca de <b>{diasRestantes} dias</b>.{" "}
+                  </>
+                ) : null}
+                A HikerAPI só informa quanto <b>resta</b>; o gasto do dia é a diferença entre a
+                primeira leitura de hoje e a de agora — então ele começa em zero a cada virada, e a
+                conta de 7 dias precisa de leituras guardadas.
+              </p>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-5">
+          <h2 className="text-sm font-bold">Banco de dados</h2>
+          <p className="mt-2 text-sm">
+            <b className="text-lg font-bold">{tamanho(banco.bytes)}</b>{" "}
+            <span className="text-muted-foreground">de {banco.limiteGb} GB</span>
+          </p>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
+            <div
+              className={cn("h-full rounded-full", usado > 0.8 ? "bg-destructive" : "bg-pink")}
+              style={{ width: `${Math.max(1, usado * 100)}%` }}
+            />
+          </div>
+
+          <ul className="mt-3 space-y-1">
+            {banco.tabelas.slice(0, 5).map((t) => (
+              <li key={t.nome} className="flex items-center gap-2 text-xs">
+                <span className="min-w-0 flex-1 truncate text-muted-foreground">{t.nome}</span>
+                <span className="shrink-0 tabular-nums">{tamanho(t.bytes)}</span>
+              </li>
+            ))}
+          </ul>
+
+          <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
+            Fotos guardadas: <b>{banco.imagens.linhas.toLocaleString("pt-BR")}</b> cópias,{" "}
+            {tamanho(banco.imagens.bytes)} — são compartilhadas entre quem acompanha o mesmo perfil.
+            O teto de {banco.limiteGb} GB é o do seu plano na Supabase, escrito na variável
+            DB_SIZE_LIMIT_GB: o banco não sabe dizer sozinho qual é.
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card className="lg:col-span-2">
+        <CardContent className="p-0">
+          <div className="border-b border-border px-5 py-4">
+            <h2 className="text-sm font-bold">Quanto cada pessoa ocupa</h2>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">
+              Eventos e pistas dos perfis dela. As fotos ficam de fora porque são compartilhadas.
+            </p>
+          </div>
+          <ul className="divide-y divide-border">
+            {usuarios.map((u) => (
+              <li key={u.id} className="flex items-center gap-3 px-5 py-2.5 text-sm">
+                <span className="min-w-0 flex-1 truncate">{u.quem}</span>
+                <span className="shrink-0 text-xs text-muted-foreground">
+                  {u.perfis} {u.perfis === 1 ? "perfil" : "perfis"}
+                </span>
+                <span className="w-24 shrink-0 text-right font-semibold tabular-nums">
+                  {tamanho(u.bytes)} <span className="font-normal text-muted-foreground">de {banco.limiteGb} GB</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
     </div>
   );
 }

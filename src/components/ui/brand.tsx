@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
@@ -193,6 +194,7 @@ export function PersonRow({
   size = 40,
   blurred = false,
   className,
+  href,
 }: {
   username: string;
   displayName?: string | null;
@@ -201,8 +203,16 @@ export function PersonRow({
   size?: number;
   blurred?: boolean;
   className?: string;
+  /**
+   * Para onde a linha leva ao ser tocada — normalmente `/p/<@>`.
+   *
+   * Quem aparece marcado é uma pessoa de verdade, com perfil próprio: ver o
+   * nome e não poder abrir era um beco sem saída. Sem `href`, a linha continua
+   * sendo só texto (é o caso da prévia borrada do plano grátis).
+   */
+  href?: string;
 }) {
-  return (
+  const conteudo = (
     <div className={cn("flex items-center gap-3 py-2.5", className)}>
       <div className={blurred ? "shrink-0 blur-[5px]" : "shrink-0"}>
         <Avatar src={avatarUrl} name={displayName ?? username} size={size} />
@@ -224,6 +234,17 @@ export function PersonRow({
       </div>
       {right}
     </div>
+  );
+
+  if (!href || blurred) return conteudo;
+  return (
+    <Link
+      href={href}
+      className="-mx-2 block rounded-xl px-2 transition hover:bg-muted/50"
+      title={`Abrir @${username}`}
+    >
+      {conteudo}
+    </Link>
   );
 }
 

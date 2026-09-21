@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { AtSign, Clock } from "lucide-react";
+import Link from "next/link";
+import { Clock, Search } from "lucide-react";
 import { Panel } from "@/components/ui/brand";
 import { StoryViewer } from "@/components/story-viewer";
 import { planFor } from "@/lib/plans";
@@ -100,10 +101,19 @@ export function SavedStories({
                 )}
               </button>
               {s.mentions.length > 0 && (
-                <p className="mt-1.5 truncate text-[11px] text-muted-foreground">
-                  <AtSign className="mr-0.5 inline h-3 w-3" />
-                  {s.mentions.join(", ")}
-                </p>
+                <div className="mt-1.5 space-y-1">
+                  {s.mentions.map((m) => (
+                    <Link
+                      key={m}
+                      href={`/p/${encodeURIComponent(m)}`}
+                      title={`Farejar @${m}`}
+                      className="flex items-center gap-1 truncate text-[11px] font-semibold text-accent hover:underline"
+                    >
+                      <Search className="h-3 w-3 shrink-0" />
+                      <span className="truncate">Farejar @{m}</span>
+                    </Link>
+                  ))}
+                </div>
               )}
             </div>
           );
