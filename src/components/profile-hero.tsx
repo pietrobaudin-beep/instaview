@@ -73,6 +73,13 @@ export function OtherNetworks({
 
   const [links, setLinks] = React.useState<Elsewhere[]>([]);
 
+  /*
+   * O @ do VSCO aceita letras, números, ponto, hífen e sublinhado, de 2 a 30.
+   * Fora disso o endereço nem seria válido, e oferecer o link seria pior do
+   * que não oferecer nada.
+   */
+  const vscoPossivel = /^[\w.-]{2,30}$/.test(username);
+
   const [procurando, setProcurando] = React.useState(false);
   const [procurouPagas, setProcurouPagas] = React.useState(false);
   const [falhou, setFalhou] = React.useState(false);
@@ -212,6 +219,34 @@ export function OtherNetworks({
         <p className="mt-2 text-[11px] text-muted-foreground">
           Não foi possível procurar em todas as redes agora.
         </p>
+      )}
+
+      {/*
+        * O VSCO é o único que não dá para confirmar: o site está atrás do
+        * Cloudflare e responde 403 a qualquer pedido — inclusive para @
+        * inexistente, então nem "não existe" dá para saber. Não há ator no
+        * Apify tampouco.
+        *
+        * Por isso ele é um link, não um achado: borda tracejada, sem foto e
+        * com "não conferimos" escrito. Se ficasse igual às outras linhas,
+        * transformaria "achei essa conta" em "chutei um endereço" — e levaria
+        * junto a credibilidade das que foram confirmadas de verdade.
+        */}
+      {vscoPossivel && (
+        <a
+          href={`https://vsco.co/${username}/gallery`}
+          target="_blank"
+          rel="noreferrer nofollow"
+          className="mt-2 flex min-h-[44px] items-center gap-2.5 rounded-2xl border border-dashed border-border px-3 text-left transition hover:border-accent/40"
+        >
+          <span className="min-w-0 flex-1 leading-tight">
+            <span className="block truncate text-sm font-bold text-foreground">@{username}</span>
+            <span className="block truncate text-[11px] text-muted-foreground">
+              VSCO · não conferimos se existe
+            </span>
+          </span>
+          <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+        </a>
       )}
 
       <p className={`mt-2 text-[11px] leading-relaxed text-muted-foreground ${destaque ? "" : "text-center md:text-left"}`}>
