@@ -857,6 +857,10 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
                 <div className="mt-3">
                   <AboutLine username={state.data.username} />
                 </div>
+
+                {/* O mesmo @ em outras redes também no perfil público, no fim
+                    da página. Some sozinho quando não há nenhuma. */}
+                <OtherNetworks username={state.data.username} destaque />
               </>
             )}
           </>

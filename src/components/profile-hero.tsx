@@ -91,7 +91,6 @@ export function OtherNetworks({
    * perfil não paga.
    */
   React.useEffect(() => {
-    if (!isPrivate) return;
     let vivo = true;
 
     (async () => {
@@ -123,9 +122,15 @@ export function OtherNetworks({
     return () => {
       vivo = false;
     };
-  }, [username, isPrivate]);
+  }, [username]);
 
-  if (!isPrivate) return null;
+  /*
+   * No perfil público o bloco só aparece quando há o que mostrar: ali ele é um
+   * acréscimo no fim da página, e um título sozinho em cima do vazio seria
+   * ruído. No privado ele fica de pé mesmo vazio, porque é a única saída da
+   * tela — sumir enquanto procura pareceria que nada está acontecendo.
+   */
+  if (!isPrivate && links.length === 0) return null;
 
   return (
     <div className={destaque ? "mt-6 w-full text-left" : "mt-4"}>
