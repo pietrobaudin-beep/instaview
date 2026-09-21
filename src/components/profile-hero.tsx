@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ArrowUpRight, BadgeCheck, Globe, Link as LinkIcon, Loader2, Lock, PawPrint, Search } from "lucide-react";
+import { ArrowUpRight, BadgeCheck, Globe, Link as LinkIcon, Loader2, Lock, PawPrint } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { StatusPill } from "@/components/ui/brand";
 import { formatNumber } from "@/lib/utils";
@@ -75,48 +75,55 @@ export function OtherNetworks({
 
   const [procurando, setProcurando] = React.useState(false);
   const [procurouPagas, setProcurouPagas] = React.useState(false);
-  /** Quantas redes a busca paga acrescentou — 0 também é resposta, e aparece. */
-  const [novas, setNovas] = React.useState(0);
   const [falhou, setFalhou] = React.useState(false);
 
+  /**
+   * Busca em duas etapas, sozinha.
+   *
+   * Primeiro as redes de graça, que respondem em ~4s e já enchem a lista.
+   * Depois, sem pedir nada a ninguém, as que passam pelo Apify — TikTok e
+   * YouTube, que trazem a foto. Quem está olhando vê a lista aparecer e
+   * depois ganhar as fotos, em vez de encarar um botão e um vazio.
+   *
+   * O botão que havia aqui saiu porque exigia descobrir que ele existia. A
+   * conta do gasto continua de pé: cada @ custa cerca de US$ 0,003 na
+   * primeira vez e fica 7 dias no cache — a segunda pessoa que abrir o mesmo
+   * perfil não paga.
+   */
   React.useEffect(() => {
     if (!isPrivate) return;
-    let alive = true;
-    fetch(`/api/elsewhere?username=${encodeURIComponent(username)}`)
-      .then((r) => r.json())
-      .then((b) => alive && setLinks(b.links ?? []))
-      .catch(() => {});
+    let vivo = true;
+
+    (async () => {
+      try {
+        const r = await fetch(`/api/elsewhere?username=${encodeURIComponent(username)}`);
+        const b = await r.json();
+        if (!vivo) return;
+        setLinks(b.links ?? []);
+      } catch {
+        // As de graça falharem não impede de tentar as outras.
+      }
+
+      if (!vivo) return;
+      setProcurando(true);
+      try {
+        const r = await fetch(`/api/elsewhere?username=${encodeURIComponent(username)}&pagas=1`);
+        if (!r.ok) throw new Error(String(r.status));
+        const b = await r.json();
+        if (!vivo) return;
+        setLinks(b.links ?? []);
+        setProcurouPagas(true);
+      } catch {
+        if (vivo) setFalhou(true);
+      } finally {
+        if (vivo) setProcurando(false);
+      }
+    })();
+
     return () => {
-      alive = false;
+      vivo = false;
     };
   }, [username, isPrivate]);
-
-  /**
-   * As redes pagas, só quando pedidas.
-   *
-   * Cada consulta destas custa, então nada roda sozinho — e o resultado fica
-   * 7 dias guardado.
-   */
-  async function procurarMais() {
-    setProcurando(true);
-    setFalhou(false);
-    const antes = links.length;
-    try {
-      const r = await fetch(`/api/elsewhere?username=${encodeURIComponent(username)}&pagas=1`);
-      if (!r.ok) throw new Error(String(r.status));
-      const b = await r.json();
-      const achados: Elsewhere[] = b.links ?? [];
-      setLinks(achados);
-      setNovas(achados.length - antes);
-      setProcurouPagas(true);
-    } catch {
-      // Sem isto, falha e "não achei nada" ficavam iguais: o botão sumia e a
-      // tela seguia idêntica.
-      setFalhou(true);
-    } finally {
-      setProcurando(false);
-    }
-  }
 
   if (!isPrivate) return null;
 
@@ -176,16 +183,13 @@ export function OtherNetworks({
           </a>
         ))}
       </div>
-      {destaque && !procurouPagas && (
-        <button
-          type="button"
-          onClick={procurarMais}
-          disabled={procurando}
-          className="mt-2 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl border border-border bg-card text-sm font-bold transition hover:border-accent/50 disabled:opacity-60"
-        >
-          {procurando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-          {procurando ? "Procurando…" : "Procurar em mais redes"}
-        </button>
+      {/* Enquanto a segunda etapa corre, a tela diz que ainda está procurando
+          — sem isso, a lista parece pronta e depois muda sozinha. */}
+      {destaque && procurando && (
+        <p className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          Procurando em mais redes…
+        </p>
       )}
 
       {/*
@@ -193,22 +197,16 @@ export function OtherNetworks({
         * busca não trazia nada novo, o botão simplesmente sumia e nada mudava:
         * quem clicou esperava dez segundos sem saber se tinha buscado.
         */}
-      {procurouPagas && novas === 0 && (
+      {procurouPagas && links.length === 0 && (
         <p className="mt-2 text-[11px] text-muted-foreground">
-          {links.length === 0
-            ? "Não achamos esse @ em nenhuma outra rede."
-            : "Procuramos também no TikTok e no YouTube: nada além do que já está aqui."}
+          Não achamos esse @ em nenhuma outra rede.
         </p>
       )}
 
       {falhou && (
-        <button
-          type="button"
-          onClick={procurarMais}
-          className="mt-2 text-[11px] font-bold text-accent underline underline-offset-2"
-        >
-          A busca falhou. Tentar de novo
-        </button>
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          Não foi possível procurar em todas as redes agora.
+        </p>
       )}
 
       <p className={`mt-2 text-[11px] leading-relaxed text-muted-foreground ${destaque ? "" : "text-center md:text-left"}`}>
