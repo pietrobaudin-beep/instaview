@@ -10,6 +10,7 @@ import { prisma } from "@/lib/db";
 import { FOLLOWING_KIND } from "@/lib/following-tracker";
 import { planFor } from "@/lib/plans";
 import { PlanLimits } from "@/components/plan-limits";
+import { TirarDoFaro } from "@/components/tirar-do-faro";
 import { consultsUsed, peekUsageKey } from "@/lib/usage";
 import { COMMENTS_KIND, LIKES_KIND } from "@/lib/post-activity";
 import { activityLevel, pistas } from "@/lib/voice";
@@ -128,10 +129,11 @@ export default async function RastrosPage() {
               const n = weekBy.get(p.id) ?? 0;
               const level = activityLevel(n);
               return (
-                <li key={p.id}>
+                <li key={p.id} className="relative">
+                  <TirarDoFaro profileId={p.id} username={p.username} />
                   <Link
                     href={`/rastros/${encodeURIComponent(p.username)}`}
-                    className="flex items-center gap-4 rounded-3xl border border-border bg-card p-4 transition hover:border-accent/50"
+                    className="flex items-center gap-4 rounded-3xl border border-border bg-card p-4 pr-11 transition hover:border-accent/50"
                   >
                     <div className="relative shrink-0">
                       <div className="rounded-full p-0.5 ring-2 ring-pink">

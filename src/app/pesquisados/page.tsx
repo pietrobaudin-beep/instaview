@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowUpRight, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { AppNav, NavSpacer } from "@/components/app-nav";
-import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/brand";
 import { Mascot } from "@/components/ui/mascot";
@@ -10,6 +9,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { peekProfileCached } from "@/lib/profile-cache";
 import { peekUsageKey } from "@/lib/usage";
+import { OCULTOS, chaveOcultos } from "@/lib/pesquisados";
+import { PesquisadosLista } from "@/components/pesquisados-lista";
 
 export const dynamic = "force-dynamic";
 
@@ -47,11 +48,22 @@ export default async function PesquisadosPage() {
       })
     : [];
 
+  // O que a pessoa tirou da lista fica escondido — a consulta em si continua
+  // contada, senão apagar daqui seria farejar de graça outra vez.
+  const escondidos = key
+    ? await prisma.sectionCache
+        .findUnique({ where: { username_section: { username: chaveOcultos(key), section: OCULTOS } } })
+        .catch(() => null)
+    : null;
+  const ocultos = new Set<string>(((escondidos?.data as string[] | null) ?? []).filter(Boolean));
+
   const perfis = await Promise.all(
-    rows.map(async (r) => ({
-      ...r,
-      cache: await peekProfileCached(r.username),
-    })),
+    rows
+      .filter((r) => !ocultos.has(r.username))
+      .map(async (r) => ({
+        ...r,
+        cache: await peekProfileCached(r.username),
+      })),
   );
 
   return (
@@ -77,32 +89,14 @@ export default async function PesquisadosPage() {
             </div>
           </Panel>
         ) : (
-          <ul className="mt-6 grid gap-3 sm:grid-cols-2">
-            {perfis.map((p) => (
-              <li key={p.username}>
-                <Link
-                  href={`/p/${encodeURIComponent(p.username)}`}
-                  className="flex items-center gap-3 rounded-3xl border border-border bg-card p-4 transition hover:border-accent/50"
-                >
-                  <Avatar
-                    src={p.cache?.avatarUrl ?? null}
-                    name={p.cache?.displayName ?? p.username}
-                    size={44}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-bold">@{p.username}</p>
-                    {p.cache?.displayName && (
-                      <p className="truncate text-xs text-muted-foreground">{p.cache.displayName}</p>
-                    )}
-                    <p className="text-xs text-muted-foreground">
-                      farejado {quando(p.createdAt)}
-                    </p>
-                  </div>
-                  <ArrowUpRight className="h-5 w-5 shrink-0 text-muted-foreground" />
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <PesquisadosLista
+            itens={perfis.map((p) => ({
+              username: p.username,
+              displayName: p.cache?.displayName ?? null,
+              avatarUrl: p.cache?.avatarUrl ?? null,
+              quando: quando(p.createdAt),
+            }))}
+          />
         )}
       </main>
       <NavSpacer />

@@ -3,11 +3,17 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowUpRight, BadgeCheck, Check, ChevronDown, Loader2, Search } from "lucide-react";
+import { ArrowUpRight, BadgeCheck, Check, ChevronDown, Loader2, Search, X } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
-import { pushRecentSearch, readRecentSearches, type RecentSearch } from "@/lib/recent-searches";
+import {
+  clearRecentSearches,
+  pushRecentSearch,
+  readRecentSearches,
+  removeRecentSearch,
+  type RecentSearch,
+} from "@/lib/recent-searches";
 
 interface Hit {
   username: string;
@@ -51,6 +57,9 @@ export function SearchBlock({
   const [error, setError] = React.useState<string | null>(null);
   const [hits, setHits] = React.useState<Hit[]>([]);
   const [buscando, setBuscando] = React.useState(false);
+  // Falha de conexão é diferente de "não existe esse @": uma pede tentar de
+  // novo, a outra pede conferir o que foi digitado.
+  const [falhou, setFalhou] = React.useState(false);
   const [expandido, setExpandido] = React.useState(false);
   // Só farejamos depois que a pessoa confirma QUEM é.
   const [escolhido, setEscolhido] = React.useState<string | null>(null);
@@ -81,20 +90,27 @@ export function SearchBlock({
     }
     const id = ++reqId.current;
     setBuscando(true);
-    const t = setTimeout(async () => {
-      try {
-        const res = await fetch(`/api/search-profiles?q=${encodeURIComponent(termo)}`);
-        if (id !== reqId.current) return; // superseded by a newer keystroke
-        const data = res.ok ? await res.json() : { results: [] };
-        setHits(Array.isArray(data.results) ? data.results : []);
-      } catch {
-        if (id === reqId.current) setHits([]);
-      } finally {
-        if (id === reqId.current) setBuscando(false);
-      }
-    }, 500);
+    setFalhou(false);
+    const t = setTimeout(() => buscar(id), 500);
     return () => clearTimeout(t);
   }, [termo]);
+
+  async function buscar(id: number) {
+    try {
+      const res = await fetch(`/api/search-profiles?q=${encodeURIComponent(termo)}`);
+      if (id !== reqId.current) return; // superseded by a newer keystroke
+      if (!res.ok) throw new Error(String(res.status));
+      const data = await res.json();
+      setHits(Array.isArray(data.results) ? data.results : []);
+      setFalhou(false);
+    } catch {
+      if (id !== reqId.current) return;
+      setHits([]);
+      setFalhou(true);
+    } finally {
+      if (id === reqId.current) setBuscando(false);
+    }
+  }
 
   function go(username: string, meta?: Partial<RecentSearch>) {
     pushRecentSearch({
@@ -169,8 +185,10 @@ export function SearchBlock({
   return (
     <div className="w-full">
       <form onSubmit={onSubmit}>
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
+        {/* No celular o botão vai para baixo: com o @ escolhido, "Analisar
+            @fulano" não cabe ao lado do campo sem espremer o que se digita. */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="relative w-full sm:flex-1">
             <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
               @
             </span>
@@ -191,17 +209,22 @@ export function SearchBlock({
             disabled={loading || !escolhida}
             aria-label={buttonLabel}
             title={escolhida ? undefined : "Escolha o perfil primeiro"}
-            className={`flex h-14 shrink-0 items-center justify-center gap-2 rounded-full px-5 font-bold transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 ${buttonTone}`}
+            className={`flex h-[52px] w-full shrink-0 items-center justify-center gap-2 rounded-2xl px-5 font-bold transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 sm:h-14 sm:w-auto sm:rounded-full ${buttonTone}`}
           >
             {loading ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
               <Search className="h-5 w-5" />
             )}
-            <span className="hidden sm:inline">{buttonLabel}</span>
+            {/* O @ escolhido já está marcado na lista logo abaixo; repeti-lo
+                no botão só fazia o rótulo crescer. */}
+            <span>{escolhida ? "Analisar" : buttonLabel}</span>
           </button>
         </div>
         {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
+        {!error && termo.length > 0 && termo.length < 3 && (
+          <p className="mt-2 text-xs text-muted-foreground">Digite pelo menos 3 caracteres.</p>
+        )}
       </form>
 
       {buscando && hits.length === 0 && (
@@ -219,7 +242,11 @@ export function SearchBlock({
       )}
 
       {hits.length > 0 && (
-        <div className="mt-3 overflow-hidden rounded-2xl border border-border bg-card">
+        <>
+          <p className="mt-4 text-sm font-semibold">
+            {escolhida ? "Escolha o perfil para continuar." : "Qual destes perfis você quer analisar?"}
+          </p>
+          <div className="mt-2 overflow-hidden rounded-2xl border border-border bg-card">
           {/* Aberto, a lista rola dentro de si mesma, como a busca do Instagram:
               as 20 contas cabem sem empurrar o resto da página para baixo. */}
           <div
@@ -232,36 +259,73 @@ export function SearchBlock({
             ))}
           </div>
 
-          {!expandido && hits.length > PREVIA && (
-            <button
-              type="button"
-              onClick={() => setExpandido(true)}
-              className="flex w-full items-center justify-center gap-1 border-t border-border px-4 py-2.5 text-xs font-bold text-accent transition hover:bg-muted/40"
-            >
-              Ver mais {hits.length - PREVIA} <ChevronDown className="h-3.5 w-3.5" />
-            </button>
+            {!expandido && hits.length > PREVIA && (
+              <button
+                type="button"
+                onClick={() => setExpandido(true)}
+                className="flex min-h-[44px] w-full items-center justify-center gap-1 border-t border-border px-4 text-sm font-bold text-accent transition hover:bg-muted/40"
+              >
+                Ver mais {hits.length - PREVIA} <ChevronDown className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* O limite real do perfil privado, dito antes de gastar a análise. */}
+          {escolhida?.isPrivate && (
+            <p className="mt-2 rounded-2xl border border-amber-500/40 bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-900">
+              <b>@{escolhida.username} é um perfil privado.</b> O Instagram só mostra quem uma conta
+              privada segue para os seguidores aprovados dela — dá para ver foto, nome, bio e a data
+              de criação, mas não as conexões.
+            </p>
           )}
-        </div>
+        </>
       )}
 
-      {/* Sem resultado, dizer por que o botão não liga. */}
-      {!buscando && hits.length === 0 && isValidUsername(termo) && termo.length >= 3 && (
+      {/* Sem resultado é uma coisa; sem conexão é outra. */}
+      {!buscando && falhou && (
+        <div className="mt-3 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3">
+          <p className="text-sm text-muted-foreground">Não foi possível buscar agora.</p>
+          <button
+            type="button"
+            onClick={() => {
+              setBuscando(true);
+              buscar(++reqId.current);
+            }}
+            className="text-sm font-bold text-accent hover:underline"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      )}
+      {!buscando && !falhou && hits.length === 0 && isValidUsername(termo) && termo.length >= 3 && (
         <p className="mt-3 text-sm text-muted-foreground">
-          Não encontramos <b className="text-foreground">@{termo}</b>. Confira o @ e tente de novo.
+          Não encontramos esse perfil. Confira o @.
         </p>
       )}
 
       {showRecent && recent.length > 0 && (
         <div className="mt-8 text-left">
-          <h2 className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-plum/45">
-            Farejados recentemente
-          </h2>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-plum/45">
+              Recentes neste aparelho
+            </h2>
+            <button
+              type="button"
+              onClick={() => {
+                clearRecentSearches();
+                setRecent([]);
+              }}
+              className="text-[11px] font-semibold text-muted-foreground transition hover:text-foreground"
+            >
+              Limpar
+            </button>
+          </div>
           <ul className="divide-y divide-plum/10 overflow-hidden rounded-2xl border border-plum/10 bg-white">
             {recent.map((r) => (
-              <li key={r.username}>
+              <li key={r.username} className="relative">
                 <Link
                   href={`/p/${encodeURIComponent(r.username)}`}
-                  className="flex items-center gap-3 px-4 py-3 transition hover:bg-blush/50"
+                  className="flex items-center gap-3 py-3 pl-4 pr-11 transition hover:bg-blush/50"
                 >
                   <Avatar src={r.avatarUrl} name={r.displayName ?? r.username} size={36} />
                   <span className="min-w-0 flex-1 truncate text-sm font-semibold text-plum">
@@ -269,9 +333,28 @@ export function SearchBlock({
                   </span>
                   <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                 </Link>
+                {/* Esta lista é só deste aparelho (fica no navegador), então
+                    apagar aqui não mexe em consulta nenhuma. */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    removeRecentSearch(r.username);
+                    setRecent((atual) => atual.filter((x) => x.username !== r.username));
+                  }}
+                  aria-label={`Tirar @${r.username} dos recentes`}
+                  title="Tirar da lista"
+                  className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition hover:bg-blush hover:text-plum"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
               </li>
             ))}
           </ul>
+          {/* Esta lista fica no navegador, não na conta: em outro aparelho ela
+              não existe, e não é o histórico de consultas do plano. */}
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Fica só neste navegador. O histórico da sua conta está em Pesquisados.
+          </p>
         </div>
       )}
     </div>

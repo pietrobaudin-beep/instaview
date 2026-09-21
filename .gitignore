@@ -39,3 +39,8 @@ yarn-error.log*
 
 # iCloud: kept out of sync
 *.nosync
+
+# Laboratório de OSINT: o ambiente Python tem 92 MB e se refaz com
+# `python3 -m venv .venv && pip install fastapi uvicorn sherlock-project`.
+osint/.venv
+.DS_Store

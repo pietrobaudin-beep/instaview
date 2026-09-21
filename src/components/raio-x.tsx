@@ -184,13 +184,20 @@ function Grid({ posts, locked, showOwner, reels }: { posts: PostItem[]; locked: 
   );
 }
 
+/** Quantos nomes o ranking mostra antes do "Ver mais". */
+const RANKING = 4;
+
 function People({ title, note, items, locked }: { title: string; note: string; items: Ranked[]; locked: boolean }) {
+  // Listas de 20 nomes viravam uma parede; quatro dão a ideia e o resto abre.
+  const [tudo, setTudo] = React.useState(false);
+  const visiveis = tudo ? items : items.slice(0, RANKING);
+
   if (!items.length) return null;
   return (
     <Panel title={title}>
       <p className="-mt-1 mb-2 text-[11px] text-muted-foreground">{note}</p>
       <ul className="divide-y divide-border">
-        {items.map((r) => (
+        {visiveis.map((r) => (
           <li key={r.user.username + r.count}>
             <PersonRow
               username={r.user.username}
@@ -204,6 +211,15 @@ function People({ title, note, items, locked }: { title: string; note: string; i
           </li>
         ))}
       </ul>
+      {items.length > RANKING && (
+        <button
+          type="button"
+          onClick={() => setTudo((t) => !t)}
+          className="mt-3 flex min-h-[44px] w-full items-center justify-center rounded-2xl border border-border text-sm font-bold text-accent transition hover:bg-muted/40"
+        >
+          {tudo ? "Ver menos" : `Ver mais ${items.length - RANKING}`}
+        </button>
+      )}
     </Panel>
   );
 }
@@ -318,7 +334,7 @@ const INTRO: Record<Section, string> = {
   stories: "Os stories publicados nas últimas 24 horas, e quem foi marcado neles.",
   posts: "As publicações mais recentes, as fixadas no topo e quem mais aparece marcado.",
   reels: "Os reels mais recentes, com visualizações.",
-  tagged: "Posts de outras pessoas em que este perfil foi marcado — e quem mais marca.",
+  tagged: "Quem marcou esta pessoa em publicações recentes.",
   highlights: "Os destaques salvos no perfil.",
   reposts: "O que este perfil repostou de outras contas.",
   suggested: "Contas que o próprio Instagram sugere como parecidas com esta.",
@@ -476,11 +492,16 @@ export function RaioX({ username, section, upgrade }: { username: string; sectio
         body = <Grid posts={data.items} locked={locked} reels />;
         break;
       case "tagged":
+        // Só QUEM marcou, não a publicação: a foto do post de outra pessoa não
+        // é o que se veio ver aqui — e é conteúdo de terceiro que o Farejo não
+        // precisa exibir.
         body = (
-          <div className="space-y-5">
-            <Grid posts={data.items} locked={locked} showOwner />
-            <People title="Quem mais marca este perfil" note="Donos dos posts em que ele aparece." items={data.people} locked={locked} />
-          </div>
+          <People
+            title="Quem marca este perfil"
+            note="Contas que publicaram marcando esta pessoa."
+            items={data.people}
+            locked={locked}
+          />
         );
         break;
       case "highlights":

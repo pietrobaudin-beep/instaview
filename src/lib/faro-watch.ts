@@ -23,9 +23,15 @@ import type { PostItem, StoryItem } from "@/lib/providers/types";
 
 const log = logger.scope("faro-watch");
 
+/**
+ * O que o Faro relê todo dia em cada perfil. **Cada linha é uma requisição
+ * paga por perfil por dia.**
+ *
+ * Reels saiu em 21/09 junto com a aba: pouca gente abria, e era 25% do custo
+ * diário de cada perfil no Faro. Com 15 perfis, isso sozinho era ~R$ 30/ano.
+ */
 const WATCH: { section: Section; kind: string }[] = [
   { section: "posts", kind: "post" },
-  { section: "reels", kind: "reel" },
   { section: "stories", kind: "story" },
   { section: "tagged", kind: "tagged" },
 ];

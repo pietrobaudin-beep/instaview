@@ -42,12 +42,16 @@ export default async function Home() {
     return (
       <>
         <AppNav plan={user.plan} />
-        {/* O Faro passeando no topo da home — e, no celular, passando na
-            frente da marca, que só aparece ali. */}
-        <div className="mx-auto max-w-6xl px-6 md:pl-[15.5rem]">
-          <HeaderStroll marca className="relative h-16 md:hidden" />
-          <HeaderStroll className="relative hidden h-16 md:block" />
-        </div>
+        {/* O Faro passeando no topo — e, no celular, passando na frente da
+            marca. Só na home PRO: na tela de busca ele já aparece ao lado do
+            título, e dois cachorros animados na mesma dobra brigavam entre si
+            e com o campo. */}
+        {proHome && (
+          <div className="mx-auto max-w-6xl px-6 md:pl-[15.5rem]">
+            <HeaderStroll marca className="relative h-16 md:hidden" />
+            <HeaderStroll className="relative hidden h-16 md:block" />
+          </div>
+        )}
         <main className="mx-auto max-w-5xl px-6 pb-10 pt-8 md:pl-[15.5rem]">
           <DemoBadge tone="yellow" />
 

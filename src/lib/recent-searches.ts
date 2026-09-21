@@ -36,6 +36,16 @@ export function pushRecentSearch(entry: Omit<RecentSearch, "at">): void {
   }
 }
 
+/** Tira um @ da lista deste aparelho. */
+export function removeRecentSearch(username: string): void {
+  try {
+    const list = readRecentSearches().filter((r) => r.username !== username);
+    window.localStorage.setItem(KEY, JSON.stringify(list));
+  } catch {
+    /* storage unavailable — the feature is optional */
+  }
+}
+
 export function clearRecentSearches(): void {
   try {
     window.localStorage.removeItem(KEY);

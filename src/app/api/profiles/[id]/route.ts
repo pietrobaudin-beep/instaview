@@ -1,67 +1,36 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import {
-  getCurrentFollowers,
-  getGrowthSeries,
-  getRecentChanges,
-  getSummary,
-  type Period,
-} from "@/lib/analytics";
+import { getCurrentUser } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
-const PERIODS: Period[] = ["24h", "7d", "30d", "90d"];
+const log = logger.scope("api:profiles");
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+/**
+ * Tirar um perfil do Faro, de vez.
+ *
+ * Leva junto tudo o que era dele: pistas, eventos, fotografias da lista e o
+ * agendamento. É o que o `onDelete: Cascade` faz. Não tem desfazer, então a
+ * rota exige `?confirm=1` e a tela pergunta duas vezes.
+ *
+ * O que **não** é apagado: as cópias de imagem. Elas são compartilhadas — a
+ * mesma foto serve para todo mundo que acompanha aquele perfil — e somem
+ * sozinhas quando ninguém mais as pede.
+ */
+export async function DELETE(req: Request, { params }: { params: { id: string } }) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
+  if (new URL(req.url).searchParams.get("confirm") !== "1") {
+    return NextResponse.json({ error: "Confirmação obrigatória" }, { status: 400 });
+  }
+
   const profile = await prisma.trackedProfile.findFirst({
     where: { id: params.id, userId: user.id },
-    include: { job: true },
+    select: { id: true, username: true },
   });
-  if (!profile) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!profile) return NextResponse.json({ error: "Perfil não encontrado" }, { status: 404 });
 
-  const url = new URL(req.url);
-  const periodParam = url.searchParams.get("period") as Period | null;
-  const period: Period = periodParam && PERIODS.includes(periodParam) ? periodParam : "7d";
-  const typeParam = url.searchParams.get("type");
-  const view =
-    typeParam === "UNFOLLOW" ? "UNFOLLOW" : typeParam === "CURRENT" ? "CURRENT" : "FOLLOW";
-
-  const [summary, series, changes] = await Promise.all([
-    getSummary(profile.id),
-    getGrowthSeries(profile.id, period),
-    view === "CURRENT"
-      ? getCurrentFollowers(profile.id, 100)
-      : getRecentChanges(profile.id, { type: view, period, limit: 100 }),
-  ]);
-
-  // Paywall: FREE users see the data blurred and must upgrade to reveal it.
-  const locked = user.plan === "FREE";
-
-  return NextResponse.json({
-    locked,
-    profile: {
-      id: profile.id,
-      username: profile.username,
-      displayName: profile.displayName,
-      avatarUrl: profile.avatarUrl,
-      isVerified: profile.isVerified,
-      isPrivate: profile.isPrivate,
-      followersCount: profile.followersCount,
-      followingCount: profile.followingCount,
-      postsCount: profile.postsCount,
-      status: profile.status,
-      captureFull: profile.captureFull,
-      monitoringStartedAt: profile.monitoringStartedAt.toISOString(),
-      lastCollectedAt: profile.lastCollectedAt?.toISOString() ?? null,
-      lastError: profile.lastError,
-      intervalMinutes: profile.job?.intervalMinutes ?? null,
-      nextRunAt: profile.job?.nextRunAt?.toISOString() ?? null,
-    },
-    period,
-    summary,
-    series,
-    changes,
-  });
+  await prisma.trackedProfile.delete({ where: { id: profile.id } });
+  log.info("perfil tirado do Faro", { username: profile.username });
+  return NextResponse.json({ ok: true });
 }

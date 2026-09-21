@@ -48,15 +48,26 @@ async function lerSaldo(): Promise<Balance | null> {
   }
 }
 
-export async function GET() {
+/** As mesmas janelas do faturamento. */
+const DIAS: Record<string, number> = { hoje: 0, ontem: 1, "7d": 7, "30d": 30, "6m": 182, "1a": 365 };
+
+function diaISO(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+export async function GET(req: Request) {
   const admin = await getAdminUser();
   if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const periodo = new URL(req.url).searchParams.get("periodo") ?? "7d";
 
   const saldo = await lerSaldo();
 
   // Guarda a leitura do dia (a primeira vence: é a da virada).
   let consumoHoje: number | null = null;
   let consumo7d: number | null = null;
+  let consumoPeriodo: number | null = null;
+  let diasComLeitura = 0;
   if (saldo) {
     await prisma.sectionCache
       .create({
@@ -71,17 +82,38 @@ export async function GET() {
     const snaps = await prisma.sectionCache.findMany({
       where: { section: SNAP },
       orderBy: { username: "desc" },
-      take: 8,
+      take: 400,
     });
-    const doDia = snaps.find((s) => s.username === hoje());
-    const inicioHoje = (doDia?.data as { requests?: number } | null)?.requests;
-    if (typeof inicioHoje === "number") consumoHoje = Math.max(0, inicioHoje - saldo.requests);
-
-    const seteAtras = snaps[snaps.length - 1];
-    const inicioSemana = (seteAtras?.data as { requests?: number } | null)?.requests;
-    if (typeof inicioSemana === "number" && snaps.length > 1) {
-      consumo7d = Math.max(0, inicioSemana - saldo.requests);
+    // dia -> quantas requisições restavam na primeira leitura daquele dia
+    const restavam = new Map<string, number>();
+    for (const s of snaps) {
+      const n = (s.data as { requests?: number } | null)?.requests;
+      if (typeof n === "number") restavam.set(s.username, n);
     }
+
+    /**
+     * Gasto entre dois dias: o que restava no começo menos o que restava no
+     * fim. Sem a leitura de um dos dois, a resposta é honesta: `null`, e a
+     * tela diz que ainda não há leitura daquele dia — em vez de inventar.
+     */
+    const gasto = (deDias: number, ateDias: number): number | null => {
+      const de = restavam.get(diaISO(new Date(Date.now() - deDias * 86400_000)));
+      const ate =
+        ateDias === 0
+          ? saldo.requests
+          : restavam.get(diaISO(new Date(Date.now() - ateDias * 86400_000)));
+      if (typeof de !== "number" || typeof ate !== "number") return null;
+      return Math.max(0, de - ate);
+    };
+
+    consumoHoje = gasto(0, 0);
+    consumo7d = gasto(7, 0);
+
+    // O período escolhido na tela.
+    if (periodo === "ontem") consumoPeriodo = gasto(1, 0) !== null ? gasto(1, 1) : null;
+    else consumoPeriodo = gasto(DIAS[periodo] ?? 7, 0);
+
+    diasComLeitura = restavam.size;
   }
 
   // Tamanho do banco e das maiores tabelas.
@@ -144,6 +176,39 @@ export async function GET() {
     FROM section_cache WHERE section = 'img'
   `;
 
+  /**
+   * O que o Faro consome por dia, sem depender de leitura nenhuma: cada perfil
+   * acompanhado custa uma requisição por seção relida (posts, stories,
+   * marcações — reels saiu em 21/09).
+   */
+  const noFaro = await prisma.trackedProfile.count({ where: { status: "ACTIVE" } });
+  const SECOES_POR_DIA = 3;
+  const esperadoPorDia = noFaro * SECOES_POR_DIA;
+
+  // O que está guardado por seção: cada linha aqui é uma requisição que NÃO
+  // precisou ser feita de novo.
+  const cache = await prisma.sectionCache.groupBy({
+    by: ["section"],
+    _count: { _all: true },
+  });
+
+  /**
+   * O que aconteceu no período, contado no nosso banco. Vale mesmo quando não
+   * há leitura de saldo guardada daquele dia: farejos novos e atualizações
+   * manuais são as duas coisas que gastam além do acompanhamento diário.
+   */
+  const desdeDias = periodo === "hoje" ? 0 : (DIAS[periodo] ?? 7);
+  const desde =
+    periodo === "hoje"
+      ? new Date(new Date().setHours(0, 0, 0, 0))
+      : new Date(Date.now() - desdeDias * 86400_000);
+  const ate = periodo === "ontem" ? new Date(new Date().setHours(0, 0, 0, 0)) : new Date();
+
+  const [farejos, coletas] = await Promise.all([
+    prisma.analysisUsage.count({ where: { createdAt: { gte: desde, lt: ate } } }),
+    prisma.followerSnapshot.count({ where: { startedAt: { gte: desde, lt: ate } } }),
+  ]);
+
   const limiteGb = Number(process.env.DB_SIZE_LIMIT_GB ?? 8);
 
   return NextResponse.json({
@@ -155,8 +220,25 @@ export async function GET() {
           porSegundo: saldo.rate,
           consumoHoje,
           consumo7d,
+          periodo,
+          consumoPeriodo,
+          diasComLeitura,
+          farejosNoPeriodo: farejos,
+          coletasNoPeriodo: coletas,
           // US$ 1 por 1.000 requisições, como está no contrato deles.
           custoHoje: consumoHoje == null ? null : +(consumoHoje / 1000).toFixed(3),
+          // US$ 1 por 1.000 requisições, como está no contrato deles.
+          porRequisicao: 0.001,
+          diasRestantes:
+            consumoHoje && consumoHoje > 0 ? Math.floor(saldo.requests / consumoHoje) : null,
+          esperadoPorDia,
+          perfisNoFaro: noFaro,
+          secoesPorDia: SECOES_POR_DIA,
+          custoEsperadoMes: +((esperadoPorDia * 30.4) / 1000).toFixed(2),
+          guardado: cache
+            .map((c) => ({ secao: c.section, linhas: c._count._all }))
+            .sort((a, b) => b.linhas - a.linhas)
+            .slice(0, 10),
         }
       : null,
     banco: {

@@ -16,8 +16,13 @@ export interface RevealProfile {
   joined?: string | null;
 }
 
-/** How long the closing line stays before the page takes over. */
-const OUTRO_MS = 2000;
+/**
+ * Quanto a frase final fica antes de a página assumir.
+ *
+ * Eram 2 segundos depois de a foto já estar nítida. O dado pronto não espera
+ * a cena: fica só o tempo de ler "Achei".
+ */
+const OUTRO_MS = 700;
 
 /**
  * Full-screen loading shown while a profile is analysed.

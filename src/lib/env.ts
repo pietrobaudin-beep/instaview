@@ -27,6 +27,8 @@ const schema = z.object({
   PROVIDER_PAGE_SIZE: z.coerce.number().int().positive().default(50),
 
   HIKERAPI_KEY: z.string().default(""),
+  /** Token do Apify, para procurar o mesmo @ em outras redes. Vazio = desligado. */
+  APIFY_TOKEN: z.string().default(""),
   HIKERAPI_BASE_URL: z.string().default("https://api.hikerapi.com"),
 
   ENSEMBLEDATA_TOKEN: z.string().default(""),
@@ -67,6 +69,7 @@ const raw = {
   PROVIDER_FOLLOWER_PAGES: clean(process.env.PROVIDER_FOLLOWER_PAGES),
   PROVIDER_PAGE_SIZE: clean(process.env.PROVIDER_PAGE_SIZE),
   HIKERAPI_KEY: clean(process.env.HIKERAPI_KEY),
+  APIFY_TOKEN: clean(process.env.APIFY_TOKEN),
   HIKERAPI_BASE_URL: clean(process.env.HIKERAPI_BASE_URL),
   ENSEMBLEDATA_TOKEN: clean(process.env.ENSEMBLEDATA_TOKEN),
   ENSEMBLEDATA_BASE_URL: clean(process.env.ENSEMBLEDATA_BASE_URL),

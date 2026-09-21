@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 242 218" fill="none">
+<title>Cachorrinho com lupa — pose lateral original</title>
+<desc>Pose lateral abaixada com a lupa, patas arredondadas, coleira rosa e as cores do SVG de referência.</desc>
+
+<g transform="translate(18 19)" stroke="#121010" stroke-width="4.8" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Cauda erguida à esquerda, como no SVG da pose. -->
+  <path d="M28 63C10 56 1 39 6 22C9 11 16 4 25 3C21 16 21 29 29 39C32 43 36 46 40 48Z" fill="#FBF9F4"/>
+  <!-- Silhueta lateral abaixada. -->
+  <path d="M19 94C20 65 39 42 69 34C89 29 109 32 130 43C139 43 148 45 155 50C178 51 179 79 186 97C190 104 192 113 191 121C202 135 190 151 171 151L132 155C138 168 128 176 118 177C105 179 98 173 93 167C78 174 58 172 40 171C35 176 28 179 19 177C6 175 1 169 2 153C3 130 10 109 19 94Z" fill="#FBF9F4"/>
+  <!-- Orelha preta caída, integrada à mesma cabeça inclinada. -->
+  <path d="M149 46C160 39 178 51 189 63C197 72 203 84 197 91C194 96 185 96 180 91C174 85 174 74 168 64C163 54 157 49 149 46Z" fill="#121010"/>
+  <!-- Coleira rosa no pescoço, atrás da lupa. -->
+  <path d="M88 126C100 137 113 144 127 148L128 156C108 153 91 142 82 132Z" fill="#E08393" stroke-width="3"/>
+  <!-- Patinha apoiada: arredondada, com o dedinho da referência. -->
+  <path d="M99 153C96 159 96 167 101 172C105 177 115 179 123 175C133 171 136 164 132 156" fill="#FBF9F4"/>
+  <path d="M112 170C111 173 111 176 112 177" stroke-width="3.7"/>
+  <!-- Patinha traseira arredondada. -->
+  <path d="M18 155C15 163 16 171 22 175C29 180 38 176 42 170" fill="#FBF9F4"/>
+  <path d="M28 170C27 173 27 176 28 177" stroke-width="3.7"/>
+  <!-- Olho distante. -->
+  <ellipse cx="161" cy="93" rx="4.4" ry="5.4" fill="#121010" stroke="none"/>
+  <!-- Focinho, copiado do primeiro SVG e ajustado à perspectiva. -->
+  <g id="reference-nose" transform="translate(90 60) scale(.28)" stroke="none"><path d="M349.68,298.79c-28.28,27.71-84.95,25.67-119.76,12.5-22.91-8.67-43.53-25.64-48.31-50.65s9.22-46.03,29.28-58.96c16.78-10.82,36.15-15.71,56.21-15.12,21.76.64,46.72,5.19,65.66,15.83,13.5,7.58,23.99,18.66,29.7,33.07,8.64,21.83,4.09,46.8-12.77,63.32ZM291.92,250.08c3.98-2.2,6.42-6.31,6.8-10.26.42-4.32-1.44-8.36-4.71-11.27-7.47-6.64-23.21-8.31-32.22-3.13-5.13,2.95-8.22,8.48-6.77,14.31,3.42,13.77,24.04,17.45,36.9,10.34Z" fill="#121010"/><path d="M291.92,250.08c-12.86,7.11-33.47,3.43-36.9-10.34-1.45-5.84,1.64-11.37,6.77-14.31,9.01-5.18,24.75-3.52,32.22,3.13,3.27,2.91,5.13,6.95,4.71,11.27-.39,3.95-2.83,8.06-6.8,10.26Z" fill="#FBF9F4"/></g>
+  <path d="M147 151C133 153 121 150 110 145"/>
+  <!-- Medalhinha circular, abaixo da coleira. -->
+  <path d="M94 145L92 149" stroke-width="2.5"/>
+  <circle cx="92" cy="154" r="6.7" fill="#E08393" stroke-width="3.4"/>
+  <!-- Lupa na posição e inclinação do segundo SVG. -->
+  <path d="M82 124L66 149" stroke-width="13"/>
+  <path d="M101 57C80 56 64 72 65 94C65 113 80 131 102 131C124 132 139 116 139 96C140 76 123 57 101 57Z" fill="#FBF9F4" stroke-width="6.5"/>
+  <ellipse cx="102" cy="94" rx="11.8" ry="13.2" fill="#121010" stroke="none"/>
+  <!-- Patinha segurando a lupa: almofada redonda e detalhe curvo. -->
+  <path d="M47 138C54 133 62 134 68 139C74 144 76 153 72 159C67 170 57 173 49 168C41 166 36 161 35 156" fill="#FBF9F4"/>
+  <path d="M59 159C59 163 62 166 65 165" stroke-width="3.7"/>
+</g>
+<g stroke="#E08393" stroke-width="4.5" stroke-linecap="round">
+  <path d="M218 71L223 62M223 82L232 78"/>
+</g>
+</svg>

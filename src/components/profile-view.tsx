@@ -7,7 +7,7 @@ import { ArrowLeft, ArrowRight, BadgeCheck, Check, ChevronDown, Loader2, Lock, U
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
 import { Panel, PersonRow } from "@/components/ui/brand";
-import { ProfileHero, type HeroProfile } from "@/components/profile-hero";
+import { OtherNetworks, ProfileHero, type HeroProfile } from "@/components/profile-hero";
 import {
   FollowsBreakdown,
   OtherInteractions,
@@ -27,7 +27,6 @@ import { NoteBox } from "@/components/ui/brand";
 import { Mascot } from "@/components/ui/mascot";
 import { AboutLine, RaioX } from "@/components/raio-x";
 import { ProfileStories } from "@/components/story-viewer";
-import { WheelPicker } from "@/components/ui/wheel-picker";
 import type { Section } from "@/lib/raio-x";
 
 interface RecentItem extends Person {
@@ -39,15 +38,22 @@ interface RecentItem extends Person {
 const STEPS = LOADING_LINES;
 /** One line every ~2.4s while Faro searches. */
 const STEP_MS = 2400;
-/** Faro always gets this long to search, even when the answer is instant. */
-const MIN_SEARCH_MS = 9000;
+/**
+ * O mínimo que a cena de busca ocupa a tela.
+ *
+ * Era de **9 segundos**: o perfil chegava em 1s e a pessoa ficava olhando o
+ * cachorro correr por mais 8. Agora é só o tempo de a cena não piscar — se a
+ * resposta vier antes, ela aparece.
+ */
+const MIN_SEARCH_MS = 900;
 
 const TABS = [
   { value: "visao", label: "Visão geral" },
   // Stories não é aba: abre em tela cheia pela foto do perfil, como no
   // Instagram. A seção continua existindo na API, só não tem entrada aqui.
   { value: "posts", label: "Posts" },
-  { value: "reels", label: "Reels" },
+  // Reels saiu da tela em 21/09: pouca gente abria e era mais uma leitura
+  // paga por dia em cada perfil do Faro. A seção continua existindo na API.
   { value: "seguindo", label: "Seguindo" },
   { value: "interacoes", label: "Interações" },
   { value: "tagged", label: "Marcações" },
@@ -68,14 +74,20 @@ type Tab = (typeof TABS)[number]["value"];
  * Cada aba continua valendo **uma** requisição, aberta só quando escolhida:
  * agrupar seções numa aba só faria o clique custar o dobro.
  */
-const PRINCIPAIS: readonly Tab[] = ["visao", "posts", "reels", "seguindo", "interacoes", "historico"];
+const PRINCIPAIS: readonly Tab[] = ["visao", "posts", "seguindo", "interacoes", "historico"];
 
 // Tabs served by the Raio-X (one provider request each, fetched when opened).
 const RAIO_X_TABS: readonly Section[] = ["stories", "posts", "reels", "tagged", "highlights", "reposts", "suggested", "about"];
 const isRaioX = (t: Tab): t is Tab & Section => (RAIO_X_TABS as readonly string[]).includes(t);
 
-/** As abas do computador: as principais e um menu "Mais" com as demais. */
-function TabsDesktop({ value, onChange }: { value: Tab; onChange: (t: Tab) => void }) {
+/**
+ * As abas da análise: as principais em linha e um menu "Mais" com as demais.
+ *
+ * No celular a linha rola de lado, com a aba escolhida sempre à vista. Cada
+ * aba só pede a sua seção quando é aberta — trocar de aba não multiplica
+ * chamada ao provedor.
+ */
+function Abas({ value, onChange }: { value: Tab; onChange: (t: Tab) => void }) {
   const [aberto, setAberto] = React.useState(false);
   const principais = TABS.filter((t) => PRINCIPAIS.includes(t.value));
   const outras = TABS.filter((t) => !PRINCIPAIS.includes(t.value));
@@ -89,15 +101,22 @@ function TabsDesktop({ value, onChange }: { value: Tab; onChange: (t: Tab) => vo
   }, [aberto]);
 
   return (
-    <div className="mt-3 hidden flex-wrap items-center gap-2 sm:flex">
+    <div
+      role="tablist"
+      aria-label="O que você quer ver"
+      className="-mx-5 mt-3 flex items-center gap-2 overflow-x-auto px-5 pb-1 sm:mx-0 sm:flex-wrap sm:px-0"
+    >
       {principais.map((t) => (
         <button
           key={t.value}
           type="button"
+          role="tab"
+          aria-selected={value === t.value}
           onClick={() => onChange(t.value)}
-          aria-pressed={value === t.value}
-          className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
-            value === t.value ? "bg-pink text-ink" : "bg-muted text-muted-foreground hover:text-foreground"
+          className={`min-h-[44px] shrink-0 rounded-2xl px-4 text-sm font-semibold transition ${
+            value === t.value
+              ? "bg-pink text-ink"
+              : "bg-muted text-muted-foreground hover:text-foreground"
           }`}
         >
           {t.label}
@@ -112,7 +131,7 @@ function TabsDesktop({ value, onChange }: { value: Tab; onChange: (t: Tab) => vo
             setAberto((a) => !a);
           }}
           aria-expanded={aberto}
-          className={`flex items-center gap-1 rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
+          className={`flex min-h-[44px] shrink-0 items-center gap-1 rounded-2xl px-4 text-sm font-semibold transition ${
             escolhidaFora ? "bg-pink text-ink" : "bg-muted text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -123,7 +142,7 @@ function TabsDesktop({ value, onChange }: { value: Tab; onChange: (t: Tab) => vo
         {aberto && (
           <ul
             onClick={(e) => e.stopPropagation()}
-            className="absolute left-0 top-full z-30 mt-1.5 w-44 overflow-hidden rounded-2xl border border-border bg-card py-1 shadow-lg"
+            className="absolute right-0 top-full z-30 mt-1.5 w-48 overflow-hidden rounded-2xl border border-border bg-card py-1 shadow-lg"
           >
             {outras.map((t) => (
               <li key={t.value}>
@@ -133,7 +152,7 @@ function TabsDesktop({ value, onChange }: { value: Tab; onChange: (t: Tab) => vo
                     onChange(t.value);
                     setAberto(false);
                   }}
-                  className={`w-full px-4 py-2 text-left text-sm transition hover:bg-muted/50 ${
+                  className={`min-h-[44px] w-full px-4 text-left text-sm transition hover:bg-muted/50 ${
                     value === t.value ? "font-bold text-accent" : ""
                   }`}
                 >
@@ -682,37 +701,41 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
             <FaroUpsell open={upsell} onClose={() => setUpsell(false)} next={`/p/${username}`} />
 
             {following.kind === "private" ? (
-              <Panel className="mt-6">
-                <div className="flex flex-col items-center gap-2 py-6 text-center">
-                  <Mascot pose="duvida" className="h-28 text-vinho" decorative />
-                  <p className="mt-1 max-w-sm text-lg font-bold">
-                    Encontrei o perfil, mas não consigo farejar além daqui.
-                  </p>
-                  <p className="max-w-sm text-sm text-muted-foreground">
-                    O Instagram só mostra quem uma conta privada segue para os seguidores aprovados
-                    dela. Não é possível analisar @{state.data.username}.
-                  </p>
-                  <Link href="/" className="mt-2">
+              <>
+                {/* Uma barra no meio: o Faro de um lado, o recado do outro.
+                    Ela separa o perfil, acima, das outras redes, abaixo. */}
+                <div className="mt-4 flex items-center gap-4 rounded-3xl border border-border bg-card p-4">
+                  <Mascot pose="duvida" className="h-16 shrink-0 text-vinho" decorative />
+                  <div className="min-w-0">
+                    <p className="text-base font-bold leading-snug">
+                      Encontrei o perfil, mas não consigo farejar além daqui.
+                    </p>
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                      O Instagram só mostra quem uma conta privada segue para os seguidores
+                      aprovados dela.
+                    </p>
+                  </div>
+                </div>
+
+                {/* O caminho que sobra: o mesmo @ em outra rede, onde o perfil
+                    pode estar aberto. Só aparece quando a conta existe mesmo. */}
+                <OtherNetworks username={state.data.username} isPrivate destaque />
+
+                <div className="mt-6 flex justify-center">
+                  <Link href="/">
                     <Button variant="outline" size="sm">
                       Buscar outro @
                     </Button>
                   </Link>
                 </div>
-              </Panel>
+              </>
             ) : (
               <>
                 <p className="mt-6 text-lg font-bold">{BRAND.phrases.achamosUmRastro} 👀</p>
-                {/* No celular, a roda do iPhone: arrasta para escolher o que ver.
-                    No computador, as pílulas continuam — roda com mouse é ruim. */}
-                <div className="mt-3 rounded-2xl border border-plum/10 bg-white px-3 py-1 sm:hidden">
-                  <WheelPicker
-                    options={TABS}
-                    value={tab}
-                    onChange={setTab}
-                    aria-label="O que você quer ver"
-                  />
-                </div>
-                <TabsDesktop value={tab} onChange={setTab} />
+                {/* A roda saiu: no celular ela escondia as opções e exigia
+                    adivinhar o que vinha depois. Agora são abas visíveis que
+                    rolam de lado, iguais no celular e no computador. */}
+                <Abas value={tab} onChange={setTab} />
 
                 {tab === "visao" && (
                   <div className="mt-5 space-y-5">

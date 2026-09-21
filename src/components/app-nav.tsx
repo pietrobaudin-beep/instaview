@@ -43,7 +43,14 @@ function FaroIcon({ className }: { className?: string }) {
   );
 }
 
-const ACCOUNT = { href: "/perfil", label: "Perfil", icon: User } as const;
+/**
+ * O destino pessoal chama-se **Conta**, com plano nenhum no nome.
+ *
+ * Antes o rótulo virava "farejo pro" ou "curioso" conforme o plano: o lugar
+ * mudava de nome sozinho, e quem procurava a conta não achava. O plano
+ * aparece ao lado, como selo.
+ */
+const ACCOUNT = { href: "/perfil", label: "Conta", icon: User } as const;
 
 /** O nome curto do plano, como a pessoa o conhece. */
 const PLAN_LABEL: Record<Plan, string> = {
@@ -170,7 +177,7 @@ export function AppNav({ plan }: { plan?: Plan }) {
                       active ? "font-semibold text-plum" : "font-medium text-plum/45",
                     )}
                   >
-                    {t.href === ACCOUNT.href && plan ? PLAN_LABEL[plan].toLowerCase() : t.label}
+                    {t.label}
                   </span>
                 </Link>
               </li>

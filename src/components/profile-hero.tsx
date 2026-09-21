@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { BadgeCheck, Globe, Link as LinkIcon, Loader2, Lock, PawPrint } from "lucide-react";
+import { ArrowUpRight, BadgeCheck, Globe, Link as LinkIcon, Loader2, Lock, PawPrint, Search } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { StatusPill } from "@/components/ui/brand";
 import { formatNumber } from "@/lib/utils";
@@ -53,10 +53,31 @@ function Stat({ value, label }: { value: string; label: string }) {
  * confirma. TikTok e X são as duas redes checadas; o que não dá para confirmar
  * simplesmente não aparece.
  */
-function OtherNetworks({ username, isPrivate }: { username: string; isPrivate?: boolean }) {
-  const [links, setLinks] = React.useState<
-    { label: string; handle: string; url: string; displayName?: string | null }[]
-  >([]);
+export function OtherNetworks({
+  username,
+  isPrivate,
+  destaque = false,
+}: {
+  username: string;
+  isPrivate?: boolean;
+  /** No beco sem saída do perfil privado, o bloco vira a saída principal. */
+  destaque?: boolean;
+}) {
+  type Elsewhere = {
+    label: string;
+    handle: string;
+    url: string;
+    displayName?: string | null;
+    avatarUrl?: string | null;
+  };
+
+  const [links, setLinks] = React.useState<Elsewhere[]>([]);
+
+  const [procurando, setProcurando] = React.useState(false);
+  const [procurouPagas, setProcurouPagas] = React.useState(false);
+  /** Quantas redes a busca paga acrescentou — 0 também é resposta, e aparece. */
+  const [novas, setNovas] = React.useState(0);
+  const [falhou, setFalhou] = React.useState(false);
 
   React.useEffect(() => {
     if (!isPrivate) return;
@@ -70,40 +91,129 @@ function OtherNetworks({ username, isPrivate }: { username: string; isPrivate?: 
     };
   }, [username, isPrivate]);
 
-  if (!isPrivate || links.length === 0) return null;
+  /**
+   * As redes pagas, só quando pedidas.
+   *
+   * Cada consulta destas custa, então nada roda sozinho — e o resultado fica
+   * 7 dias guardado.
+   */
+  async function procurarMais() {
+    setProcurando(true);
+    setFalhou(false);
+    const antes = links.length;
+    try {
+      const r = await fetch(`/api/elsewhere?username=${encodeURIComponent(username)}&pagas=1`);
+      if (!r.ok) throw new Error(String(r.status));
+      const b = await r.json();
+      const achados: Elsewhere[] = b.links ?? [];
+      setLinks(achados);
+      setNovas(achados.length - antes);
+      setProcurouPagas(true);
+    } catch {
+      // Sem isto, falha e "não achei nada" ficavam iguais: o botão sumia e a
+      // tela seguia idêntica.
+      setFalhou(true);
+    } finally {
+      setProcurando(false);
+    }
+  }
+
+  if (!isPrivate) return null;
 
   return (
-    <div className="mt-4">
-      <div className="flex flex-wrap justify-center gap-2 md:justify-start">
+    <div className={destaque ? "mt-6 w-full text-left" : "mt-4"}>
+      {destaque && (
+        <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-plum/50">
+          O mesmo @ em outras redes
+        </p>
+      )}
+      <div
+        className={
+          destaque
+            ? "grid gap-2"
+            : "flex flex-wrap justify-center gap-2 md:justify-start"
+        }
+      >
         {links.map((l) => (
           <a
             key={l.url}
             href={l.url}
             target="_blank"
             rel="noreferrer nofollow"
-            className="flex items-center gap-2.5 rounded-2xl border border-border bg-muted/50 py-2 pl-2 pr-3.5 transition hover:border-accent/40"
+            className={`flex items-center gap-2.5 rounded-2xl border border-border bg-muted/50 py-2 pl-2 pr-3.5 transition hover:border-accent/40 ${
+              destaque ? "min-h-[56px]" : ""
+            }`}
           >
-            {/* Foto ilustrativa: o Farejo ainda não busca a imagem dessas redes,
-                então desenha uma silhueta em vez de fingir que tem a real. */}
-            <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-pink/40">
-              <svg viewBox="0 0 48 48" className="h-full w-full text-vinho/35" aria-hidden>
-                <circle cx="24" cy="18" r="8" fill="currentColor" />
-                <path d="M8 44c0-8.8 7.2-14 16-14s16 5.2 16 14z" fill="currentColor" />
-              </svg>
+            {/* A foto real quando a rede publica uma (hoje, o Telegram). Onde
+                não há via oficial para a imagem, fica a silhueta — melhor do
+                que fingir que temos a foto. */}
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-pink/40">
+              {l.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={l.avatarUrl}
+                  alt=""
+                  className="h-full w-full object-cover"
+                  referrerPolicy="no-referrer"
+                  loading="lazy"
+                />
+              ) : (
+                <svg viewBox="0 0 48 48" className="h-full w-full text-vinho/35" aria-hidden>
+                  <circle cx="24" cy="18" r="8" fill="currentColor" />
+                  <path d="M8 44c0-8.8 7.2-14 16-14s16 5.2 16 14z" fill="currentColor" />
+                </svg>
+              )}
             </span>
-            <span className="text-left leading-tight">
-              <span className="block text-sm font-bold text-foreground">@{l.handle}</span>
+            <span className="min-w-0 flex-1 text-left leading-tight">
+              <span className="block truncate text-sm font-bold text-foreground">@{l.handle}</span>
               {/* O nome vem da própria rede, quando ela devolve. */}
-              <span className="block text-[11px] text-muted-foreground">
+              <span className="block truncate text-[11px] text-muted-foreground">
                 {l.label}
                 {l.displayName ? ` · ${l.displayName}` : ""}
               </span>
             </span>
+            {destaque && <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground" />}
           </a>
         ))}
       </div>
-      <p className="mt-2 text-center text-[11px] leading-relaxed text-muted-foreground md:text-left">
-        Foto ilustrativa. Mesmo @ nessa rede — <b className="font-semibold">pode ser outra pessoa</b>.
+      {destaque && !procurouPagas && (
+        <button
+          type="button"
+          onClick={procurarMais}
+          disabled={procurando}
+          className="mt-2 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl border border-border bg-card text-sm font-bold transition hover:border-accent/50 disabled:opacity-60"
+        >
+          {procurando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+          {procurando ? "Procurando…" : "Procurar em mais redes"}
+        </button>
+      )}
+
+      {/*
+        * Depois de procurar, a tela precisa dizer o que houve. Antes, quando a
+        * busca não trazia nada novo, o botão simplesmente sumia e nada mudava:
+        * quem clicou esperava dez segundos sem saber se tinha buscado.
+        */}
+      {procurouPagas && novas === 0 && (
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          {links.length === 0
+            ? "Não achamos esse @ em nenhuma outra rede."
+            : "Procuramos também no TikTok e no YouTube: nada além do que já está aqui."}
+        </p>
+      )}
+
+      {falhou && (
+        <button
+          type="button"
+          onClick={procurarMais}
+          className="mt-2 text-[11px] font-bold text-accent underline underline-offset-2"
+        >
+          A busca falhou. Tentar de novo
+        </button>
+      )}
+
+      <p className={`mt-2 text-[11px] leading-relaxed text-muted-foreground ${destaque ? "" : "text-center md:text-left"}`}>
+        {links.some((l) => !l.avatarUrl) ? "Onde não há foto, o desenho é ilustrativo. " : ""}
+        Mesmo @ nessa rede — <b className="font-semibold">pode ser outra pessoa</b>.
       </p>
     </div>
   );
@@ -140,7 +250,11 @@ export function ProfileHero({
       {premium && (
         <div className="h-1.5 w-full bg-gradient-to-r from-pink via-accent to-purple" />
       )}
-      <div className="flex flex-col items-center gap-5 p-6 text-center md:flex-row md:items-start md:gap-7 md:text-left">
+      {/* Foto e identidade na mesma linha; números, bio e ação embaixo, em
+          largura cheia. Empilhado e centralizado como antes, o cartão sozinho
+          ocupava a tela toda e empurrava a análise para fora da dobra. */}
+      <div className="p-5 text-left md:p-6">
+        <div className="flex items-start gap-4 md:gap-7">
         <div className="relative shrink-0">
           {onVerStories ? (
             <button
@@ -153,17 +267,33 @@ export function ProfileHero({
                 <Avatar
                   src={profile.avatarUrl}
                   name={profile.displayName ?? profile.username}
+                  size={72}
+                  className="md:hidden"
+                />
+                <Avatar
+                  src={profile.avatarUrl}
+                  name={profile.displayName ?? profile.username}
                   size={104}
+                  className="hidden md:block"
                 />
               </span>
-              <span className="mt-1.5 block text-[11px] font-bold text-accent">Ver stories</span>
+              <span className="mt-1 block text-center text-[11px] font-bold text-accent">
+                Ver stories
+              </span>
             </button>
           ) : (
             <div className="rounded-full p-1 ring-[3px] ring-pink">
               <Avatar
                 src={profile.avatarUrl}
                 name={profile.displayName ?? profile.username}
+                size={72}
+                className="md:hidden"
+              />
+              <Avatar
+                src={profile.avatarUrl}
+                name={profile.displayName ?? profile.username}
                 size={104}
+                className="hidden md:block"
               />
             </div>
           )}
@@ -178,7 +308,7 @@ export function ProfileHero({
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center justify-center gap-2 md:justify-start">
+          <div className="flex flex-wrap items-center gap-2">
             <h1 className="truncate text-2xl font-extrabold tracking-tight">
               {profile.username}
             </h1>
@@ -191,21 +321,21 @@ export function ProfileHero({
             })()}
           </div>
 
-          {profile.displayName && (
-            <p className="mt-0.5 truncate text-sm text-muted-foreground">{profile.displayName}</p>
-          )}
+            {profile.displayName && (
+              <p className="mt-0.5 truncate text-sm text-muted-foreground">{profile.displayName}</p>
+            )}
+          </div>
+        </div>
 
-          <div className="mt-4 flex items-center justify-center gap-8 md:justify-start">
+        {/* Daqui para baixo, largura cheia. */}
+        <div className="mt-4">
+          <div className="flex items-center justify-between gap-4 md:justify-start md:gap-8">
             {typeof profile.postsCount === "number" && profile.postsCount > 0 && (
               <Stat value={formatNumber(profile.postsCount)} label="publicações" />
             )}
             <Stat value={formatNumber(profile.followersCount)} label="seguidores" />
             <Stat value={formatNumber(profile.followingCount)} label="seguindo" />
           </div>
-
-          {profile.bio && (
-            <p className="mt-4 whitespace-pre-line text-sm text-foreground/80">{profile.bio}</p>
-          )}
 
           {/* O link é a pista mais honesta que existe: foi a própria pessoa que
               escolheu publicá-lo. Mostramos o domínio, não a URL inteira. */}
@@ -222,9 +352,7 @@ export function ProfileHero({
             </a>
           )}
 
-          <OtherNetworks username={profile.username} isPrivate={profile.isPrivate} />
-
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-2 md:justify-start">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             <span
               className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
                 profile.isPrivate
@@ -237,15 +365,13 @@ export function ProfileHero({
             </span>
           </div>
           {note && <p className="mt-2 text-xs text-muted-foreground">{note}</p>}
-        </div>
 
-        {onTrack && (
-          <div className="w-full shrink-0 md:w-auto md:self-center">
+          {onTrack && (
             <button
               type="button"
               onClick={onTrack}
               disabled={tracking?.busy || tracking?.saved}
-              className={`flex w-full items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-bold transition md:w-auto ${
+              className={`mt-4 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl px-5 text-sm font-bold transition md:w-auto ${
                 tracking?.saved
                   ? "bg-muted text-foreground"
                   : "bg-pink text-ink hover:opacity-90"
@@ -260,8 +386,8 @@ export function ProfileHero({
               )}
               {tracking?.saved ? "No seu Faro" : "Colocar no Faro"}
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </section>
   );

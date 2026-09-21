@@ -36,6 +36,7 @@ export function CodeLogin({ channels }: { channels: Channel[] }) {
   const [cooldown, setCooldown] = React.useState(0);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [novaConta, setNovaConta] = React.useState(false);
 
   // Resend countdown.
   React.useEffect(() => {
@@ -92,6 +93,9 @@ export function CodeLogin({ channels }: { channels: Channel[] }) {
         setCode("");
         return;
       }
+      // "Conta criada" só vale quando ela é nova de verdade. Quem já tinha
+      // conta e nunca pôs o nome cai na mesma tela, com outro título.
+      setNovaConta(!!data.isNew);
       if (data.needsName) setStep("name");
       else done();
     } catch {
@@ -136,9 +140,9 @@ export function CodeLogin({ channels }: { channels: Channel[] }) {
         <CardContent className="p-6">
           {step === "target" && (
             <>
-              <h1 className="text-2xl font-extrabold tracking-tight">Entrar no Farejo</h1>
+              <h1 className="text-2xl font-extrabold tracking-tight">Seu acesso ao Farejo</h1>
               <p className="mt-1 text-sm text-muted-foreground">
-                Sem senha: a gente manda um código e pronto. Se for sua primeira vez, a conta é criada na hora.
+                Entre ou crie sua conta com um código. Sem senha.
               </p>
 
               {channels.length > 1 && (
@@ -197,7 +201,15 @@ export function CodeLogin({ channels }: { channels: Channel[] }) {
                 </Button>
                 {error && <p className="text-sm text-destructive">{error}</p>}
                 <p className="text-xs leading-relaxed text-muted-foreground">
-                  Ao continuar, você declara ter 18 anos ou mais.
+                  Ao continuar, você concorda com os{" "}
+                  <Link href="/termos" className="font-semibold text-vinho underline-offset-2 hover:underline">
+                    Termos de Uso
+                  </Link>{" "}
+                  e com a{" "}
+                  <Link href="/privacidade" className="font-semibold text-vinho underline-offset-2 hover:underline">
+                    Política de Privacidade
+                  </Link>
+                  , e declara ter 18 anos ou mais.
                 </p>
               </form>
             </>
@@ -267,8 +279,13 @@ export function CodeLogin({ channels }: { channels: Channel[] }) {
           {step === "name" && (
             <>
               <Mascot pose="feliz" className="h-20 text-ink" bob />
-              <h1 className="mt-4 text-2xl font-extrabold tracking-tight">Conta criada! 🐶</h1>
-              <p className="mt-1 text-sm text-muted-foreground">Como quer ser chamado? Dá para mudar depois no Perfil.</p>
+              <h1 className="mt-4 text-2xl font-extrabold tracking-tight">
+                {novaConta ? "Conta criada! 🐶" : "Como podemos chamar você?"}
+              </h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {novaConta ? "Como podemos chamar você? " : ""}É opcional. Você pode mudar depois em
+                Conta.
+              </p>
               <form onSubmit={saveName} className="mt-5 space-y-3">
                 <Input
                   placeholder="Seu nome ou apelido"
@@ -287,7 +304,7 @@ export function CodeLogin({ channels }: { channels: Channel[] }) {
                   onClick={done}
                   className="w-full text-center text-sm font-medium text-muted-foreground hover:text-foreground"
                 >
-                  Pular por enquanto
+                  Agora não
                 </button>
               </form>
             </>

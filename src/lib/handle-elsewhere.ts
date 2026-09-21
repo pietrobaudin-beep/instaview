@@ -1,5 +1,5 @@
 /**
- * O mesmo @ no TikTok e no X — mostrado só quando a conta realmente existe.
+ * O mesmo @ no TikTok, no X e no Telegram — só quando a conta existe mesmo.
  *
  * O Farejo pede a página pública do perfil e olha apenas para o sinal de
  * existência: um 404 é "não existe", uma página com o nome do perfil é
@@ -14,12 +14,15 @@
  */
 import { prisma } from "@/lib/db";
 import { logger } from "@/lib/logger";
+import { LABELS, apifyLigado, viaApify, type Achado, type RedePaga } from "@/lib/elsewhere-apify";
 
 const log = logger.scope("elsewhere");
 const TTL = 7 * 24 * 60 * 60 * 1000;
+/** Quanto vale um "não achei" das redes pagas — ver o porquê no laço delas. */
+const TTL_FALHA = 6 * 60 * 60 * 1000;
 const TIMEOUT_MS = 4000;
 
-export type Network = "tiktok" | "x";
+export type Network = "tiktok" | "x" | "telegram" | RedePaga;
 
 export interface Elsewhere {
   network: Network;
@@ -28,19 +31,38 @@ export interface Elsewhere {
   url: string;
   /** Nome que a própria rede devolve, quando devolve. */
   displayName?: string | null;
+  /**
+   * Foto de perfil, quando a rede publica uma.
+   *
+   * De graça, só o Telegram devolve: a página de prévia que ele serve para
+   * montar o cartão de link traz a foto. TikTok e X não expõem a imagem por
+   * via oficial. Atrás do botão "Procurar em mais redes", o Apify traz foto
+   * do TikTok e do YouTube; onde não há nenhuma, a tela continua desenhando a
+   * silhueta.
+   */
+  avatarUrl?: string | null;
 }
 
+/** As redes de graça. As pagas (via Apify) ficam em `elsewhere-apify`. */
+type RedeGratis = "tiktok" | "x" | "telegram";
+
 const NETWORKS: Record<
-  Network,
+  RedeGratis,
   { label: string; url: (h: string) => string; valid: RegExp }
 > = {
   // O @ do TikTok aceita ponto e sublinhado; o do X, só letras, números e _.
   tiktok: { label: "TikTok", url: (h) => `https://www.tiktok.com/@${h}`, valid: /^[\w.]{2,24}$/ },
   x: { label: "X", url: (h) => `https://x.com/${h}`, valid: /^\w{1,15}$/ },
+  // O @ do Telegram: letras, números e sublinhado, começando por letra.
+  telegram: {
+    label: "Telegram",
+    url: (h) => `https://t.me/${h}`,
+    valid: /^[a-z][\w]{4,31}$/,
+  },
 };
 
 type Verdict = "yes" | "unknown";
-type Result = { verdict: Verdict; displayName?: string | null };
+type Result = { verdict: Verdict; displayName?: string | null; avatarUrl?: string | null };
 
 /**
  * TikTok pelo oEmbed — o endpoint público que eles mantêm para quem quer
@@ -63,6 +85,39 @@ async function checkTikTok(handle: string): Promise<Result> {
   }
 }
 
+/**
+ * Telegram pela página de prévia.
+ *
+ * O `t.me/<@>` devolve um HTML com as marcas `og:` que o próprio Telegram
+ * publica para montar o cartãozinho do link — de lá saem **nome, foto e bio**.
+ * Conta que não existe vem sem essas marcas, e aí o veredito é "não sei".
+ */
+async function checkTelegram(handle: string): Promise<Result> {
+  const r = await ask(`https://t.me/${handle}`);
+  if (!r || r.status !== 200) return { verdict: "unknown" };
+
+  const og = (prop: string) =>
+    r.body.match(new RegExp(`<meta property="og:${prop}" content="([^"]*)"`, "i"))?.[1] ?? null;
+
+  const titulo = og("title");
+  const foto = og("image");
+
+  /*
+   * O @ que não existe também responde 200 — e com marcas `og:` preenchidas.
+   * A diferença está no conteúdo: o título vira "Telegram: Contact @fulano" e
+   * a imagem é o logotipo em telegram.org. A conta de verdade traz o nome da
+   * pessoa e uma foto no CDN (cdn*.telesco.pe).
+   *
+   * Sem esta checagem, TODO @ aparecia como tendo Telegram. Foi o que
+   * aconteceu no primeiro teste.
+   */
+  const ehCdn = !!foto && /(^|\.)telesco\.pe\//i.test(foto);
+  const tituloGenerico = !titulo || /^telegram(:|$)/i.test(titulo.trim());
+  if (!ehCdn || tituloGenerico) return { verdict: "unknown" };
+
+  return { verdict: "yes", displayName: titulo, avatarUrl: foto };
+}
+
 async function ask(url: string): Promise<{ status: number; body: string } | null> {
   try {
     const res = await fetch(url, {
@@ -83,8 +138,9 @@ async function ask(url: string): Promise<{ status: number; body: string } | null
   }
 }
 
-async function check(network: Network, handle: string): Promise<Result> {
+async function check(network: RedeGratis, handle: string): Promise<Result> {
   if (network === "tiktok") return checkTikTok(handle);
+  if (network === "telegram") return checkTelegram(handle);
   const url = NETWORKS[network].url(handle);
   const r = await ask(url);
   if (!r) return { verdict: "unknown" };
@@ -108,12 +164,21 @@ async function check(network: Network, handle: string): Promise<Result> {
 
 const key = (network: Network) => `net:${network}`;
 
-/** Consulta com memória de 7 dias; só devolve as redes confirmadas. */
-export async function handleElsewhere(username: string): Promise<Elsewhere[]> {
+/**
+ * Consulta com memória de 7 dias; só devolve as redes confirmadas.
+ *
+ * `incluirPagas` liga as redes que passam pelo Apify (TikTok com foto e
+ * YouTube). Elas custam por execução, então só rodam quando alguém aperta
+ * "Procurar em outras redes" — nunca sozinhas.
+ */
+export async function handleElsewhere(
+  username: string,
+  incluirPagas = false,
+): Promise<Elsewhere[]> {
   const handle = username.trim().replace(/^@+/, "").toLowerCase();
   const out: Elsewhere[] = [];
 
-  for (const network of Object.keys(NETWORKS) as Network[]) {
+  for (const network of Object.keys(NETWORKS) as RedeGratis[]) {
     const cfg = NETWORKS[network];
     if (!cfg.valid.test(handle)) continue; // o @ nem é válido nessa rede
 
@@ -144,7 +209,74 @@ export async function handleElsewhere(username: string): Promise<Elsewhere[]> {
         handle,
         url: cfg.url(handle),
         displayName: result.displayName ?? null,
+        avatarUrl: result.avatarUrl ?? null,
       });
+    }
+  }
+
+  if (incluirPagas && apifyLigado()) {
+    // Em paralelo, e não em fila: medido em 21/09, o TikTok leva ~11s e o
+    // YouTube ~6s. Juntos, a espera é a da rede mais lenta, não a soma.
+    const achados = await Promise.all(
+      (Object.keys(LABELS) as RedePaga[]).map(async (rede) => {
+        const secao = key(rede);
+        const row = await prisma.sectionCache
+          .findUnique({ where: { username_section: { username: handle, section: secao } } })
+          .catch(() => null);
+
+        // "Achei" vale 7 dias; "não achei" vale 6 horas. O ator falha por
+        // motivo passageiro — limite de memória da conta, tempo esgotado — e
+        // guardar isso por uma semana apagaria a rede daquele @ sem motivo.
+        const validade = (row?.data as unknown as Achado | undefined)?.verdict === "yes"
+          ? TTL
+          : TTL_FALHA;
+        if (row && Date.now() - row.fetchedAt.getTime() < validade) {
+          return [rede, row.data as unknown as Achado] as const;
+        }
+
+        const achado = await viaApify(rede, handle);
+        log.info("apify", { rede, handle, verdict: achado.verdict });
+
+        // `erro` é "não consegui perguntar", não uma resposta: guardar isso
+        // faria a rede sumir até o cache vencer, mesmo estando lá. Fica sem
+        // gravar, para a próxima tentativa perguntar de novo.
+        if (achado.verdict !== "erro") {
+          const data = achado as unknown as Parameters<typeof prisma.sectionCache.create>[0]["data"]["data"];
+          await prisma.sectionCache
+            .upsert({
+              where: { username_section: { username: handle, section: secao } },
+              create: { username: handle, section: secao, data },
+              update: { data, fetchedAt: new Date() },
+            })
+            .catch(() => null);
+        }
+        return [rede, achado] as const;
+      }),
+    );
+
+    for (const [rede, achado] of achados) {
+      // Sem endereço não há link para oferecer. Mandar para uma busca do
+      // Google, como antes, seria fingir que sabemos onde a conta está.
+      if (achado?.verdict !== "yes" || !achado.url) continue;
+
+      const achadoPago: Elsewhere = {
+        network: rede,
+        label: LABELS[rede],
+        handle,
+        url: achado.url,
+        displayName: achado.displayName ?? null,
+        avatarUrl: achado.avatarUrl ?? null,
+      };
+
+      /*
+       * O TikTok é a mesma rede por dois caminhos: o oEmbed de graça confirma
+       * a conta mas não dá foto; o ator do Apify dá. Sem isto a tela mostrava
+       * "TikTok" duas vezes, uma com foto e outra sem — conferido em 21/09.
+       * A linha paga, mais completa, toma o lugar da grátis.
+       */
+      const iguais = out.findIndex((l) => l.label === achadoPago.label);
+      if (iguais >= 0) out[iguais] = achadoPago;
+      else out.push(achadoPago);
     }
   }
 

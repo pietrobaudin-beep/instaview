@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 220" fill="none">
+  <title>Cachorrinho com lupa</title>
+  <desc>Cachorrinho branco com orelha preta, coleira rosa e lupa, em traços arredondados sobre fundo creme.</desc>
+  <g stroke="#171615" stroke-width="4.7" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Cauda curva e corpo arredondado. -->
+    <path d="M48 85C23 80 12 61 19 42C23 31 30 23 38 23C29 45 36 60 56 67" fill="#FFFDFA"/>
+    <path d="M33 111C33 86 48 65 70 58C95 49 112 55 132 62C143 66 151 66 159 69C178 66 194 82 198 100C201 110 206 119 209 130C218 138 217 151 207 156C197 162 178 159 166 162C169 174 165 184 154 187C143 191 132 185 126 178C116 185 103 186 92 183C80 190 65 185 59 186C50 193 43 198 33 195C17 194 14 185 16 171C17 149 23 129 33 111Z" fill="#FFFDFA"/>
+    <!-- Oreille noire souple. -->
+    <path d="M158 70C170 61 185 72 196 85C207 98 213 113 206 120C201 125 192 122 188 117C179 107 180 92 171 81C167 76 162 74 158 70Z" fill="#171615"/>
+    <!-- Coleira e medalha rosa. -->
+    <path d="M82 140C101 153 122 159 141 158" stroke="#EEA0B3" stroke-width="8"/>
+    <!-- Olho e focinho. -->
+    <path d="M181 113C181 116 180 118 178 118C175 118 174 115 175 112C176 109 180 110 181 113Z" fill="#171615" stroke="none"/>
+    <path d="M177 132C188 127 201 130 208 137C215 144 212 153 203 157C192 162 178 160 172 153C166 145 169 136 177 132Z" fill="#171615"/>
+    <path d="M187 140C189 137 194 138 195 141C196 145 192 147 189 145C187 145 186 142 187 140Z" fill="#FFFDFA" stroke="none"/>
+    <path d="M166 162C153 164 141 160 130 155"/>
+    <path d="M132 163C132 157 136 154 141 155C147 155 150 159 148 165C146 172 138 173 134 168Z" fill="#F3B6C5" stroke-width="3.5"/>
+    <!-- Patinhas com dedos suaves. -->
+    <path d="M148 177C146 182 147 187 151 188M39 185C37 190 38 194 41 195" stroke-width="3.4"/>
+    <!-- Lupa com o olho ampliado. -->
+    <path d="M92 140L78 163" stroke-width="13"/>
+    <path d="M77 99C78 79 94 67 113 69C134 70 148 88 147 108C146 128 132 143 112 142C91 143 75 124 77 99Z" fill="#FFFDFA" stroke-width="7"/>
+    <ellipse cx="114" cy="106" rx="10" ry="12" fill="#171615" stroke="none"/>
+    <ellipse cx="117" cy="102" rx="2.8" ry="3.2" fill="#FFFDFA" stroke="none"/>
+    <!-- Patte devant le manche. -->
+    <path d="M58 163C62 157 70 156 76 159C86 163 90 171 85 178C80 188 66 188 57 181C53 178 51 175 50 172" fill="#FFFDFA"/>
+    <path d="M67 179L71 184M60 176L62 181" stroke-width="3.2"/>
+  </g>
+  <g stroke="#EEA0B3" stroke-width="4.8" stroke-linecap="round">
+    <path d="M211 91L217 82M217 102L227 98"/>
+  </g>
+</svg>

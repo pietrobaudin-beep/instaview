@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { BarRow, Panel, PersonRow } from "@/components/ui/brand";
@@ -112,11 +113,17 @@ export function OtherInteractions({
   locked: boolean;
   username: string;
 }) {
+  // Três de cara; o resto abre no "Ver mais". Seis fotos de uma vez empurravam
+  // o próximo bloco para fora da tela no celular.
+  const [tudo, setTudo] = React.useState(false);
+  const PREVIA = 3;
+  const visiveis = tudo ? people.slice(0, 12) : people.slice(0, PREVIA);
+
   if (people.length === 0) return null;
   return (
     <Panel title="Pessoas que aparecem bastante">
       <ul className="grid grid-cols-3 gap-4 sm:grid-cols-6">
-        {people.slice(0, 6).map((p, i) => (
+        {visiveis.map((p, i) => (
           <li key={p.username + i} className="text-center">
             <div className={locked ? "blur-[5px]" : ""}>
               <div className="mx-auto h-[72px] w-[72px] overflow-hidden rounded-2xl bg-muted">
@@ -150,6 +157,17 @@ export function OtherInteractions({
           </li>
         ))}
       </ul>
+
+      {!locked && people.length > PREVIA && (
+        <button
+          type="button"
+          onClick={() => setTudo((t) => !t)}
+          className="mt-4 flex min-h-[44px] w-full items-center justify-center gap-1 rounded-2xl border border-border text-sm font-bold text-accent transition hover:bg-muted/40"
+        >
+          {tudo ? "Ver menos" : `Ver mais ${Math.min(people.length, 12) - PREVIA}`}
+        </button>
+      )}
+
       {locked && (
         <p className="mt-5 text-center text-sm font-semibold">
           Veja muito mais com o{" "}

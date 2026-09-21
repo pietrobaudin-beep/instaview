@@ -326,7 +326,7 @@ export function HistoryPanel({
           <Panel title="Novidades do Faro" icon={Sparkles}>
             {!h.news || h.news.length === 0 ? (
               <p className="text-xs text-muted-foreground">
-                🐾 O Faro olha este perfil todo dia e mostra aqui só o que for novo: posts, reels, stories e
+                🐾 O Faro olha este perfil todo dia e mostra aqui só o que for novo: posts, stories e
                 marcações que aparecerem daqui pra frente.
               </p>
             ) : (

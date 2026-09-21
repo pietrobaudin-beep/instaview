@@ -13,7 +13,14 @@ import * as React from "react";
 
 /** Resolution of each beat, in pixels of the source grid. */
 const LADDER = [4, 7, 12, 22, 44];
-const STEP_MS = 800;
+/**
+ * Cada degrau do mosaico até a foto ficar nítida.
+ *
+ * Era 800ms por degrau, o que somava vários segundos depois de a resposta já
+ * ter chegado. A cena continua existindo — é ela que explica que a foto só
+ * aparece depois do provedor — mas agora ela não segura mais a tela.
+ */
+const STEP_MS = 260;
 
 export function PixelAvatar({
   src,

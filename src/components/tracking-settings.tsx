@@ -10,9 +10,11 @@ import {
   Check,
   ChevronDown,
   Clock,
+  Eraser,
   Heart,
   Loader2,
   Pause,
+  Trash2,
   UserMinus,
   UserPlus,
 } from "lucide-react";
@@ -336,8 +338,9 @@ export function TrackingSettings({
                 </button>
 
                 {profileId && (
-                  <div className="border-t border-border py-4">
+                  <div className="space-y-4 border-t border-border py-4">
                     <PausarFaro profileId={profileId} ativo={active} username={username} />
+                    <Perigo profileId={profileId} username={username} />
                   </div>
                 )}
               </>
@@ -426,5 +429,118 @@ function PausarFaro({
           : `O Faro não está olhando @${username} no momento.`}
       </p>
     </>
+  );
+}
+
+/**
+ * As duas ações sem volta: limpar o histórico e tirar do Faro.
+ *
+ * Ficam no fim, dentro dos ajustes, e cada uma pergunta duas vezes — o
+ * primeiro clique só arma o botão. As rotas ainda exigem `confirm=1`, para
+ * que um clique perdido nunca apague nada.
+ */
+function Perigo({ profileId, username }: { profileId: string; username: string }) {
+  const router = useRouter();
+  const [armado, setArmado] = React.useState<"limpar" | "tirar" | null>(null);
+  const [busy, setBusy] = React.useState(false);
+
+  async function limpar() {
+    setBusy(true);
+    try {
+      await fetch(`/api/profiles/${profileId}/limpar?confirm=1`, { method: "POST" });
+      router.refresh();
+    } finally {
+      setBusy(false);
+      setArmado(null);
+    }
+  }
+
+  async function tirar() {
+    setBusy(true);
+    try {
+      const r = await fetch(`/api/profiles/${profileId}?confirm=1`, { method: "DELETE" });
+      if (r.ok) router.push("/rastros");
+    } finally {
+      setBusy(false);
+      setArmado(null);
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      {armado === "limpar" ? (
+        <Confirma
+          texto={`Apagar todas as pistas, stories e o histórico de @${username}? O perfil continua no Faro, e a próxima leitura vira a nova base.`}
+          rotulo="Limpar mesmo"
+          busy={busy}
+          onSim={limpar}
+          onNao={() => setArmado(null)}
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setArmado("limpar")}
+          className="flex w-full items-center justify-center gap-2 rounded-full border border-border px-6 py-2.5 text-sm font-semibold transition hover:bg-muted/50"
+        >
+          <Eraser className="h-4 w-4" /> Limpar histórico
+        </button>
+      )}
+
+      {armado === "tirar" ? (
+        <Confirma
+          texto={`Tirar @${username} do Faro apaga tudo o que o Faro já encontrou dele. Não tem desfazer.`}
+          rotulo="Tirar do Faro"
+          busy={busy}
+          onSim={tirar}
+          onNao={() => setArmado(null)}
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setArmado("tirar")}
+          className="flex w-full items-center justify-center gap-2 rounded-full border border-destructive/30 px-6 py-2.5 text-sm font-semibold text-destructive transition hover:bg-destructive/5"
+        >
+          <Trash2 className="h-4 w-4" /> Tirar do Faro
+        </button>
+      )}
+    </div>
+  );
+}
+
+function Confirma({
+  texto,
+  rotulo,
+  busy,
+  onSim,
+  onNao,
+}: {
+  texto: string;
+  rotulo: string;
+  busy: boolean;
+  onSim: () => void;
+  onNao: () => void;
+}) {
+  return (
+    <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-3">
+      <p className="text-xs leading-relaxed">{texto}</p>
+      <div className="mt-2 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onSim}
+          disabled={busy}
+          className="flex items-center gap-1.5 rounded-full bg-destructive px-4 py-1.5 text-xs font-bold text-white transition hover:opacity-90 disabled:opacity-50"
+        >
+          {busy && <Loader2 className="h-3 w-3 animate-spin" />}
+          {rotulo}
+        </button>
+        <button
+          type="button"
+          onClick={onNao}
+          className="text-xs font-semibold text-muted-foreground hover:underline"
+        >
+          cancelar
+        </button>
+      </div>
+    </div>
   );
 }

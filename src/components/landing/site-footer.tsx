@@ -27,6 +27,13 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
       { href: "/pricing", label: "Assinar o PRO" },
     ],
   },
+  {
+    title: "Legal",
+    links: [
+      { href: "/termos", label: "Termos de Uso" },
+      { href: "/privacidade", label: "Política de Privacidade" },
+    ],
+  },
 ];
 
 export function SiteFooter() {

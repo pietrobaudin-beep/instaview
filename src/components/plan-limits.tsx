@@ -34,11 +34,19 @@ export function PlanLimits({
         ? `até ${cfg.storiesHours} horas`
         : "não incluídos";
 
+  // Quem não tem acompanhamento não tem "0 de 0" — tem um recurso que ainda
+  // não é dele. Dizer o número dava a impressão de limite estourado.
+  const acompanha = cfg.maxProfiles > 0;
+
   const itens = [
     { label: "Perfis consultados", valor: `${consultados} de ${cfg.maxConsults}`, cheio: consultados >= cfg.maxConsults },
-    { label: "Perfis no Faro", valor: `${noFaro} de ${cfg.maxProfiles}`, cheio: cfg.maxProfiles > 0 && noFaro >= cfg.maxProfiles },
-    { label: "Stories guardados", valor: stories, cheio: false },
-  ];
+    acompanha
+      ? { label: "Perfis no Faro", valor: `${noFaro} de ${cfg.maxProfiles}`, cheio: noFaro >= cfg.maxProfiles }
+      : { label: "Acompanhamento", valor: "disponível no PRO", cheio: false },
+    acompanha
+      ? { label: "Stories guardados", valor: stories, cheio: false }
+      : null,
+  ].filter(Boolean) as { label: string; valor: string; cheio: boolean }[];
 
   return (
     <section
