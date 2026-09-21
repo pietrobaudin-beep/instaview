@@ -1,4 +1,4 @@
-import { Bell, Heart, Pin, UserPlus } from "lucide-react";
+import { Bell, Heart, PawPrint, UserPlus } from "lucide-react";
 import { FakeAvatar, PEOPLE, type Person } from "@/components/landing/people";
 export { StepSearch } from "@/components/landing/step-search";
 import { cn } from "@/lib/utils";
@@ -175,12 +175,12 @@ export function FaroMockup() {
             <FakeAvatar person={PEOPLE.julia} size={72} />
           </span>
           <span className="absolute -right-1 top-0 flex h-7 w-7 items-center justify-center rounded-full bg-pink">
-            <Pin className="h-3.5 w-3.5 fill-vinho text-vinho" />
+            <PawPrint className="h-3.5 w-3.5 fill-vinho text-vinho" />
           </span>
         </span>
         <p className="mt-3 font-bold">@{PEOPLE.julia.handle}</p>
         <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-pink px-3.5 py-1.5 text-xs font-bold text-ink">
-          <Pin className="h-3.5 w-3.5" /> No seu Faro
+          <PawPrint className="h-3.5 w-3.5" /> No seu Faro
         </span>
       </Frame>
 

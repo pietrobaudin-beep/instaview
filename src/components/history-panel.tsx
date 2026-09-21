@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Bell, Check, ChevronDown, Clapperboard, Clock3, ImageIcon, Loader2, Lock, Pin, Sparkles, Tag, TrendingUp, UserMinus, UserPlus } from "lucide-react";
+import { Bell, Check, ChevronDown, Clapperboard, Clock3, ImageIcon, Loader2, Lock, PawPrint, Sparkles, Tag, TrendingUp, UserMinus, UserPlus } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Avatar } from "@/components/ui/avatar";
@@ -287,7 +287,7 @@ export function HistoryPanel({
               {saving ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : isPro ? (
-                <Pin className="h-4 w-4" />
+                <PawPrint className="h-4 w-4" />
               ) : (
                 <Lock className="h-4 w-4" />
               )}

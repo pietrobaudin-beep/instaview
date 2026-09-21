@@ -29,8 +29,8 @@ export default function AdminPreviewPage() {
     },
     planos: [
       { id: "FREE", nome: "Curioso", cobranca: "free", preco: 0, maxConsults: 1, maxProfiles: 0, storiesHours: 0, pessoas: 128, receitaMensal: 0 },
-      { id: "WEEK", nome: "Faro de Cão", cobranca: "weekly", preco: 14.9, maxConsults: 3, maxProfiles: 1, storiesHours: 48, pessoas: 9, receitaMensal: 582.66 },
-      { id: "PRO", nome: "Farejo PRO", cobranca: "monthly", preco: 29.9, maxConsults: 10, maxProfiles: 5, storiesHours: 72, pessoas: 14, receitaMensal: 418.6 },
+      { id: "WEEK", nome: "Faro de Cão", cobranca: "weekly", preco: 14.9, maxConsults: 3, maxProfiles: 1, storiesHours: null, pessoas: 9, receitaMensal: 582.66 },
+      { id: "PRO", nome: "Farejo PRO", cobranca: "monthly", preco: 29.9, maxConsults: 10, maxProfiles: 5, storiesHours: null, pessoas: 14, receitaMensal: 418.6 },
       { id: "AGENCY", nome: "Faro Detetive", cobranca: "yearly", preco: 99.9, maxConsults: 30, maxProfiles: 15, storiesHours: null, pessoas: 6, receitaMensal: 49.95 },
     ],
     meses: [

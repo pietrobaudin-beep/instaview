@@ -18,8 +18,14 @@ export interface PlanConfig {
   maxProfiles: number;
   /** Quantos perfis diferentes o plano deixa consultar por completo. */
   maxConsults: number;
-  /** Por quantas horas os stories encontrados ficam guardados. Infinity = desde
-   *  a entrada do perfil no Faro. */
+  /**
+   * Por quantas horas os stories encontrados ficam guardados.
+   * `Infinity` = **enquanto o perfil estiver no Faro**, sem prazo.
+   *
+   * Decidido em 21/09: todo plano que coloca perfil no Faro guarda sem prazo.
+   * O prazo curto só faz sentido para o Farejador, que é uma consulta única e
+   * nem coloca ninguém no Faro.
+   */
   storiesHours: number;
   /** Minimum minutes between collections (smaller = more frequent). */
   minIntervalMinutes: number;
@@ -69,7 +75,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     priceMonthly: 14.9, // cobrado por semana
     maxProfiles: 1,
     maxConsults: 3,
-    storiesHours: 48,
+    storiesHours: Number.POSITIVE_INFINITY,
     minIntervalMinutes: 24 * 60,
     historyDays: 90,
     alerts: true,
@@ -80,7 +86,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
       "Até 3 perfis para consultar",
       "1 perfil no Faro, com tudo liberado",
       "Alertas quando o Faro encontrar algo",
-      "Stories guardados por 48 horas",
+      "Stories guardados enquanto o perfil estiver no Faro",
     ],
   },
 
@@ -93,7 +99,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     priceYearly: 239.9,
     maxProfiles: 5,
     maxConsults: 10,
-    storiesHours: 72,
+    storiesHours: Number.POSITIVE_INFINITY,
     // Once a day, on purpose. A story lasts 24h, so a daily pass catches every
     // one of them — reading every six hours finds nothing extra and costs four
     // times as much (R$ 46/month of data for a R$ 29,90 plan). The UI shows the
@@ -109,7 +115,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
       "Até 5 perfis no Faro",
       "Alertas de follows, unfollows e interações",
       "Histórico desde a entrada no Faro",
-      "Stories guardados por 72 horas",
+      "Stories guardados enquanto o perfil estiver no Faro",
       "Área Meu Faro",
     ],
   },

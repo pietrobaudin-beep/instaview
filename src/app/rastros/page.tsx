@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowUpRight, Pin } from "lucide-react";
+import { ArrowUpRight, PawPrint } from "lucide-react";
 import { AppNav, NavSpacer } from "@/components/app-nav";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -45,7 +45,7 @@ export default async function RastrosPage() {
               </p>
               <Link href="/pricing?next=/rastros" className="mt-2">
                 <Button variant="accent">
-                  <Pin className="h-4 w-4" /> Desbloquear Farejo PRO
+                  <PawPrint className="h-4 w-4" /> Desbloquear Farejo PRO
                 </Button>
               </Link>
             </div>
@@ -138,7 +138,7 @@ export default async function RastrosPage() {
                         <Avatar src={p.avatarUrl} name={p.displayName ?? p.username} size={52} />
                       </div>
                       {/* The pink pin: this profile is in your Faro. */}
-                      <Pin className="absolute -right-1 -top-1 h-5 w-5 fill-pink text-accent" />
+                      <PawPrint className="absolute -right-1 -top-1 h-5 w-5 fill-pink text-accent" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-bold">@{p.username}</p>

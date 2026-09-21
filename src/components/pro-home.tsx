@@ -2,7 +2,7 @@ import * as React from "react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowUpRight, Heart, PawPrint, Pin, Undo2 } from "lucide-react";
+import { ArrowUpRight, Heart, PawPrint, Undo2, UserPlus } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Nose } from "@/components/ui/doodles";
 import type { ProHome as ProHomeData } from "@/lib/pro-home";
@@ -79,7 +79,7 @@ export function ProHome({
   const found = data.pistasSinceYesterday;
 
   const cards = [
-    { icon: PawPrint, value: data.follows, label: "novos follows", tone: "bg-blush text-plum" },
+    { icon: UserPlus, value: data.follows, label: "novos follows", tone: "bg-blush text-plum" },
     { icon: Undo2, value: data.unfollows, label: "unfollows", tone: "bg-mint text-plum" },
     { icon: Heart, value: data.interactions, label: "interações", tone: "bg-magenta text-white" },
   ];
@@ -130,7 +130,7 @@ export function ProHome({
       <div className="mt-6 grid gap-5 lg:grid-cols-5 lg:items-stretch">
         <Card
           className="lg:col-span-2"
-          icon={<Pin className="h-4 w-4 text-magenta" />}
+          icon={<PawPrint className="h-4 w-4 text-magenta" />}
           title="No seu Faro"
           action={
             <Link
@@ -150,7 +150,7 @@ export function ProHome({
                 >
                   <div className="relative shrink-0">
                     <Avatar src={p.avatarUrl} name={p.displayName ?? p.username} size={40} />
-                    <Pin className="absolute -right-1 -top-1 h-4 w-4 fill-blush text-magenta" />
+                    <PawPrint className="absolute -right-1 -top-1 h-4 w-4 fill-blush text-magenta" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-plum">@{p.username}</p>

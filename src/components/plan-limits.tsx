@@ -29,7 +29,7 @@ export function PlanLimits({
           : null;
   const stories =
     cfg.storiesHours === Number.POSITIVE_INFINITY
-      ? "desde a entrada no Faro"
+      ? "enquanto estiver no Faro"
       : cfg.storiesHours > 0
         ? `até ${cfg.storiesHours} horas`
         : "não incluídos";

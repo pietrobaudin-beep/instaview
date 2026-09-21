@@ -10,7 +10,6 @@ import {
   Heart,
   History,
   PawPrint,
-  Pin,
   Sparkles,
   Users,
   X,
@@ -98,7 +97,7 @@ const PRO_PROMISES = [
 ];
 
 const PRO_FEATURES = [
-  { icon: Pin, label: "Colocar no Faro" },
+  { icon: PawPrint, label: "Colocar no Faro" },
   { icon: Bell, label: "Alertas de mudanças" },
   { icon: PawPrint, label: "Histórico" },
   { icon: Heart, label: "Interações" },

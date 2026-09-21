@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowRight, Pin, X } from "lucide-react";
+import { ArrowRight, PawPrint, X } from "lucide-react";
 import { SniffingDog } from "@/components/ui/dog";
 
 /**
@@ -51,7 +51,7 @@ export function FaroUpsell({
 
         <div className="relative">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-yellow px-3 py-1 text-xs font-bold text-ink">
-            <Pin className="h-3.5 w-3.5" /> Farejo PRO
+            <PawPrint className="h-3.5 w-3.5" /> Farejo PRO
           </span>
           <h2 id="faro-upsell-title" className="mt-5 text-3xl font-bold leading-tight">
             Quer que o Farejo acompanhe por você?

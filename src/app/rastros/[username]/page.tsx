@@ -40,10 +40,17 @@ export default async function TrackingPage({ params }: { params: { username: str
       take: 40,
     }),
     // Stories que o Faro guardou deste perfil.
+    //
+    // Duas coisas escondiam o que já estava guardado:
+    // 1. o teto de 24, que com vários stories por dia dava uns dois dias só;
+    // 2. o filtro `baseline: false`. A primeira leitura de cada tipo é marcada
+    //    como base para não virar "novidade" no feed — mas story guardado não
+    //    é novidade, é acervo. Sem os da base, o primeiro dia de um perfil
+    //    aparecia vazio mesmo com as miniaturas no banco.
     prisma.profileEvent.findMany({
-      where: { profileId: profile.id, kind: "story", baseline: false },
+      where: { profileId: profile.id, kind: "story" },
       orderBy: { detectedAt: "desc" },
-      take: 24,
+      take: 300,
     }),
     // O movimento da semana, por tipo — o resumo do topo da tela.
     // Agrupa por kind E type: "type" sozinho é só FOLLOW/UNFOLLOW, e uma

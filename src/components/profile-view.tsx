@@ -23,7 +23,6 @@ import { markSeen, wasSeenRecently } from "@/lib/seen-profiles";
 import { BRAND, LOADING_LINES } from "@/lib/voice";
 import { FaroUpsell } from "@/components/faro-upsell";
 import { SingleUnlockButton } from "@/components/single-unlock-button";
-import { PeekingFaro } from "@/components/ui/peeking-faro";
 import { NoteBox } from "@/components/ui/brand";
 import { Mascot } from "@/components/ui/mascot";
 import { AboutLine, RaioX } from "@/components/raio-x";
@@ -645,8 +644,10 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
 
         {!analyzing && state.kind === "ok" && (
           <>
-            {/* Profile found: Faro plays peek-a-boo around the card. */}
-            <PeekingFaro>
+            {/* O Faro não fica mais aparecendo e sumindo em volta do cartão:
+                no perfil, o que interessa é o perfil. Ele corre no topo das
+                telas de entrada, onde há espaço para brincar. */}
+            <div>
               <ProfileHero
                 profile={state.data}
                 premium={isPro}
@@ -657,7 +658,7 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
                 onVerStories={temStories === false ? undefined : () => setStoriesAbertos(true)}
                 onTrack={following.kind === "private" ? undefined : startTracking}
               />
-            </PeekingFaro>
+            </div>
 
             {storiesAbertos && (
               <ProfileStories

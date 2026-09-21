@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { BadgeCheck, Globe, Link as LinkIcon, Loader2, Lock, Pin } from "lucide-react";
+import { BadgeCheck, Globe, Link as LinkIcon, Loader2, Lock, PawPrint } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { StatusPill } from "@/components/ui/brand";
 import { formatNumber } from "@/lib/utils";
@@ -172,7 +172,7 @@ export function ProfileHero({
               className="absolute -right-1 top-1 flex h-8 w-8 items-center justify-center rounded-full bg-pink shadow"
               title="No seu Faro"
             >
-              <Pin className="h-4 w-4 fill-ink text-ink" />
+              <PawPrint className="h-4 w-4 fill-ink text-ink" />
             </span>
           )}
         </div>
@@ -256,7 +256,7 @@ export function ProfileHero({
               ) : locked ? (
                 <Lock className="h-4 w-4" />
               ) : (
-                <Pin className={`h-4 w-4 ${tracking?.saved ? "fill-pink text-accent" : ""}`} />
+                <PawPrint className={`h-4 w-4 ${tracking?.saved ? "fill-pink text-accent" : ""}`} />
               )}
               {tracking?.saved ? "No seu Faro" : "Colocar no Faro"}
             </button>

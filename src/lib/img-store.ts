@@ -19,8 +19,17 @@
 import { createHash } from "crypto";
 import { prisma } from "@/lib/db";
 
-/** Teto de guarda. O que a pessoa VÊ é decidido pelo plano, nunca por isto. */
-export const COPY_TTL = 30 * 24 * 60 * 60 * 1000;
+/**
+ * Teto de guarda das cópias.
+ *
+ * Era de 30 dias, o que fazia sentido quando o story só precisava sobreviver a
+ * uma janela de 72 horas. Desde 21/09 o story fica guardado **enquanto o perfil
+ * estiver no Faro**, então a cópia precisa durar o mesmo tanto: quem apaga é a
+ * saída do Faro, não o relógio.
+ *
+ * O que a pessoa VÊ continua sendo decidido pelo plano, nunca por isto.
+ */
+export const COPY_TTL = Number.POSITIVE_INFINITY;
 const MAX_BYTES = 400_000;
 const TIMEOUT_MS = 10_000;
 

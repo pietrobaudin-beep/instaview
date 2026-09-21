@@ -11,9 +11,9 @@ import type { Plan } from "@prisma/client";
  * Os stories que o Faro guardou.
  *
  * No Instagram eles somem em 24h. Aqui, enquanto o perfil está no Faro, a
- * miniatura foi copiada no momento em que o Faro a encontrou — então ela
- * continua aparecendo pelo prazo do plano (48h no Cão, 72h no PRO, sem prazo no
- * Detetive).
+ * miniatura foi copiada no momento em que o Faro a encontrou — e **continua
+ * guardada enquanto o perfil estiver no Faro**, sem prazo (decidido em 21/09).
+ * O prazo curto ficou só para o Farejador, que é consulta única.
  *
  * A tela diz isso com todas as letras: o que já expirou no Instagram leva o
  * aviso, para ninguém achar que ainda está no ar.
@@ -60,7 +60,7 @@ export function SavedStories({
   const janela = planFor(plan).storiesHours;
   const prazo =
     janela === Number.POSITIVE_INFINITY
-      ? "Guardados desde a entrada no Faro."
+      ? "Guardados desde a entrada no Faro, sem prazo."
       : `Guardados por ${janela} horas pelo seu plano.`;
 
   // Fora da janela do plano, some — mesmo que a cópia ainda exista.
