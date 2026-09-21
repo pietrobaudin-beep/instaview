@@ -34,11 +34,10 @@ export interface Elsewhere {
   /**
    * Foto de perfil, quando a rede publica uma.
    *
-   * De graça, só o Telegram devolve: a página de prévia que ele serve para
-   * montar o cartão de link traz a foto. TikTok e X não expõem a imagem por
-   * via oficial. Atrás do botão "Procurar em mais redes", o Apify traz foto
-   * do TikTok e do YouTube; onde não há nenhuma, a tela continua desenhando a
-   * silhueta.
+   * De graça vêm as do Telegram e a do X, as duas das marcas `og:` que essas
+   * redes publicam para montar o cartão de link. O TikTok não expõe imagem
+   * por via oficial: a dele vem do Apify, junto com a do YouTube. Onde não há
+   * nenhuma, a tela continua desenhando a silhueta.
    */
   avatarUrl?: string | null;
 }
@@ -118,6 +117,41 @@ async function checkTelegram(handle: string): Promise<Result> {
   return { verdict: "yes", displayName: titulo, avatarUrl: foto };
 }
 
+/**
+ * X pela própria página, incluindo a foto.
+ *
+ * A página que o x.com serve para quem não está logado é uma casca de
+ * JavaScript, mas o cabeçalho dela traz as marcas `og:` do cartão de link — e
+ * ali estão o nome e a foto de perfil. Já buscávamos essa página para
+ * confirmar a conta e jogávamos os dois fora; agora não. Não custa pedido
+ * nenhum a mais, e foi o que tornou desnecessário pagar um raspador só pela
+ * foto do X.
+ *
+ * A imagem vem em `_200x200`; `_400x400` é a mesma, maior.
+ */
+async function checkX(handle: string): Promise<Result> {
+  const r = await ask(`https://x.com/${handle}`);
+  if (!r || r.status !== 200) return { verdict: "unknown" };
+
+  const og = (prop: string) =>
+    r.body.match(new RegExp(`<meta property="og:${prop}" content="([^"]*)"`, "i"))?.[1] ?? null;
+
+  // O sinal de que a conta existe continua sendo o @ escrito na página, como
+  // em "NASA (@NASA) on X" — não a simples presença das marcas.
+  const titulo = og("title");
+  if (!titulo || !titulo.toLowerCase().includes(`(@${handle.toLowerCase()})`)) {
+    return { verdict: "unknown" };
+  }
+
+  const foto = og("image");
+  return {
+    verdict: "yes",
+    // De "NASA (@NASA) on X" sobra "NASA".
+    displayName: titulo.split("(@")[0].trim() || null,
+    avatarUrl: foto ? foto.replace(/_200x200\.(jpg|jpeg|png|webp)$/i, "_400x400.$1") : null,
+  };
+}
+
 async function ask(url: string): Promise<{ status: number; body: string } | null> {
   try {
     const res = await fetch(url, {
@@ -138,28 +172,17 @@ async function ask(url: string): Promise<{ status: number; body: string } | null
   }
 }
 
+/**
+ * Cada rede tem o seu jeito, e é melhor assim.
+ *
+ * Havia aqui um caminho genérico — pedir a página e procurar frases de "não
+ * existe" — que sobrou de quando nenhuma das três era tratada em separado.
+ * Agora as três têm função própria, e o genérico virou código morto.
+ */
 async function check(network: RedeGratis, handle: string): Promise<Result> {
   if (network === "tiktok") return checkTikTok(handle);
   if (network === "telegram") return checkTelegram(handle);
-  const url = NETWORKS[network].url(handle);
-  const r = await ask(url);
-  if (!r) return { verdict: "unknown" };
-  if (r.status !== 200) return { verdict: "unknown" }; // 404, bloqueio, captcha: não aparece
-
-  const html = r.body.toLowerCase();
-  const naoExiste = [
-    "couldn't find this account",
-    "não foi possível encontrar esta conta",
-    "esta conta não existe",
-    "this account doesn't exist",
-    "page not available",
-    "página não disponível",
-    "user not found",
-  ];
-  if (naoExiste.some((t) => html.includes(t))) return { verdict: "unknown" };
-
-  // Positivo só com o @ escrito na própria página, como o X faz no título.
-  return html.includes(`(@${handle.toLowerCase()})`) ? { verdict: "yes" } : { verdict: "unknown" };
+  return checkX(handle);
 }
 
 const key = (network: Network) => `net:${network}`;
