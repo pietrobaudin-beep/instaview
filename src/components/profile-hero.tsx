@@ -222,30 +222,39 @@ export function OtherNetworks({
       )}
 
       {/*
-        * O VSCO é o único que não dá para confirmar: o site está atrás do
+        * O VSCO não é confirmado como as outras: o site está atrás do
         * Cloudflare e responde 403 a qualquer pedido — inclusive para @
-        * inexistente, então nem "não existe" dá para saber. Não há ator no
-        * Apify tampouco.
+        * inexistente, então nem "não existe" dá para saber —, e não há ator no
+        * Apify. O endereço é montado a partir do @.
         *
-        * Por isso ele é um link, não um achado: borda tracejada, sem foto e
-        * com "não conferimos" escrito. Se ficasse igual às outras linhas,
-        * transformaria "achei essa conta" em "chutei um endereço" — e levaria
-        * junto a credibilidade das que foram confirmadas de verdade.
+        * Fica igual às demais a seu pedido. O aviso que segura a linha é o do
+        * rodapé do bloco, que já vale para todas: "pode ser outra pessoa".
         */}
       {vscoPossivel && (
         <a
           href={`https://vsco.co/${username}/gallery`}
           target="_blank"
           rel="noreferrer nofollow"
-          className="mt-2 flex min-h-[44px] items-center gap-2.5 rounded-2xl border border-dashed border-border px-3 text-left transition hover:border-accent/40"
+          className={`mt-2 flex items-center gap-2.5 rounded-2xl border border-border bg-muted/50 py-2 pl-2 pr-3.5 transition hover:border-accent/40 ${
+            destaque ? "min-h-[56px]" : ""
+          }`}
         >
-          <span className="min-w-0 flex-1 leading-tight">
-            <span className="block truncate text-sm font-bold text-foreground">@{username}</span>
-            <span className="block truncate text-[11px] text-muted-foreground">
-              VSCO · não conferimos se existe
-            </span>
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-foreground">
+            {/* A marca do VSCO é um anel: círculo cheio com um furo no meio. */}
+            <svg viewBox="0 0 36 36" className="h-5 w-5" aria-hidden>
+              <path
+                d="M18 2a16 16 0 1 0 0 32 16 16 0 0 0 0-32zm0 10a6 6 0 1 1 0 12 6 6 0 0 1 0-12z"
+                fill="currentColor"
+                className="text-background"
+                fillRule="evenodd"
+              />
+            </svg>
           </span>
-          <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <span className="min-w-0 flex-1 text-left leading-tight">
+            <span className="block truncate text-sm font-bold text-foreground">@{username}</span>
+            <span className="block truncate text-[11px] text-muted-foreground">VSCO</span>
+          </span>
+          {destaque && <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground" />}
         </a>
       )}
 
