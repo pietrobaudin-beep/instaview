@@ -4,8 +4,7 @@ import { ProviderError } from "@/lib/providers/types";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
 import { logger } from "@/lib/logger";
 import { getCurrentUser } from "@/lib/auth";
-import { checkAllowance, consultLimitFor, usageKey } from "@/lib/usage";
-import { accessFor } from "@/lib/access";
+import { checarConsulta, respostaDeLimite } from "@/lib/consulta";
 
 const log = logger.scope("api:preview");
 
@@ -18,17 +17,13 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "invalid" }, { status: 400 });
   }
 
-  // Free plan: do not look up profiles beyond the one analysis they get.
-  // A one-off unlock of this profile bypasses the free allowance.
+  // O teto do plano vale para TODO mundo, não só para quem não paga — ver
+  // `@/lib/consulta`. Conferido antes de qualquer chamada ao provedor, para
+  // um perfil além da conta nunca custar crédito.
   const user = await getCurrentUser();
-  if ((await accessFor(user, username)) === "free") {
-    const allowance = await checkAllowance(usageKey(user), username, consultLimitFor(user));
-    if (!allowance.allowed) {
-      return NextResponse.json(
-        { error: "limit_reached", spentOn: allowance.spentOn },
-        { status: 402 },
-      );
-    }
+  const consulta = await checarConsulta(user, username);
+  if (!consulta.permitido) {
+    return NextResponse.json(respostaDeLimite(consulta), { status: 402 });
   }
 
   try {

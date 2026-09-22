@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { accessFor } from "@/lib/access";
-import { checkAllowance, consultLimitFor, usageKey } from "@/lib/usage";
+import { checarConsulta, respostaDeLimite } from "@/lib/consulta";
 import { SECTIONS, getCachedSection, getSection, previewOf, type Section } from "@/lib/raio-x";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
 
@@ -29,7 +28,8 @@ export async function GET(req: Request) {
   }
 
   const user = await getCurrentUser();
-  const access = await accessFor(user, username);
+  const consulta = await checarConsulta(user, username);
+  const access = consulta.access;
   const paid = access !== "free";
 
   // Stories, posts e reels são do plano pago. Para quem é grátis a resposta é
@@ -40,11 +40,8 @@ export async function GET(req: Request) {
     return NextResponse.json({ status: "locked", access, locked: true });
   }
 
-  if (!paid) {
-    const allowance = await checkAllowance(usageKey(user), username, consultLimitFor(user));
-    if (!allowance.allowed) {
-      return NextResponse.json({ limited: true, spentOn: allowance.spentOn }, { status: 402 });
-    }
+  if (!consulta.permitido) {
+    return NextResponse.json(respostaDeLimite(consulta), { status: 402 });
   }
 
   // Cache-only: no provider call, so a miss is simply "not now".

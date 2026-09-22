@@ -10,8 +10,7 @@ import {
 } from "@/lib/following-tracker";
 import { prisma } from "@/lib/db";
 import { peekProfileCached } from "@/lib/profile-cache";
-import { checkAllowance, claimAnalysis, consultLimitFor, usageKey } from "@/lib/usage";
-import { accessFor } from "@/lib/access";
+import { checarConsulta, respostaDeLimite } from "@/lib/consulta";
 import { mayRecordFor } from "@/lib/sandbox";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
 import { logger } from "@/lib/logger";
@@ -47,22 +46,16 @@ export async function GET(req: Request) {
   if (!isValidUsername(username)) return NextResponse.json({ error: "invalid" }, { status: 400 });
 
   const user = await getCurrentUser();
-  // Revealed for Pro, and for a one-off unlock of THIS profile ("uso único").
-  const access = await accessFor(user, username);
-  const paid = access !== "free";
 
-  // Free plan: one profile only. Checked before any provider call, so an extra
-  // analysis never costs credits.
-  if (!paid) {
-    const key = usageKey(user);
-    const allowance = await checkAllowance(key, username, consultLimitFor(user));
-    if (!allowance.allowed) {
-      return NextResponse.json(
-        { limited: true, used: allowance.used, limit: allowance.limit, spentOn: allowance.spentOn },
-        { status: 402 },
-      );
-    }
-    await claimAnalysis(key, username);
+  // Esta é a rota que representa a análise, então é aqui que o gasto é
+  // registrado (`marcar`). O teto vale para todos os planos; quem comprou
+  // este perfil avulso passa direto. Conferido antes de qualquer chamada ao
+  // provedor.
+  const consulta = await checarConsulta(user, username, true);
+  const access = consulta.access;
+  const paid = access !== "free";
+  if (!consulta.permitido) {
+    return NextResponse.json(respostaDeLimite(consulta), { status: 402 });
   }
 
   // Fetch (or reuse cached) real following — ONE page only (~1 provider request).

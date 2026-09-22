@@ -5,6 +5,7 @@ import { rankInteractions, type Interaction } from "@/lib/interactions";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
 import { logger } from "@/lib/logger";
 import { accessFor } from "@/lib/access";
+import { checarConsulta, respostaDeLimite } from "@/lib/consulta";
 
 const log = logger.scope("api:interactions");
 
@@ -25,6 +26,13 @@ export async function GET(req: Request) {
   const user = await getCurrentUser();
   if ((await accessFor(user, username)) === "free") {
     return NextResponse.json({ locked: true, items: [] });
+  }
+
+  // Gasta provedor: passa pelo teto do plano, como as outras. Antes não
+  // passava, e era um jeito de consultar perfis sem fim sem gastar cota.
+  const consulta = await checarConsulta(user, username);
+  if (!consulta.permitido) {
+    return NextResponse.json(respostaDeLimite(consulta), { status: 402 });
   }
 
   const hit = cache.get(username);

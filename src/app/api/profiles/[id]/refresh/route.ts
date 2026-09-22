@@ -19,7 +19,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
   // bypass the per-profile schedule and burn Hiker credits. The dashboard can
   // render this exact time as "Próximo farejo" without making another call.
   // Teto de atualizações do dia: cada uma é uma coleta paga.
-  const status = await refreshStatusFor(profile.id);
+  const status = await refreshStatusFor(profile.id, user.plan);
   if (!status.podeAtualizar) {
     return NextResponse.json(
       {
@@ -63,7 +63,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     });
   }
 
-  const depois = await refreshStatusFor(profile.id);
+  const depois = await refreshStatusFor(profile.id, user.plan);
   return NextResponse.json({ ...summary, refresh: depois, nextRunAt: profile.job
     ? new Date(completedAt.getTime() + profile.job.intervalMinutes * 60_000).toISOString()
     : null });

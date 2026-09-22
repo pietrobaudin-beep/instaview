@@ -29,7 +29,7 @@ export default async function TrackingPage({ params }: { params: { username: str
   });
   if (!profile) notFound();
 
-  const status = await refreshStatusFor(profile.id);
+  const status = await refreshStatusFor(profile.id, user.plan);
 
   const PISTA_KINDS = [FOLLOWING_KIND, LIKES_KIND, COMMENTS_KIND];
 

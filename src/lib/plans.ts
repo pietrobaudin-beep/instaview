@@ -38,6 +38,14 @@ export interface PlanConfig {
    * caro.
    */
   storiesSalvosMes: number;
+  /**
+   * Quantas vezes por dia o "Atualizar agora" pode ser usado num perfil.
+   *
+   * Cada uma é uma coleta paga no provedor. Era uma constante global de 3,
+   * igual para todos: o Detetive tinha o mesmo teto do Faro de Cão, embora
+   * pague sete vezes mais.
+   */
+  refreshesPorDia: number;
   /** Minimum minutes between collections (smaller = more frequent). */
   minIntervalMinutes: number;
   /** How many days of history are queryable. Infinity = unlimited. */
@@ -68,6 +76,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     storiesHours: 0,
     // O Curioso não coloca ninguém no Faro, então não tem story guardado para salvar.
     storiesSalvosMes: 0,
+    refreshesPorDia: 0,
     minIntervalMinutes: 24 * 60, // once a day
     historyDays: 7,
     alerts: false,
@@ -91,6 +100,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     storiesHours: 48, // dois dias — tabela de 20/09
     // Dez por semana de assinatura já cobre o que costuma importar em uma pista só.
     storiesSalvosMes: 10,
+    refreshesPorDia: 3,
     minIntervalMinutes: 24 * 60,
     historyDays: 90,
     alerts: true,
@@ -117,6 +127,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     storiesHours: 72, // três dias — tabela de 20/09
     // Cinco perfis no Faro; dez por perfil é a conta que o preço sustenta.
     storiesSalvosMes: 50,
+    refreshesPorDia: 5,
     // Once a day, on purpose. A story lasts 24h, so a daily pass catches every
     // one of them — reading every six hours finds nothing extra and costs four
     // times as much (R$ 46/month of data for a R$ 29,90 plan). The UI shows the
@@ -154,6 +165,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     storiesHours: Number.POSITIVE_INFINITY,
     // Quinze perfis, e é o plano de quem documenta — o teto existe só para o banco não crescer sem fim.
     storiesSalvosMes: 200,
+    refreshesPorDia: 10,
     // The paid-for extra: four passes a day instead of one. Costs ~4x per
     // profile, which the Agency price covers and the Pro price does not.
     minIntervalMinutes: 6 * 60,

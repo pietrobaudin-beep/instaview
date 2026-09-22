@@ -10,8 +10,8 @@
  */
 import { prisma } from "@/lib/db";
 import { FOLLOWING_KIND } from "@/lib/following-tracker";
-
-export const REFRESHES_PER_DAY = 3;
+import { planFor } from "@/lib/plans";
+import type { Plan } from "@prisma/client";
 
 export interface RefreshStatus {
   usadas: number;
@@ -29,7 +29,12 @@ function inicioDoDia(): Date {
   return d;
 }
 
-export async function refreshStatusFor(profileId: string): Promise<RefreshStatus> {
+/**
+ * `plan` decide o teto. Era uma constante global de 3 para todo mundo — o
+ * Detetive, que paga sete vezes mais, tinha o mesmo limite do Faro de Cão.
+ */
+export async function refreshStatusFor(profileId: string, plan: Plan): Promise<RefreshStatus> {
+  const limite = planFor(plan).refreshesPorDia;
   const [usadas, ultimaLinha, job] = await Promise.all([
     prisma.followerSnapshot.count({
       where: { profileId, kind: FOLLOWING_KIND, startedAt: { gte: inicioDoDia() } },
@@ -44,8 +49,8 @@ export async function refreshStatusFor(profileId: string): Promise<RefreshStatus
 
   return {
     usadas,
-    limite: REFRESHES_PER_DAY,
-    podeAtualizar: usadas < REFRESHES_PER_DAY,
+    limite,
+    podeAtualizar: usadas < limite,
     ultima: ultimaLinha?.completedAt ?? null,
     proxima: job?.enabled ? job.nextRunAt : null,
   };

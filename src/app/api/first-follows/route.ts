@@ -5,6 +5,7 @@ import { guessGender } from "@/lib/gender";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
 import { logger } from "@/lib/logger";
 import type { FollowerEntry } from "@/lib/providers/types";
+import { checarConsulta, respostaDeLimite } from "@/lib/consulta";
 
 const log = logger.scope("api:first-follows");
 
@@ -26,6 +27,14 @@ export async function GET(req: Request) {
 
   const user = await getCurrentUser();
   if (!user || user.plan === "FREE") return NextResponse.json({ locked: true, items: [] });
+
+  // Esta rota gasta provedor. Antes ela era um porteiro binário pago/grátis e
+  // não consumia consulta nenhuma: quem paga podia abrir perfis sem fim por
+  // aqui, sem tocar no teto do plano.
+  const consulta = await checarConsulta(user, username);
+  if (!consulta.permitido) {
+    return NextResponse.json(respostaDeLimite(consulta), { status: 402 });
+  }
 
   const hit = cache.get(username);
   if (hit && Date.now() - hit.at < TTL) {
