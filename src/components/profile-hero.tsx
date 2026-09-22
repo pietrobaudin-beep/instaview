@@ -417,6 +417,7 @@ export function ProfileHero({
   tracking,
   onTrack,
   locked = false,
+  onVerStories,
   tier,
 }: {
   profile: HeroProfile;
@@ -426,6 +427,8 @@ export function ProfileHero({
   onTrack?: () => void;
   /** Free plan: the button shows a lock and opens the Pro offer instead. */
   locked?: boolean;
+  /** Abre os stories em tela cheia; ausente quando não há nenhum. */
+  onVerStories?: () => void;
   /** Which badge to show beside the name. */
   tier?: "free" | "single" | "pro";
   /**
@@ -445,23 +448,50 @@ export function ProfileHero({
       <div className="p-5 text-left md:p-6">
         <div className="flex items-start gap-4 md:gap-7">
         <div className="relative shrink-0">
-          {/* O anel de story saiu daqui junto com os stories: eles agora só
-              existem no painel do Faro, guardados. Sem o anel, volta o aro
-              rosa da marca. */}
-          <div className="rounded-full p-1 ring-[3px] ring-pink">
-            <Avatar
-              src={profile.avatarUrl}
-              name={profile.displayName ?? profile.username}
-              size={72}
-              className="md:hidden"
-            />
-            <Avatar
-              src={profile.avatarUrl}
-              name={profile.displayName ?? profile.username}
-              size={104}
-              className="hidden md:block"
-            />
-          </div>
+          {/* O anel colorido é a porta dos stories, como no Instagram: toca na
+              foto e eles abrem em tela cheia. Sem `onVerStories` (ou quando já
+              se sabe que não há nenhum), fica o aro rosa da marca. */}
+          {onVerStories ? (
+            <button
+              type="button"
+              onClick={onVerStories}
+              title="Ver stories"
+              className="block rounded-full bg-gradient-to-tr from-yellow via-pink to-purple p-[3px] transition hover:opacity-90"
+            >
+              <span className="block rounded-full bg-card p-1">
+                <Avatar
+                  src={profile.avatarUrl}
+                  name={profile.displayName ?? profile.username}
+                  size={72}
+                  className="md:hidden"
+                />
+                <Avatar
+                  src={profile.avatarUrl}
+                  name={profile.displayName ?? profile.username}
+                  size={104}
+                  className="hidden md:block"
+                />
+              </span>
+              <span className="mt-1 block text-center text-[11px] font-bold text-accent">
+                Ver stories
+              </span>
+            </button>
+          ) : (
+            <div className="rounded-full p-1 ring-[3px] ring-pink">
+              <Avatar
+                src={profile.avatarUrl}
+                name={profile.displayName ?? profile.username}
+                size={72}
+                className="md:hidden"
+              />
+              <Avatar
+                src={profile.avatarUrl}
+                name={profile.displayName ?? profile.username}
+                size={104}
+                className="hidden md:block"
+              />
+            </div>
+          )}
           {tracking?.saved && (
             <span
               className="absolute -right-1 top-1 flex h-8 w-8 items-center justify-center rounded-full bg-pink shadow"

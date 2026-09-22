@@ -26,6 +26,7 @@ import { SingleUnlockButton } from "@/components/single-unlock-button";
 import { NoteBox } from "@/components/ui/brand";
 import { Mascot } from "@/components/ui/mascot";
 import { AboutLine, RaioX } from "@/components/raio-x";
+import { ProfileStories } from "@/components/story-viewer";
 import type { Section } from "@/lib/raio-x";
 
 interface RecentItem extends Person {
@@ -265,14 +266,16 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
   });
 
   const [tab, setTab] = React.useState<Tab>("visao");
-  /*
-   * Os stories saíram desta tela.
+  // Os stories abrem em tela cheia pela foto, não como aba.
+  const [storiesAbertos, setStoriesAbertos] = React.useState(false);
+  /**
+   * Tem story? `null` = ainda não dá para saber.
    *
-   * Eles abriam em tela cheia pela foto do perfil, aqui na busca. Agora vivem
-   * só no painel do Faro, onde ficam guardados: é lá que a pessoa vê o que já
-   * sumiu do Instagram, e é isso que ela assina. Mostrá-los também para quem
-   * só pesquisou dava de graça a parte mais cara de guardar.
+   * A pergunta só é feita ao **cache** (`cached=1`), que não custa nada. Saber
+   * de verdade exigiria a requisição paga em todo perfil aberto, e o anel some
+   * de qualquer jeito assim que uma abertura mostrar que não há nenhum.
    */
+  const [temStories, setTemStories] = React.useState<boolean | null>(null);
   const [step, setStep] = React.useState(0);
   const [analyzing, setAnalyzing] = React.useState(true);
   const [tracking, setTracking] = React.useState({ saved: false, busy: false });
@@ -330,6 +333,23 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
     const id = window.setTimeout(() => setIntro("play"), 900);
     return () => window.clearTimeout(id);
   }, [username, inFaro]);
+
+  // Pergunta ao cache se este perfil tinha story na última leitura. É grátis:
+  // `cached=1` nunca chama o provedor. Miss = continua sem saber.
+  React.useEffect(() => {
+    let vivo = true;
+    setTemStories(null);
+    fetch(`/api/raio-x?username=${encodeURIComponent(username)}&section=stories&cached=1`)
+      .then((r) => r.json())
+      .then((b) => {
+        if (!vivo) return;
+        if (b?.status === "ok" && Array.isArray(b?.data?.items)) setTemStories(b.data.items.length > 0);
+      })
+      .catch(() => {});
+    return () => {
+      vivo = false;
+    };
+  }, [username]);
 
   // Remember it once the scene has played through to the result. Only then:
   // a skipped revisit must not push the 24h window forward, or someone coming
@@ -654,9 +674,19 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
                 note={state.note}
                 tracking={tracking}
                 locked={!isPro}
+                onVerStories={temStories === false ? undefined : () => setStoriesAbertos(true)}
                 onTrack={following.kind === "private" ? undefined : startTracking}
               />
             </div>
+
+            {storiesAbertos && (
+              <ProfileStories
+                username={state.data.username}
+                avatarUrl={state.data.avatarUrl}
+                onClose={() => setStoriesAbertos(false)}
+                onVazio={() => setTemStories(false)}
+              />
+            )}
 
             {justPinned && (
               <NoteBox className="mt-4 items-center" icon={<Mascot pose="feliz" className="h-10 text-ink" decorative />}>
