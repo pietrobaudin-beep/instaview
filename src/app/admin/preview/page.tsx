@@ -113,6 +113,24 @@ export default function AdminPreviewPage() {
         { secao: "hiker:stories", linhas: 74 },
       ],
     },
+    // Números do Apify parecidos com os medidos em 21/09, para a tela poder
+    // ser vista sem tocar na conta de verdade.
+    apify: {
+      plano: "FREE",
+      cicloDe: "2026-09-21T00:00:00.000Z",
+      cicloAte: "2026-10-20T23:59:59.999Z",
+      usdNoCiclo: 0.4251,
+      creditoMensal: 5,
+      execucoesNoPeriodo: 16,
+      usdNoPeriodo: 0.0552,
+      porRede: [
+        { rede: "fora do Farejo", doFarejo: false, execucoes: 1, falhas: 0, usd: 0.37 },
+        { rede: "X (desligado)", doFarejo: true, execucoes: 7, falhas: 3, usd: 0.03 },
+        { rede: "TikTok", doFarejo: true, execucoes: 8, falhas: 0, usd: 0.0145 },
+        { rede: "YouTube", doFarejo: true, execucoes: 8, falhas: 0, usd: 0.0104 },
+      ],
+      amostra: 30,
+    },
     banco: {
       bytes: 50 * 1024 ** 2,
       limiteBytes: 8 * 1024 ** 3,

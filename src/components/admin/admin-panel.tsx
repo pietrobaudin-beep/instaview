@@ -79,6 +79,17 @@ export interface Infra {
     custoEsperadoMes: number;
     guardado: { secao: string; linhas: number }[];
   } | null;
+  apify: {
+    plano: string | null;
+    cicloDe: string | null;
+    cicloAte: string | null;
+    usdNoCiclo: number;
+    creditoMensal: number | null;
+    execucoesNoPeriodo: number;
+    usdNoPeriodo: number;
+    porRede: { rede: string; doFarejo: boolean; execucoes: number; falhas: number; usd: number }[];
+    amostra: number;
+  } | null;
   banco: {
     bytes: number;
     limiteBytes: number;
@@ -321,7 +332,7 @@ export function AdminPanel({
           </p>
           {infra ? (
             aba === "api" ? (
-              <Api hiker={infra.hiker} periodo={periodo} onPeriodo={setPeriodo} />
+              <Api hiker={infra.hiker} apify={infra.apify} periodo={periodo} onPeriodo={setPeriodo} />
             ) : (
               <Armazenamento infra={infra} />
             )
@@ -903,13 +914,22 @@ const tamanho = (bytes: number) => {
   return `${bytes} B`;
 };
 
-/** Os créditos do provedor de dados. */
+/**
+ * As duas APIs pagas, separadas.
+ *
+ * Elas não se somam: a HikerAPI é pré-paga por requisição (US$ 1 / 1.000) e
+ * sustenta a análise inteira; o Apify cobra por execução, num ciclo mensal
+ * próprio, e serve só ao bloco de outras redes. Misturar os dois números
+ * esconderia qual dos dois está custando.
+ */
 function Api({
   hiker,
+  apify,
   periodo,
   onPeriodo,
 }: {
   hiker: Infra["hiker"];
+  apify: Infra["apify"];
   periodo: string;
   onPeriodo: (p: string) => void;
 }) {
@@ -925,6 +945,8 @@ function Api({
     n.toLocaleString("pt-BR", { style: "currency", currency: moeda });
 
   const rotulo = PERIODOS.find((p) => p.id === periodo)?.label ?? periodo;
+
+  const dolar = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "USD" });
 
   return (
     <div className="mt-5 space-y-3">
@@ -1019,6 +1041,86 @@ function Api({
           </ul>
         </CardContent>
       </Card>
+
+      {/* ——— Apify, em bloco próprio ——— */}
+      <div className="pt-2">
+        <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-plum/50">Apify</h2>
+        <p className="mt-0.5 text-[11px] text-muted-foreground">
+          Só o bloco &ldquo;Outras redes sociais&rdquo;. Ciclo e cobrança próprios, separados da
+          HikerAPI.
+        </p>
+      </div>
+
+      {!apify ? (
+        <Card>
+          <CardContent className="p-5 text-sm text-muted-foreground">
+            Sem APIFY_TOKEN configurado aqui — o gasto só aparece onde a variável existe.
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <Numero titulo={`Gasto · ${rotulo}`} valor={dolar(apify.usdNoPeriodo)} />
+            <Numero
+              titulo={`Execuções · ${rotulo}`}
+              valor={apify.execucoesNoPeriodo.toLocaleString("pt-BR")}
+            />
+            <Numero titulo="Gasto no ciclo" valor={dolar(apify.usdNoCiclo)} />
+            <Numero
+              titulo="Crédito do mês"
+              valor={apify.creditoMensal ? dolar(apify.creditoMensal) : "—"}
+            />
+          </div>
+
+          <Card>
+            <CardContent className="p-5">
+              <h2 className="text-sm font-bold">Por rede</h2>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">
+                É por aqui que se decide se uma rede vale o que custa.
+              </p>
+              {apify.porRede.length === 0 ? (
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Nenhuma execução no período escolhido.
+                </p>
+              ) : (
+                <ul className="mt-2 space-y-1">
+                  {apify.porRede.map((r) => (
+                    <li key={r.rede} className="flex items-center gap-2 text-xs">
+                      <span
+                        className={`min-w-0 flex-1 truncate ${
+                          r.doFarejo ? "text-foreground" : "italic text-muted-foreground"
+                        }`}
+                      >
+                        {r.rede}
+                      </span>
+                      <span className="shrink-0 text-muted-foreground">
+                        {r.execucoes}×{r.falhas > 0 ? ` · ${r.falhas} falhou` : ""}
+                      </span>
+                      <span className="shrink-0 tabular-nums font-semibold">{dolar(r.usd)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {apify.porRede.some((r) => !r.doFarejo) && (
+                <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
+                  O que está em itálico é execução que <b>não saiu do Farejo</b> — teste feito no
+                  painel do Apify, por exemplo. Fica à parte de propósito: somado, inflaria o custo
+                  do produto com algo que não é dele.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          <p className="text-[11px] leading-relaxed text-muted-foreground">
+            O ciclo do Apify vai de{" "}
+            {apify.cicloDe ? new Date(apify.cicloDe).toLocaleDateString("pt-BR") : "—"} a{" "}
+            {apify.cicloAte ? new Date(apify.cicloAte).toLocaleDateString("pt-BR") : "—"} (plano{" "}
+            {apify.plano ?? "—"}), e não coincide com o mês do faturamento. O gasto por período vem
+            das últimas {apify.amostra} execuções — o suficiente hoje, mas se o movimento crescer
+            muito o número de um período longo pode ficar incompleto.
+          </p>
+        </>
+      )}
 
       <p className="text-[11px] leading-relaxed text-muted-foreground">
         A HikerAPI só informa quanto <b>resta</b>, nunca quanto foi gasto: o gasto de um período é a

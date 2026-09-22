@@ -7,7 +7,8 @@ import type { Prisma } from "@prisma/client";
 export const dynamic = "force-dynamic";
 
 /**
- * O que a casa consome: créditos da HikerAPI e espaço no banco.
+ * O que a casa consome: HikerAPI, Apify e espaço no banco — cada um separado,
+ * porque cada um tem contrato, moeda de cobrança e ciclo diferentes.
  *
  * **Créditos.** O `/sys/balance` da HikerAPI é de graça (não é cobrado) e diz
  * quantas requisições **restam** — nunca quantas foram feitas. Para saber o
@@ -43,6 +44,92 @@ async function lerSaldo(): Promise<Balance | null> {
     });
     if (!res.ok) return null;
     return (await res.json()) as Balance;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * O gasto no Apify, por ator.
+ *
+ * Diferente da HikerAPI, aqui o próprio provedor soma o dinheiro: o
+ * `/users/me/limits` traz o gasto do ciclo, e `/actor-runs` o custo de cada
+ * execução. Isso deixa o número **por rede** — que é o que interessa para
+ * decidir se vale manter cada uma.
+ *
+ * Os dois endpoints são de leitura e não custam nada.
+ */
+const REDES_APIFY: Record<string, string> = {
+  "accountable_eel~tiktok-profile-lookup": "TikTok",
+  "streamers~youtube-channel-scraper": "YouTube",
+  "apidojo~twitter-user-scraper": "X (desligado)",
+  "epctex~pinterest-scraper": "Pinterest (não alugado)",
+  "luan.r.dev~kwai-profile-scraper": "Kwai (sem permissão)",
+};
+
+async function lerApify(desde: Date, ate: Date) {
+  if (!env.APIFY_TOKEN) return null;
+  const cab = { Authorization: `Bearer ${env.APIFY_TOKEN}`, accept: "application/json" };
+  try {
+    const [limites, execucoes] = await Promise.all([
+      fetch("https://api.apify.com/v2/users/me/limits", {
+        headers: cab,
+        signal: AbortSignal.timeout(8000),
+        cache: "no-store",
+      }).then((r) => (r.ok ? r.json() : null)),
+      fetch("https://api.apify.com/v2/actor-runs?limit=500&desc=1", {
+        headers: cab,
+        signal: AbortSignal.timeout(10_000),
+        cache: "no-store",
+      }).then((r) => (r.ok ? r.json() : null)),
+    ]);
+
+    const d = limites?.data ?? {};
+    const itens: any[] = execucoes?.data?.items ?? [];
+
+    // O id do ator vem como `actId`; o nome legível vem do nosso mapa. Quando
+    // não está no mapa é execução que não saiu do Farejo (teste no painel do
+    // Apify, por exemplo) — e isso precisa aparecer separado, senão o número
+    // do produto fica inflado por algo que não é dele.
+    const porAtor = new Map<string, { nome: string; execucoes: number; falhas: number; usd: number }>();
+    let noPeriodo = 0;
+    let usdNoPeriodo = 0;
+
+    for (const r of itens) {
+      const inicio = r.startedAt ? new Date(r.startedAt) : null;
+      if (!inicio || inicio < desde || inicio >= ate) continue;
+      noPeriodo += 1;
+      const usd = Number(r.usageTotalUsd ?? 0);
+      usdNoPeriodo += usd;
+
+      const id = String(r.actId ?? "?");
+      const atual = porAtor.get(id) ?? { nome: id, execucoes: 0, falhas: 0, usd: 0 };
+      atual.execucoes += 1;
+      if (r.status !== "SUCCEEDED") atual.falhas += 1;
+      atual.usd += usd;
+      porAtor.set(id, atual);
+    }
+
+    return {
+      plano: d.plan?.id ?? null,
+      cicloDe: d.monthlyUsageCycle?.startAt ?? null,
+      cicloAte: d.monthlyUsageCycle?.endAt ?? null,
+      usdNoCiclo: Number(d.current?.monthlyUsageUsd ?? 0),
+      creditoMensal: Number(d.limits?.maxMonthlyUsageUsd ?? 0) || null,
+      execucoesNoPeriodo: noPeriodo,
+      usdNoPeriodo: +usdNoPeriodo.toFixed(4),
+      // As redes que o Farejo usa hoje, pelo nome; o resto agrupado.
+      porRede: [...porAtor.entries()]
+        .map(([id, v]) => ({
+          rede: REDES_APIFY[id] ?? "fora do Farejo",
+          doFarejo: Boolean(REDES_APIFY[id]),
+          execucoes: v.execucoes,
+          falhas: v.falhas,
+          usd: +v.usd.toFixed(4),
+        }))
+        .sort((a, b) => b.usd - a.usd),
+      amostra: itens.length,
+    };
   } catch {
     return null;
   }
@@ -204,9 +291,10 @@ export async function GET(req: Request) {
       : new Date(Date.now() - desdeDias * 86400_000);
   const ate = periodo === "ontem" ? new Date(new Date().setHours(0, 0, 0, 0)) : new Date();
 
-  const [farejos, coletas] = await Promise.all([
+  const [farejos, coletas, apify] = await Promise.all([
     prisma.analysisUsage.count({ where: { createdAt: { gte: desde, lt: ate } } }),
     prisma.followerSnapshot.count({ where: { startedAt: { gte: desde, lt: ate } } }),
+    lerApify(desde, ate),
   ]);
 
   const limiteGb = Number(process.env.DB_SIZE_LIMIT_GB ?? 8);
@@ -241,6 +329,7 @@ export async function GET(req: Request) {
             .slice(0, 10),
         }
       : null,
+    apify,
     banco: {
       bytes: Number(tamanho?.bytes ?? 0),
       limiteBytes: limiteGb * GB,
