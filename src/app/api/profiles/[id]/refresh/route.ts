@@ -2,9 +2,19 @@ import { NextResponse } from "next/server";
 import { refreshStatusFor } from "@/lib/refresh-limit";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { collectProfile } from "@/lib/monitoring/snapshot";
+import { watchProfile } from "@/lib/faro-watch";
 
-/** Manual "Refresh now" — runs a collection on demand for the owner. */
+/**
+ * "Atualizar agora" — uma passagem completa do Faro, a pedido do dono.
+ *
+ * Antes isto chamava `collectProfile`, que busca a **lista de seguidores** —
+ * dado que só o `/dashboard` legado lê. Na prática o botão gastava uma
+ * requisição e **não atualizava nada do que a tela do Faro mostra**: a pessoa
+ * clicava, esperava, e as pistas continuavam as mesmas.
+ *
+ * Agora roda a passagem completa (posts, stories, marcações e quem começou a
+ * seguir), que é exatamente o que o painel exibe.
+ */
 export async function POST(_req: Request, { params }: { params: { id: string } }) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -43,20 +53,23 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     );
   }
 
-  const summary = await collectProfile(profile.id);
+  const relatorio = await watchProfile(
+    { id: profile.id, username: profile.username, userId: user.id },
+    "completo",
+  );
+  const falhou = relatorio.skipped === "error";
   const completedAt = new Date();
 
   // Reset the schedule after an on-demand collection too. Without this, a
   // cron job that was already due could collect the same profile immediately
   // again and pay twice for the same information.
   if (profile.job) {
-    const failed = summary.status === "FAILED";
     await prisma.monitoringJob.update({
       where: { profileId: profile.id },
       data: {
         lastRunAt: completedAt,
-        lastRunStatus: summary.status.toLowerCase(),
-        consecutiveFailures: failed ? { increment: 1 } : 0,
+        lastRunStatus: falhou ? "failed" : "success",
+        consecutiveFailures: falhou ? { increment: 1 } : 0,
         runCount: { increment: 1 },
         nextRunAt: new Date(completedAt.getTime() + profile.job.intervalMinutes * 60_000),
       },
@@ -64,7 +77,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
   }
 
   const depois = await refreshStatusFor(profile.id, user.plan);
-  return NextResponse.json({ ...summary, refresh: depois, nextRunAt: profile.job
+  return NextResponse.json({ status: falhou ? "FAILED" : "SUCCESS", novidades: relatorio.news, skipped: relatorio.skipped ?? null, refresh: depois, nextRunAt: profile.job
     ? new Date(completedAt.getTime() + profile.job.intervalMinutes * 60_000).toISOString()
     : null });
 }

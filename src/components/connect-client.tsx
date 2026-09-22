@@ -55,7 +55,7 @@ export function ConnectClient() {
   return (
     <main className="mx-auto max-w-lg px-6 py-10">
       <div className="mb-8 flex items-center justify-between">
-        <Link href="/dashboard" className="flex items-center gap-2 font-semibold tracking-tight">
+        <Link href="/rastros" className="flex items-center gap-2 font-semibold tracking-tight">
           <Logo className="h-6" />
         </Link>
       </div>

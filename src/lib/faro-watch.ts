@@ -88,12 +88,35 @@ export interface WatchReport {
   skipped?: string;
 }
 
-/** Reads one profile and stores whatever is new since the last reading. */
-export async function watchProfile(profile: { id: string; username: string; userId: string }): Promise<WatchReport> {
+/**
+ * Uma passagem do Faro.
+ *
+ * `modo` decide o que é lido, e isso é dinheiro:
+ *
+ * - **`completo`** — tudo: posts, stories, marcações e uma página de
+ *   "seguindo". É a passagem do dia.
+ * - **`stories`** — só os stories. É a passagem EXTRA dos planos com cadência
+ *   maior, e existe porque só o story expira: ele some em 24h e, se ninguém
+ *   olhar naquela janela, está perdido para sempre. Quem alguém começou a
+ *   seguir continua lá amanhã; ler isso de 6 em 6 horas era pagar quatro vezes
+ *   por uma informação que não muda tão rápido.
+ *
+ * No Faro Detetive isso derruba o custo de 10 para 7 requisições por perfil
+ * por dia, **sem perder nada do que o plano promete** — a captura de story
+ * continua 4× ao dia.
+ */
+export type ModoDaPassagem = "completo" | "stories";
+
+export async function watchProfile(
+  profile: { id: string; username: string; userId: string },
+  modo: ModoDaPassagem = "completo",
+): Promise<WatchReport> {
   const { id: profileId, username } = profile;
   let news = 0;
 
-  for (const { section, kind, fresco } of WATCH) {
+  const secoes = modo === "stories" ? WATCH.filter((w) => w.section === "stories") : WATCH;
+
+  for (const { section, kind, fresco } of secoes) {
     const res = await getSection(username, section, fresco);
     if (res.status === "private") return { username, news, skipped: "private" };
     if (res.status !== "ok") continue;
@@ -130,6 +153,9 @@ export async function watchProfile(profile: { id: string; username: string; user
   }
 
   // Follows: the same tracker the analysis page uses, one page of "following".
+  // Fora da passagem completa não roda: ver `ModoDaPassagem`.
+  if (modo !== "completo") return { username, news };
+
   try {
     const provider = getProvider();
     const [p, following] = await Promise.all([
@@ -171,6 +197,18 @@ export async function runFaroDaily(limit = 20): Promise<{ checked: number; news:
         // Fake data (localhost) only ever touches the test accounts.
         ...(usingMockData() ? { email: { endsWith: TEST_EMAIL_DOMAIN } } : {}),
       },
+      /*
+       * Quem o runner já leu por completo nas últimas 20h fica de fora.
+       *
+       * Sem isto os dois caminhos pagariam pela mesma informação: o runner
+       * faz a passagem completa na cadência do plano, e esta rotina diária
+       * viria logo atrás refazer. Ela continua existindo como rede de
+       * segurança — pega quem ficou sem job ou atrasado.
+       */
+      OR: [
+        { lastCollectedAt: null },
+        { lastCollectedAt: { lt: new Date(Date.now() - 20 * 60 * 60 * 1000) } },
+      ],
     },
     orderBy: [{ lastCollectedAt: { sort: "asc", nulls: "first" } }],
     take: limit,

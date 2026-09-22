@@ -48,7 +48,7 @@ export function UpgradeButton({
         window.location.href = data.url; // Stripe Checkout
       } else {
         // Demo unlock (no Stripe keys) — go back to where they were, now revealed.
-        router.push(next || "/dashboard");
+        router.push(next || "/rastros");
         router.refresh();
       }
     } catch {

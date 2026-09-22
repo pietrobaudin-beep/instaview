@@ -95,7 +95,7 @@ export function TrackForm({
         setError(data.error ?? "Algo deu errado. Tente novamente.");
         return;
       }
-      router.push(`/dashboard/${data.id}`);
+      router.push(`/rastros/${encodeURIComponent(username)}`);
     } catch {
       setError("Falha de conexão. Tente novamente.");
     } finally {

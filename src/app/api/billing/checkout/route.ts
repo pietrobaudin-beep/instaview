@@ -74,7 +74,8 @@ export async function POST(req: Request) {
 
   // Use the real site origin (NEXT_PUBLIC_APP_URL may be unset on Vercel).
   const origin = new URL(req.url).origin;
-  const back = safeNext(parsed.data.next) ?? "/dashboard";
+  // Depois de pagar, a pessoa vai para o Faro — não para a área antiga.
+  const back = safeNext(parsed.data.next) ?? "/rastros";
 
   if (isBillingConfigured() && priceId) {
     const session = await createCheckoutSession({
