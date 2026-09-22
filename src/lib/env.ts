@@ -22,7 +22,7 @@ const schema = z.object({
   APP_SECRET: z.string().default("dev-secret-change-me"),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
 
-  INSTAGRAM_PROVIDER: z.enum(["mock", "hikerapi", "ensembledata"]).default("mock"),
+  INSTAGRAM_PROVIDER: z.enum(["mock", "hikerapi"]).default("mock"),
   PROVIDER_FOLLOWER_PAGES: z.coerce.number().int().positive().default(5),
   PROVIDER_PAGE_SIZE: z.coerce.number().int().positive().default(50),
 
@@ -31,8 +31,6 @@ const schema = z.object({
   APIFY_TOKEN: z.string().default(""),
   HIKERAPI_BASE_URL: z.string().default("https://api.hikerapi.com"),
 
-  ENSEMBLEDATA_TOKEN: z.string().default(""),
-  ENSEMBLEDATA_BASE_URL: z.string().default("https://ensembledata.com/apis"),
 
   CRON_SECRET: z.string().default("dev-cron-secret-change-me"),
   DEFAULT_COLLECTION_INTERVAL_MINUTES: z.coerce.number().int().positive().default(120),
@@ -71,8 +69,6 @@ const raw = {
   HIKERAPI_KEY: clean(process.env.HIKERAPI_KEY),
   APIFY_TOKEN: clean(process.env.APIFY_TOKEN),
   HIKERAPI_BASE_URL: clean(process.env.HIKERAPI_BASE_URL),
-  ENSEMBLEDATA_TOKEN: clean(process.env.ENSEMBLEDATA_TOKEN),
-  ENSEMBLEDATA_BASE_URL: clean(process.env.ENSEMBLEDATA_BASE_URL),
   CRON_SECRET: clean(process.env.CRON_SECRET),
   DEFAULT_COLLECTION_INTERVAL_MINUTES: clean(process.env.DEFAULT_COLLECTION_INTERVAL_MINUTES),
   AUTH_MODE: clean(process.env.AUTH_MODE),

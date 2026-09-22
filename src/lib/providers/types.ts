@@ -1,7 +1,7 @@
 /**
  * InstagramDataProvider — the abstraction that isolates the rest of the system
  * from any single data source. Swap the implementation (mock, HikerAPI,
- * EnsembleData, Apify, official Graph API for owned accounts...) without
+ * HikerAPI, Apify, official Graph API for owned accounts...) without
  * touching the monitoring engine, API routes, or frontend.
  *
  * IMPORTANT REALITY (see README): no OFFICIAL Meta/Instagram API returns the

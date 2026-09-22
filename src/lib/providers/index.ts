@@ -2,10 +2,14 @@
  * Provider factory. The rest of the app imports `getProvider()` and never
  * references a concrete adapter. Switch providers with the INSTAGRAM_PROVIDER
  * env var — no other code changes.
+ *
+ * O EnsembleData saiu em 22/09. Não era usado em lugar nenhum (o cache do
+ * banco só tinha chaves `hikerapi:` e `mock:`), mas continuava aceitável como
+ * valor da variável — e os perfis que quebraram na época dele seguiam
+ * travados com mensagens de um provedor que não existe mais.
  */
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
-import { EnsembleDataProvider } from "./ensembledata-provider";
 import { HikerApiProvider } from "./hiker-provider";
 import { MockProvider } from "./mock-provider";
 import type { InstagramDataProvider } from "./types";
@@ -21,12 +25,6 @@ export function getProvider(): InstagramDataProvider {
         apiKey: env.HIKERAPI_KEY,
         baseUrl: env.HIKERAPI_BASE_URL,
         defaultPageSize: env.PROVIDER_PAGE_SIZE,
-      });
-      break;
-    case "ensembledata":
-      cached = new EnsembleDataProvider({
-        token: env.ENSEMBLEDATA_TOKEN,
-        baseUrl: env.ENSEMBLEDATA_BASE_URL,
       });
       break;
     case "mock":
