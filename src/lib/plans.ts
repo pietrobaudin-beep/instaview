@@ -153,13 +153,24 @@ export const PLANS: Record<Plan, PlanConfig> = {
     para: "Para quem não deixa pista passar.",
     // Cobrado UMA vez por ano: R$ 99,90. Preço definido pelo dono do produto.
     //
-    // Margem: 15 perfis no Faro lidos todo dia custam ~R$ 120/ano de HikerAPI,
-    // acima do preço. Duas saídas sem mexer no preço: ler 3 seções por dia em
-    // vez de 4 (~R$ 92) ou baixar o Faro para 10 perfis (~R$ 82). Ver
-    // "Custos e preços" no cofre — decisão pendente.
+    /*
+     * R$ 179/ano desde 22/09 (era R$ 99,90).
+     *
+     * A R$ 99,90 o plano dava prejuízo em qualquer configuração: são R$ 7,96
+     * por mês líquidos, e 15 perfis lidos 4× ao dia custam R$ 17,56 de
+     * HikerAPI. Não havia corte que fechasse sem deixá-lo pior que o PRO.
+     *
+     * A R$ 179 sobram R$ 14,29/mês líquidos — o que ainda **não** cobre os 15
+     * perfis a 4×/dia. Os tetos abaixo continuam os de antes; mexer neles é
+     * decisão pendente do dono do produto. Ver "Custos e preços" no cofre.
+     *
+     * ATENÇÃO: este número é só o que a tela mostra. Quem cobra é o Stripe,
+     * pelo price id em `stripePriceEnv` — sem criar o preço novo lá, o site
+     * anuncia R$ 179 e cobra R$ 99,90.
+     */
     billing: "yearly",
-    priceMonthly: 99.9 / 12,
-    priceYearly: 99.9,
+    priceMonthly: 179 / 12,
+    priceYearly: 179,
     maxProfiles: 15,
     maxConsults: 30,
     storiesHours: Number.POSITIVE_INFINITY,
