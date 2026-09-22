@@ -90,6 +90,8 @@ export function TrackingSettings({
   ultimaMudanca,
   semana,
   limites,
+  storiesSalvos = [],
+  cotaSalvos,
 }: {
   username: string;
   displayName: string | null;
@@ -112,6 +114,10 @@ export function TrackingSettings({
   limites?: { consultados: number; noFaro: number };
   /** Estado das atualizações do dia, para o botão "Atualizar agora". */
   refresh?: Status;
+  /** Ids dos stories que a pessoa marcou com a estrela. */
+  storiesSalvos?: string[];
+  /** Quantos salvamentos o plano ainda permite neste mês. */
+  cotaSalvos?: { usados: number; limite: number; restam: number };
 }) {
   const router = useRouter();
   const [prefs, setPrefs] = React.useState(initial);
@@ -288,6 +294,9 @@ export function TrackingSettings({
               plan={plan}
               username={username}
               avatarUrl={avatarUrl}
+              profileId={profileId}
+              salvosIniciais={storiesSalvos}
+              cotaInicial={cotaSalvos}
             />
           )}
 

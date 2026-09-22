@@ -10,6 +10,7 @@ import { NotificationsFeed, type Notification } from "@/components/notifications
 import { FOLLOWING_KIND } from "@/lib/following-tracker";
 import { COMMENTS_KIND, LIKES_KIND } from "@/lib/post-activity";
 import { consultsUsed, peekUsageKey } from "@/lib/usage";
+import { cotaDoMes, lerSalvos } from "@/lib/stories-salvos";
 import { describe } from "@/lib/pista-text";
 import type { SavedStory } from "@/components/saved-stories";
 import type { EventData } from "@/lib/faro-watch";
@@ -33,7 +34,8 @@ export default async function TrackingPage({ params }: { params: { username: str
   const PISTA_KINDS = [FOLLOWING_KIND, LIKES_KIND, COMMENTS_KIND];
 
   // As pistas DESTE perfil, e só dele: a visão geral fica em /pistas.
-  const [changes, storyEvents, semana, noFaro, consultados] = await Promise.all([
+  const [changes, storyEvents, semana, noFaro, consultados, storiesSalvos, cotaSalvos] =
+    await Promise.all([
     prisma.followerChange.findMany({
       where: { profileId: profile.id, kind: { in: PISTA_KINDS }, isVerified: false },
       orderBy: { detectedAt: "desc" },
@@ -67,6 +69,8 @@ export default async function TrackingPage({ params }: { params: { username: str
     }),
     prisma.trackedProfile.count({ where: { userId: user.id } }),
     consultsUsed(peekUsageKey(user)),
+    lerSalvos(profile.id),
+    cotaDoMes(user.id, user.plan),
   ]);
 
   const somar = (fn: (r: (typeof semana)[number]) => boolean) =>
@@ -121,6 +125,8 @@ export default async function TrackingPage({ params }: { params: { username: str
           interacoes: somar((r) => r.kind === LIKES_KIND || r.kind === COMMENTS_KIND),
         }}
         limites={{ consultados, noFaro }}
+        storiesSalvos={storiesSalvos}
+        cotaSalvos={cotaSalvos}
       />
       <NavSpacer />
     </>

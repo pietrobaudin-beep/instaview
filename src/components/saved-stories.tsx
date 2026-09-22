@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Clock, Search } from "lucide-react";
+import { ChevronRight, Clock, Loader2, Search, Star } from "lucide-react";
 import { Panel } from "@/components/ui/brand";
 import { StoryViewer } from "@/components/story-viewer";
 import { planFor } from "@/lib/plans";
@@ -48,13 +48,65 @@ export function SavedStories({
   plan,
   username,
   avatarUrl,
+  profileId,
+  salvosIniciais = [],
+  cotaInicial = { usados: 0, limite: 0, restam: 0 },
 }: {
   stories: SavedStory[];
   plan: Plan;
   username: string;
   avatarUrl?: string | null;
+  /** Sem ele não dá para marcar: é a chave da lista de salvos. */
+  profileId?: string;
+  /** Os ids já marcados, vindos do servidor. */
+  salvosIniciais?: string[];
+  /** Quantos salvamentos o plano ainda permite neste mês. */
+  cotaInicial?: { usados: number; limite: number; restam: number };
 }) {
   const [aberto, setAberto] = React.useState(-1);
+  const [salvos, setSalvos] = React.useState<string[]>(salvosIniciais);
+  const [marcando, setMarcando] = React.useState<string | null>(null);
+  /*
+   * A cota vem do servidor, em vez de ser importada: o arquivo que a define
+   * também importa o Prisma, e trazê-lo para cá arrastaria código de servidor
+   * para o navegador.
+   */
+  const [cota, setCota] = React.useState(cotaInicial);
+  const [semCota, setSemCota] = React.useState(false);
+
+  /**
+   * Marca ou desmarca, mudando a tela antes da resposta.
+   *
+   * Marcar é um gesto pequeno e repetido; esperar o servidor a cada estrela
+   * faria a lista piscar. Se o pedido falhar, volta como estava.
+   */
+  async function alternar(storyId: string) {
+    if (!profileId) return;
+    const estava = salvos.includes(storyId);
+    setMarcando(storyId);
+    setSemCota(false);
+    setSalvos((atual) => (estava ? atual.filter((id) => id !== storyId) : [storyId, ...atual]));
+    try {
+      const r = await fetch("/api/stories-salvos", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ profileId, storyId, salvar: !estava }),
+      });
+      const b = await r.json();
+      if (!r.ok) throw new Error(String(r.status));
+      if (Array.isArray(b?.ids)) setSalvos(b.ids);
+      if (b?.cota) setCota(b.cota);
+      // Recusado por falta de cota: a tela volta atrás e diz por quê.
+      if (b?.ok === false) {
+        setSemCota(true);
+        setSalvos((atual) => atual.filter((id) => id !== storyId));
+      }
+    } catch {
+      setSalvos((atual) => (estava ? [storyId, ...atual] : atual.filter((id) => id !== storyId)));
+    } finally {
+      setMarcando(null);
+    }
+  }
 
   if (!stories.length) return null;
 
@@ -64,9 +116,26 @@ export function SavedStories({
       ? "Guardados desde a entrada no Faro, sem prazo."
       : `Guardados por ${janela} horas pelo seu plano.`;
 
-  // Fora da janela do plano, some — mesmo que a cópia ainda exista.
-  const visiveis = stories.filter((s) => horas(s.detectedAt) <= janela);
-  if (!visiveis.length) return null;
+  /*
+   * O prazo do plano vale para o que o Faro guardou sozinho. O que a pessoa
+   * marcou com a estrela **escapa dele**: é isso que a estrela compra, e é
+   * por isso que ela tem cota mensal.
+   *
+   * No Faro Detetive a janela já é infinita, então lá marcar é só organizar.
+   */
+  const dentroDoPrazo = stories.filter((s) => horas(s.detectedAt) <= janela);
+  const marcados = stories.filter((s) => salvos.includes(s.id));
+  const visiveis = dentroDoPrazo;
+  if (!visiveis.length && !marcados.length) return null;
+
+  const paraViewer = (lista: SavedStory[]) =>
+    lista.map((s) => ({
+      id: s.id,
+      imageUrl: proxied(s.thumbnailUrl),
+      takenAt: s.takenAt ?? s.detectedAt,
+      mentions: s.mentions,
+      expirou: horas(s.detectedAt) >= 24,
+    }));
 
   return (
     <Panel title="Stories guardados">
@@ -75,7 +144,7 @@ export function SavedStories({
           const h = horas(s.detectedAt);
           const expirou = h >= 24;
           return (
-            <div key={s.id} className="w-32 shrink-0 sm:w-36">
+            <div key={s.id} className="relative w-32 shrink-0 sm:w-36">
               <button
                 type="button"
                 onClick={() => setAberto(i)}
@@ -100,6 +169,27 @@ export function SavedStories({
                   </span>
                 )}
               </button>
+
+              {/* A estrela fica FORA do botão que abre o story: dentro, o
+                  toque abriria a tela cheia em vez de marcar. */}
+              {profileId && (
+                <button
+                  type="button"
+                  onClick={() => alternar(s.id)}
+                  aria-pressed={salvos.includes(s.id)}
+                  aria-label={salvos.includes(s.id) ? "Tirar dos salvos" : "Salvar este story"}
+                  title={salvos.includes(s.id) ? "Tirar dos salvos" : "Salvar este story"}
+                  className="absolute right-1 top-1 flex h-9 w-9 items-center justify-center rounded-full bg-ink/65 text-cream transition hover:bg-ink/80"
+                >
+                  {marcando === s.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Star
+                      className={`h-4 w-4 ${salvos.includes(s.id) ? "fill-yellow text-yellow" : ""}`}
+                    />
+                  )}
+                </button>
+              )}
               {s.mentions.length > 0 && (
                 <div className="mt-1.5 space-y-1">
                   {s.mentions.map((m) => (
@@ -124,20 +214,52 @@ export function SavedStories({
           username={username}
           avatarUrl={avatarUrl}
           startAt={aberto}
-          stories={visiveis.map((s) => ({
-            id: s.id,
-            imageUrl: proxied(s.thumbnailUrl),
-            takenAt: s.takenAt ?? s.detectedAt,
-            mentions: s.mentions,
-            expirou: horas(s.detectedAt) >= 24,
-          }))}
+          stories={paraViewer(visiveis)}
           onClose={() => setAberto(-1)}
         />
       )}
       <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
         {prazo} O Farejo copiou a miniatura quando ela ainda estava pública; o story em si sai do
         Instagram em 24 horas.
+        {profileId && cota.limite > 0 && janela !== Number.POSITIVE_INFINITY && (
+          <>
+            {" "}
+            Toque na <b className="font-semibold">estrela</b> para o story não expirar —{" "}
+            {cota.restam} de {cota.limite} ainda neste mês.
+          </>
+        )}
+        {profileId && cota.limite > 0 && janela === Number.POSITIVE_INFINITY && (
+          <> Aqui nada expira; a estrela serve para separar os que importam.</>
+        )}
       </p>
+
+      {/*
+        * "Stories salvos" tem página própria (`/rastros/<@>/salvos`).
+        *
+        * A lista morava aqui embaixo e dobrava a altura do cartão — num
+        * celular, empurrava as pistas para fora da tela. Aqui fica só o
+        * atalho, com a contagem, que é o que interessa de relance.
+        */}
+      {profileId && marcados.length > 0 && (
+        <Link
+          href={`/rastros/${encodeURIComponent(username)}/salvos`}
+          className="mt-4 flex min-h-[48px] items-center justify-between gap-3 rounded-2xl border border-border bg-muted/40 px-4 transition hover:border-accent/50"
+        >
+          <span className="flex items-center gap-2 text-sm font-bold">
+            <Star className="h-4 w-4 fill-yellow text-yellow" />
+            Stories salvos
+            <span className="text-muted-foreground">· {marcados.length}</span>
+          </span>
+          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+        </Link>
+      )}
+
+      {semCota && (
+        <p className="mt-2 text-[11px] font-semibold text-destructive">
+          Você já salvou {cota.limite} stories este mês. A cota volta no dia 1º — ou você libera
+          espaço tirando a estrela de algum.
+        </p>
+      )}
     </Panel>
   );
 }

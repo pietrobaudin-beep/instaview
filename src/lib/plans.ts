@@ -22,11 +22,22 @@ export interface PlanConfig {
    * Por quantas horas os stories encontrados ficam guardados.
    * `Infinity` = **enquanto o perfil estiver no Faro**, sem prazo.
    *
-   * Decidido em 21/09: todo plano que coloca perfil no Faro guarda sem prazo.
-   * O prazo curto só faz sentido para o Farejador, que é uma consulta única e
-   * nem coloca ninguém no Faro.
+   * Voltou à tabela fechada em 20/09 (24h · 48h · 72h · sem prazo). Em 21/09
+   * eu tinha igualado todos os planos pagos em "sem prazo"; era erro meu — é
+   * justamente a guarda sem prazo que o Faro Detetive vende, e dá-la ao Cão e
+   * ao PRO apaga a diferença entre eles.
    */
   storiesHours: number;
+  /**
+   * Quantos stories novos podem ser **salvos com a estrela** por mês.
+   *
+   * O Faro guarda todos sozinho; salvar é separar os que importam, e é por
+   * isso que o teto sobe com o plano. Conta só o que entra: o que já foi
+   * salvo fica para sempre e não ocupa a cota do mês seguinte. Desmarcar
+   * dentro do mesmo mês devolve o crédito, senão um toque errado custaria
+   * caro.
+   */
+  storiesSalvosMes: number;
   /** Minimum minutes between collections (smaller = more frequent). */
   minIntervalMinutes: number;
   /** How many days of history are queryable. Infinity = unlimited. */
@@ -55,6 +66,8 @@ export const PLANS: Record<Plan, PlanConfig> = {
     // de revelar UMA informação daquele mesmo perfil.
     maxConsults: 1,
     storiesHours: 0,
+    // O Curioso não coloca ninguém no Faro, então não tem story guardado para salvar.
+    storiesSalvosMes: 0,
     minIntervalMinutes: 24 * 60, // once a day
     historyDays: 7,
     alerts: false,
@@ -75,7 +88,9 @@ export const PLANS: Record<Plan, PlanConfig> = {
     priceMonthly: 14.9, // cobrado por semana
     maxProfiles: 1,
     maxConsults: 3,
-    storiesHours: Number.POSITIVE_INFINITY,
+    storiesHours: 48, // dois dias — tabela de 20/09
+    // Dez por semana de assinatura já cobre o que costuma importar em uma pista só.
+    storiesSalvosMes: 10,
     minIntervalMinutes: 24 * 60,
     historyDays: 90,
     alerts: true,
@@ -99,7 +114,9 @@ export const PLANS: Record<Plan, PlanConfig> = {
     priceYearly: 239.9,
     maxProfiles: 5,
     maxConsults: 10,
-    storiesHours: Number.POSITIVE_INFINITY,
+    storiesHours: 72, // três dias — tabela de 20/09
+    // Cinco perfis no Faro; dez por perfil é a conta que o preço sustenta.
+    storiesSalvosMes: 50,
     // Once a day, on purpose. A story lasts 24h, so a daily pass catches every
     // one of them — reading every six hours finds nothing extra and costs four
     // times as much (R$ 46/month of data for a R$ 29,90 plan). The UI shows the
@@ -135,6 +152,8 @@ export const PLANS: Record<Plan, PlanConfig> = {
     maxProfiles: 15,
     maxConsults: 30,
     storiesHours: Number.POSITIVE_INFINITY,
+    // Quinze perfis, e é o plano de quem documenta — o teto existe só para o banco não crescer sem fim.
+    storiesSalvosMes: 200,
     // The paid-for extra: four passes a day instead of one. Costs ~4x per
     // profile, which the Agency price covers and the Pro price does not.
     minIntervalMinutes: 6 * 60,
