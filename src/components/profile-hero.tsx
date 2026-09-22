@@ -143,7 +143,7 @@ export function OtherNetworks({
     <div className={destaque ? "mt-6 w-full text-left" : "mt-4"}>
       {destaque && (
         <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-plum/50">
-          O mesmo @ em outras redes
+          Outras redes sociais
         </p>
       )}
       <div
