@@ -30,13 +30,28 @@ const log = logger.scope("faro-watch");
  * Reels saiu em 21/09 junto com a aba: pouca gente abria, e era 25% do custo
  * diário de cada perfil no Faro. Com 15 perfis, isso sozinho era ~R$ 30/ano.
  */
-const WATCH: { section: Section; kind: string }[] = [
-  { section: "posts", kind: "post" },
-  { section: "stories", kind: "story" },
-  { section: "tagged", kind: "tagged" },
+/**
+ * O que o Faro lê em cada passagem, e por quanto tempo uma leitura serve.
+ *
+ * O prazo precisa ser menor do que a vida do conteúdo — senão o Faro olha
+ * para um retrato velho e jura que não há nada.
+ *
+ * Post e marcação não somem: 20h de reaproveitamento economiza requisição sem
+ * perder nada. **Story vive 24h**, e com os mesmos 20h o Faro perdia story de
+ * verdade: bastava alguém apertar "Atualizar agora" num momento sem story
+ * para o "não tem nada" valer até quase o dia seguinte. E no Faro Detetive,
+ * que passa de 6 em 6 horas, as três passagens seguintes reusavam a primeira
+ * — pagava por quatro leituras de story e recebia uma.
+ *
+ * Uma hora é curto o bastante para nenhuma passagem programada cair no cache,
+ * e longo o bastante para um "Atualizar agora" logo depois do cron não cobrar
+ * duas vezes.
+ */
+const WATCH: { section: Section; kind: string; fresco: number }[] = [
+  { section: "posts", kind: "post", fresco: 20 * 60 * 60 * 1000 },
+  { section: "stories", kind: "story", fresco: 60 * 60 * 1000 },
+  { section: "tagged", kind: "tagged", fresco: 20 * 60 * 60 * 1000 },
 ];
-
-const FRESH_MS = 20 * 60 * 60 * 1000;
 
 /** What the news card needs, frozen at detection time. */
 export interface EventData {
@@ -78,8 +93,8 @@ export async function watchProfile(profile: { id: string; username: string; user
   const { id: profileId, username } = profile;
   let news = 0;
 
-  for (const { section, kind } of WATCH) {
-    const res = await getSection(username, section, FRESH_MS);
+  for (const { section, kind, fresco } of WATCH) {
+    const res = await getSection(username, section, fresco);
     if (res.status === "private") return { username, news, skipped: "private" };
     if (res.status !== "ok") continue;
 
