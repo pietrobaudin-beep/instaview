@@ -14,6 +14,7 @@ import {
   Heart,
   Loader2,
   Pause,
+  PawPrint,
   Trash2,
   UserMinus,
   UserPlus,
@@ -157,6 +158,43 @@ export function TrackingSettings({
           ) : null
         }
       />
+
+      {/*
+        * "Onde eu estou?" respondido antes de qualquer coisa.
+        *
+        * Esta tela e a da busca (`/p/<@>`) se pareciam: as duas abrem com a
+        * foto, o @ e números, e quem clicava para vir ao Faro achava que
+        * tinha voltado para a análise. O título pequeno no topo não dava
+        * conta. Aqui a diferença fica dita com todas as letras — e dita pelo
+        * que MUDA entre as duas: lá você olha, aqui o Farejo olha por você.
+        */}
+      <div className="mb-5 flex items-start gap-3 rounded-3xl border border-accent/30 bg-accent/5 p-4">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-accent/15 text-accent">
+          <PawPrint className="h-5 w-5" />
+        </span>
+        <div className="min-w-0">
+          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-accent">
+            Você está no Faro
+          </p>
+          <p className="mt-0.5 text-base font-bold leading-snug">
+            {active ? `O Faro está de olho em @${username}` : `O Faro de @${username} está pausado`}
+          </p>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            {active ? (
+              <>
+                Aqui o Farejo observa sozinho e guarda o que muda — você não precisa voltar para
+                conferir. Para a análise completa do perfil, use{" "}
+                <b className="font-semibold">Abrir o perfil completo</b>.
+              </>
+            ) : (
+              <>
+                Enquanto estiver pausado, o Farejo não procura nada novo. O que ele já encontrou
+                continua aqui.
+              </>
+            )}
+          </p>
+        </div>
+      </div>
 
       {limites && (
         <PlanLimits
