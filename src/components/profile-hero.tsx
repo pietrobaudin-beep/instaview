@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { BadgeCheck, Globe, Link as LinkIcon, Loader2, Lock, PawPrint, ThumbsDown, ThumbsUp } from "lucide-react";
+import { ArrowRight, BadgeCheck, Globe, Link as LinkIcon, Loader2, Lock, PawPrint, ThumbsDown, ThumbsUp } from "lucide-react";
+import NextLink from "next/link";
 import { Avatar } from "@/components/ui/avatar";
 import { StatusPill } from "@/components/ui/brand";
 import { formatNumber } from "@/lib/utils";
@@ -417,7 +418,6 @@ export function ProfileHero({
   onTrack,
   locked = false,
   tier,
-  onVerStories,
 }: {
   profile: HeroProfile;
   premium?: boolean;
@@ -433,7 +433,6 @@ export function ProfileHero({
    * story — sem isto, ele ficava escondido atrás do seletor de seções.
    * Não pede nada ao provedor: só troca de aba.
    */
-  onVerStories?: () => void;
 }) {
   return (
     <section className="overflow-hidden rounded-3xl border border-border bg-card">
@@ -446,47 +445,23 @@ export function ProfileHero({
       <div className="p-5 text-left md:p-6">
         <div className="flex items-start gap-4 md:gap-7">
         <div className="relative shrink-0">
-          {onVerStories ? (
-            <button
-              type="button"
-              onClick={onVerStories}
-              title="Ver stories"
-              className="block rounded-full bg-gradient-to-tr from-yellow via-pink to-purple p-[3px] transition hover:opacity-90"
-            >
-              <span className="block rounded-full bg-card p-1">
-                <Avatar
-                  src={profile.avatarUrl}
-                  name={profile.displayName ?? profile.username}
-                  size={72}
-                  className="md:hidden"
-                />
-                <Avatar
-                  src={profile.avatarUrl}
-                  name={profile.displayName ?? profile.username}
-                  size={104}
-                  className="hidden md:block"
-                />
-              </span>
-              <span className="mt-1 block text-center text-[11px] font-bold text-accent">
-                Ver stories
-              </span>
-            </button>
-          ) : (
-            <div className="rounded-full p-1 ring-[3px] ring-pink">
-              <Avatar
-                src={profile.avatarUrl}
-                name={profile.displayName ?? profile.username}
-                size={72}
-                className="md:hidden"
-              />
-              <Avatar
-                src={profile.avatarUrl}
-                name={profile.displayName ?? profile.username}
-                size={104}
-                className="hidden md:block"
-              />
-            </div>
-          )}
+          {/* O anel de story saiu daqui junto com os stories: eles agora só
+              existem no painel do Faro, guardados. Sem o anel, volta o aro
+              rosa da marca. */}
+          <div className="rounded-full p-1 ring-[3px] ring-pink">
+            <Avatar
+              src={profile.avatarUrl}
+              name={profile.displayName ?? profile.username}
+              size={72}
+              className="md:hidden"
+            />
+            <Avatar
+              src={profile.avatarUrl}
+              name={profile.displayName ?? profile.username}
+              size={104}
+              className="hidden md:block"
+            />
+          </div>
           {tracking?.saved && (
             <span
               className="absolute -right-1 top-1 flex h-8 w-8 items-center justify-center rounded-full bg-pink shadow"
@@ -556,26 +531,41 @@ export function ProfileHero({
           </div>
           {note && <p className="mt-2 text-xs text-muted-foreground">{note}</p>}
 
-          {onTrack && (
-            <button
-              type="button"
-              onClick={onTrack}
-              disabled={tracking?.busy || tracking?.saved}
-              className={`mt-4 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl px-5 text-sm font-bold transition md:w-auto ${
-                tracking?.saved
-                  ? "bg-muted text-foreground"
-                  : "bg-pink text-ink hover:opacity-90"
-              }`}
+          {/*
+            * Já está no Faro: o botão vira caminho, não aviso.
+            *
+            * Antes ele ficava desativado dizendo "No seu Faro" — informava um
+            * estado e não levava a lugar nenhum, bem no momento em que a
+            * pessoa mais quer ver o que o Faro já encontrou. Agora é um link
+            * para o painel daquele perfil.
+            */}
+          {onTrack && tracking?.saved ? (
+            <NextLink
+              href={`/rastros/${encodeURIComponent(profile.username)}`}
+              className="mt-4 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-muted px-5 text-sm font-bold text-foreground transition hover:opacity-90 md:w-auto"
             >
-              {tracking?.busy ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : locked ? (
-                <Lock className="h-4 w-4" />
-              ) : (
-                <PawPrint className={`h-4 w-4 ${tracking?.saved ? "fill-pink text-accent" : ""}`} />
-              )}
-              {tracking?.saved ? "No seu Faro" : "Colocar no Faro"}
-            </button>
+              <PawPrint className="h-4 w-4 fill-pink text-accent" />
+              Ir para o painel do Faro
+              <ArrowRight className="h-4 w-4" />
+            </NextLink>
+          ) : (
+            onTrack && (
+              <button
+                type="button"
+                onClick={onTrack}
+                disabled={tracking?.busy}
+                className="mt-4 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-pink px-5 text-sm font-bold text-ink transition hover:opacity-90 md:w-auto"
+              >
+                {tracking?.busy ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : locked ? (
+                  <Lock className="h-4 w-4" />
+                ) : (
+                  <PawPrint className="h-4 w-4" />
+                )}
+                Colocar no Faro
+              </button>
+            )
           )}
         </div>
       </div>
