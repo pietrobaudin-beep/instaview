@@ -922,6 +922,50 @@ const tamanho = (bytes: number) => {
  * próprio, e serve só ao bloco de outras redes. Misturar os dois números
  * esconderia qual dos dois está custando.
  */
+/**
+ * O cabeçalho de um provedor, com marca própria.
+ *
+ * Os dois blocos tinham só um título de texto e, rolando a tela, era fácil
+ * ler um número da HikerAPI achando que era do Apify. A marca resolve isso
+ * antes da leitura: cor e letra diferentes, repetidas no topo de cada bloco.
+ *
+ * São monogramas desenhados aqui, não os logotipos das empresas: logotipo de
+ * terceiro é imagem externa, muda sem avisar e nem é nosso para usar. A cor
+ * de cada um é a que a própria marca usa, o que basta para distinguir.
+ */
+function MarcaDoProvedor({
+  letra,
+  nome,
+  descricao,
+  cor,
+  fundo,
+}: {
+  letra: string;
+  nome: string;
+  descricao: string;
+  cor: string;
+  fundo: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 pt-2">
+      <span
+        className={cn(
+          "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-lg font-extrabold",
+          fundo,
+          cor,
+        )}
+        aria-hidden
+      >
+        {letra}
+      </span>
+      <div className="min-w-0">
+        <h2 className="text-base font-extrabold tracking-tight">{nome}</h2>
+        <p className="text-[11px] leading-snug text-muted-foreground">{descricao}</p>
+      </div>
+    </div>
+  );
+}
+
 function Api({
   hiker,
   apify,
@@ -950,7 +994,15 @@ function Api({
 
   return (
     <div className="mt-5 space-y-3">
-      {/* As mesmas janelas do faturamento. */}
+      <MarcaDoProvedor
+        letra="H"
+        nome="HikerAPI"
+        descricao="O provedor dos dados do Instagram — sustenta a análise inteira. Pré-pago, US$ 1 por 1.000 requisições."
+        cor="text-white"
+        fundo="bg-plum"
+      />
+
+      {/* As mesmas janelas do faturamento, e valem para os dois provedores. */}
       <div className="flex flex-wrap gap-2">
         {PERIODOS.map((p) => (
           <button
@@ -1042,13 +1094,24 @@ function Api({
         </CardContent>
       </Card>
 
+      <p className="text-[11px] leading-relaxed text-muted-foreground">
+        A HikerAPI só informa quanto <b>resta</b>, nunca quanto foi gasto: o gasto de um período é a
+        diferença entre a leitura guardada do primeiro dia e a de agora. Por isso &quot;hoje&quot;
+        começa em zero a cada virada, e períodos mais longos só aparecem depois que o dia
+        correspondente tiver sido lido — hoje há <b>{hiker.diasComLeitura}</b>{" "}
+        {hiker.diasComLeitura === 1 ? "dia guardado" : "dias guardados"}. Farejos e coletas, ao lado,
+        vêm do nosso banco e valem sempre.
+      </p>
+
       {/* ——— Apify, em bloco próprio ——— */}
-      <div className="pt-2">
-        <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-plum/50">Apify</h2>
-        <p className="mt-0.5 text-[11px] text-muted-foreground">
-          Só o bloco &ldquo;Outras redes sociais&rdquo;. Ciclo e cobrança próprios, separados da
-          HikerAPI.
-        </p>
+      <div className="mt-6 border-t border-border pt-2">
+        <MarcaDoProvedor
+          letra="A"
+          nome="Apify"
+          descricao="Só o bloco “Outras redes sociais” (TikTok e YouTube). Cobra por execução, em ciclo mensal próprio."
+          cor="text-ink"
+          fundo="bg-[#97CF26]"
+        />
       </div>
 
       {!apify ? (
@@ -1122,14 +1185,6 @@ function Api({
         </>
       )}
 
-      <p className="text-[11px] leading-relaxed text-muted-foreground">
-        A HikerAPI só informa quanto <b>resta</b>, nunca quanto foi gasto: o gasto de um período é a
-        diferença entre a leitura guardada do primeiro dia e a de agora. Por isso &quot;hoje&quot;
-        começa em zero a cada virada, e períodos mais longos só aparecem depois que o dia
-        correspondente tiver sido lido — hoje há <b>{hiker.diasComLeitura}</b>{" "}
-        {hiker.diasComLeitura === 1 ? "dia guardado" : "dias guardados"}. Farejos e coletas, ao lado,
-        vêm do nosso banco e valem sempre.
-      </p>
     </div>
   );
 }
