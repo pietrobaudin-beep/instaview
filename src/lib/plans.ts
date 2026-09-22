@@ -154,15 +154,17 @@ export const PLANS: Record<Plan, PlanConfig> = {
     // Cobrado UMA vez por ano: R$ 99,90. Preço definido pelo dono do produto.
     //
     /*
-     * R$ 179/ano desde 22/09 (era R$ 99,90).
+     * R$ 179/ano desde 22/09 (era R$ 99,90), com 8 perfis no Faro e 20
+     * consultas por mês (eram 15 e 30).
      *
      * A R$ 99,90 o plano dava prejuízo em qualquer configuração: são R$ 7,96
      * por mês líquidos, e 15 perfis lidos 4× ao dia custam R$ 17,56 de
      * HikerAPI. Não havia corte que fechasse sem deixá-lo pior que o PRO.
      *
-     * A R$ 179 sobram R$ 14,29/mês líquidos — o que ainda **não** cobre os 15
-     * perfis a 4×/dia. Os tetos abaixo continuam os de antes; mexer neles é
-     * decisão pendente do dono do produto. Ver "Custos e preços" no cofre.
+     * A R$ 179 sobram R$ 14,29/mês líquidos. Com 8 perfis lidos 4× ao dia o
+     * custo é R$ 9,36 — **margem de 34%**, e o plano continua bem acima do
+     * PRO (5 perfis, 1×/dia). Era esse descompasso que fazia o plano de topo
+     * custar menos que o do meio.
      *
      * ATENÇÃO: este número é só o que a tela mostra. Quem cobra é o Stripe,
      * pelo price id em `stripePriceEnv` — sem criar o preço novo lá, o site
@@ -171,10 +173,10 @@ export const PLANS: Record<Plan, PlanConfig> = {
     billing: "yearly",
     priceMonthly: 179 / 12,
     priceYearly: 179,
-    maxProfiles: 15,
-    maxConsults: 30,
+    maxProfiles: 8,
+    maxConsults: 20,
     storiesHours: Number.POSITIVE_INFINITY,
-    // Quinze perfis, e é o plano de quem documenta — o teto existe só para o banco não crescer sem fim.
+    // É o plano de quem documenta; o teto existe só para o banco não crescer sem fim.
     storiesSalvosMes: 200,
     refreshesPorDia: 10,
     // The paid-for extra: four passes a day instead of one. Costs ~4x per
@@ -186,8 +188,8 @@ export const PLANS: Record<Plan, PlanConfig> = {
     exportAndApi: true,
     stripePriceEnv: "NEXT_PUBLIC_STRIPE_PRICE_AGENCY",
     features: [
-      "Até 30 perfis para consultar",
-      "Até 15 perfis no Faro",
+      "Até 20 perfis para consultar por mês",
+      "Até 8 perfis no Faro",
       "Alertas de conexões, interações e mudanças",
       "Histórico contínuo desde a entrada no Faro",
       "Arquivo de stories desde a entrada no Faro",
