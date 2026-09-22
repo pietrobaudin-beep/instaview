@@ -4,6 +4,7 @@ import { isValidUsername, normalizeUsername } from "@/lib/utils";
 import { getCurrentUser } from "@/lib/auth";
 import { peekUsageKey, usageKey } from "@/lib/usage";
 import { meusVotos, redesEscondidas, votar, type Voto } from "@/lib/elsewhere-votos";
+import { TETO_REDES_PAGAS, consumirTeto } from "@/lib/teto-diario";
 
 export const dynamic = "force-dynamic";
 
@@ -23,23 +24,32 @@ export async function GET(req: Request) {
   const username = normalizeUsername(url.searchParams.get("username") || "");
   if (!isValidUsername(username)) return NextResponse.json({ error: "invalid" }, { status: 400 });
 
-  // `?pagas=1` liga as redes que passam pelo Apify — cada consulta dessas
-  // custa, então quem chama decide.
+  /*
+   * `?pagas=1` liga as redes que passam pelo Apify. Cada @ novo custa, e isto
+   * passou a rodar sozinho em todo perfil aberto — por qualquer visitante,
+   * sem conta. O teto diário evita que o crédito do mês vá embora numa tarde.
+   *
+   * O @ que já está no cache não consome teto: quem paga é o @ novo.
+   */
   const pagas = url.searchParams.get("pagas") === "1";
 
   // `peek`, e não `usageKey`: um GET não deve criar identidade para quem ainda
   // não tem nenhuma. Sem chave, vale só a regra global.
   const chave = peekUsageKey(await getCurrentUser());
 
+  const podePagar = pagas
+    ? (await consumirTeto(chave, "redes-pagas", TETO_REDES_PAGAS)).ok
+    : false;
+
   const [links, escondidas, votos] = await Promise.all([
-    handleElsewhere(username, pagas),
+    handleElsewhere(username, podePagar),
     redesEscondidas(username, chave),
     meusVotos(username, chave),
   ]);
 
   return NextResponse.json({
     links: links.filter((l) => !escondidas.includes(l.network)),
-    pagas,
+    pagas: podePagar,
     // O VSCO é montado na tela, não vem daqui — por isso a lista vai inteira,
     // para a tela poder escondê-lo também.
     escondidas,

@@ -96,11 +96,32 @@ export interface Allowance {
   spentOn: string | null;
 }
 
+/** Começo do mês corrente — a janela do teto de quem assina. */
+function inicioDoMes(): Date {
+  const d = new Date();
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
+}
+
 /**
  * Se esta identidade pode consultar `username`, sem registrar nada.
  *
- * `limit` vem do plano (Curioso 1, Farejador 1, Cão 3, Pro 10, Detetive 30).
- * Um perfil já consultado **nunca** conta de novo: reabrir o mesmo @ é grátis.
+ * `limit` vem do plano (Curioso 1, Cão 3, Pro 10, Detetive 30).
+ *
+ * ## A janela é mensal (corrigido em 22/09)
+ *
+ * Isto contava **todas** as análises que a pessoa já tinha feito, sem filtro
+ * de data. O teto era vitalício: um assinante PRO analisava 10 perfis — podia
+ * ser na primeira semana — e **nunca mais conseguia analisar outro, mesmo
+ * pagando todo mês**. Ele cancelaria, e com razão.
+ *
+ * Agora conta só o mês corrente. Duas consequências de propósito:
+ *
+ * - **Reabrir um @ já consultado continua grátis, para sempre.** A linha é
+ *   única por (identidade, @) e `claimAnalysis` não mexe na data, então um
+ *   perfil de meses atrás não volta a ocupar cota.
+ * - **O Curioso segue com um farejo só**, porque para quem não paga o limite
+ *   não é de fluxo, é de amostra — e um por mês seria um produto grátis
+ *   diferente do que foi decidido.
  */
 export async function checkAllowance(
   key: string,
@@ -110,26 +131,40 @@ export async function checkAllowance(
   if (!FREE_LIMIT_ENFORCED) {
     return { allowed: true, used: 0, limit, claimed: false, spentOn: null };
   }
-  const rows = await prisma.analysisUsage.findMany({
-    where: { key },
-    orderBy: { createdAt: "asc" },
-    select: { username: true },
-  });
 
-  const claimed = rows.some((r) => r.username === username);
+  const [doMes, jaFeito, primeiro] = await Promise.all([
+    prisma.analysisUsage.count({
+      where: { key, createdAt: { gte: inicioDoMes() } },
+    }),
+    prisma.analysisUsage.findUnique({
+      where: { key_username: { key, username } },
+      select: { id: true },
+    }),
+    prisma.analysisUsage.findFirst({
+      where: { key },
+      orderBy: { createdAt: "asc" },
+      select: { username: true },
+    }),
+  ]);
+
+  const claimed = Boolean(jaFeito);
   return {
-    allowed: claimed || rows.length < limit,
-    used: rows.length,
+    allowed: claimed || doMes < limit,
+    used: doMes,
     limit,
     claimed,
-    spentOn: rows[0]?.username ?? null,
+    spentOn: primeiro?.username ?? null,
   };
 }
 
-/** Quantos perfis esta identidade já consultou — para os contadores da conta. */
+/**
+ * Quantos perfis esta identidade consultou **neste mês** — é o número que a
+ * tela mostra ao lado do teto do plano, e tem de contar a mesma coisa que
+ * `checkAllowance`, senão o contador diz uma coisa e a porta faz outra.
+ */
 export async function consultsUsed(key: string | null): Promise<number> {
   if (!key) return 0;
-  return prisma.analysisUsage.count({ where: { key } });
+  return prisma.analysisUsage.count({ where: { key, createdAt: { gte: inicioDoMes() } } });
 }
 
 /** Record that this identity spent its allowance on `username`. Idempotent. */
