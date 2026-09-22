@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ArrowUpRight, BadgeCheck, Globe, Link as LinkIcon, Loader2, Lock, PawPrint } from "lucide-react";
+import { BadgeCheck, Globe, Link as LinkIcon, Loader2, Lock, PawPrint, ThumbsDown, ThumbsUp } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { StatusPill } from "@/components/ui/brand";
 import { formatNumber } from "@/lib/utils";
@@ -50,8 +50,12 @@ function Stat({ value, label }: { value: string; label: string }) {
  * O mesmo @ em outra rede — só quando a conta existe de verdade.
  *
  * Quem verifica é o servidor (/api/elsewhere), e só entra na lista o que ele
- * confirma. TikTok e X são as duas redes checadas; o que não dá para confirmar
- * simplesmente não aparece.
+ * confirma: Telegram, X e TikTok de graça, TikTok com foto e YouTube pelo
+ * Apify. O VSCO é a exceção — está atrás do Cloudflare e não dá para
+ * confirmar, então o endereço é montado com o @.
+ *
+ * Como nada disso prova **identidade** (o mesmo @ pode ser de outra pessoa),
+ * cada linha tem um joinha. Ver {@link Joinha}.
  */
 export function OtherNetworks({
   username,
@@ -64,14 +68,14 @@ export function OtherNetworks({
   destaque?: boolean;
 }) {
   type Elsewhere = {
+    network: string;
     label: string;
     handle: string;
     url: string;
     displayName?: string | null;
     avatarUrl?: string | null;
   };
-
-  const [links, setLinks] = React.useState<Elsewhere[]>([]);
+  type Voto = "sim" | "nao";
 
   /*
    * O @ do VSCO aceita letras, números, ponto, hífen e sublinhado, de 2 a 30.
@@ -80,9 +84,17 @@ export function OtherNetworks({
    */
   const vscoPossivel = /^[\w.-]{2,30}$/.test(username);
 
+  const [links, setLinks] = React.useState<Elsewhere[]>([]);
   const [procurando, setProcurando] = React.useState(false);
   const [procurouPagas, setProcurouPagas] = React.useState(false);
   const [falhou, setFalhou] = React.useState(false);
+
+  /** O que esta pessoa já respondeu, por rede. */
+  const [votos, setVotos] = React.useState<Record<string, Voto>>({});
+  /** As que ela escondeu — some da tela na hora, sem esperar o servidor. */
+  const [escondidas, setEscondidas] = React.useState<string[]>([]);
+  /** A última escondida, para oferecer o desfazer. */
+  const [ultima, setUltima] = React.useState<{ rede: string; label: string } | null>(null);
 
   /**
    * Busca em duas etapas, sozinha.
@@ -100,12 +112,18 @@ export function OtherNetworks({
   React.useEffect(() => {
     let vivo = true;
 
+    const aplicar = (b: { links?: Elsewhere[]; escondidas?: string[]; votos?: Record<string, Voto> }) => {
+      setLinks(b.links ?? []);
+      setEscondidas(b.escondidas ?? []);
+      setVotos(b.votos ?? {});
+    };
+
     (async () => {
       try {
         const r = await fetch(`/api/elsewhere?username=${encodeURIComponent(username)}`);
         const b = await r.json();
         if (!vivo) return;
-        setLinks(b.links ?? []);
+        aplicar(b);
       } catch {
         // As de graça falharem não impede de tentar as outras.
       }
@@ -117,7 +135,7 @@ export function OtherNetworks({
         if (!r.ok) throw new Error(String(r.status));
         const b = await r.json();
         if (!vivo) return;
-        setLinks(b.links ?? []);
+        aplicar(b);
         setProcurouPagas(true);
       } catch {
         if (vivo) setFalhou(true);
@@ -131,13 +149,50 @@ export function OtherNetworks({
     };
   }, [username]);
 
+  /**
+   * Registra o voto e some na hora com o que foi marcado como errado.
+   *
+   * A tela não espera a resposta do servidor: quem disse "não é essa pessoa"
+   * já sabe o que quer, e ver a linha continuar ali por um segundo parece que
+   * o clique não funcionou. Se o pedido falhar, o voto volta atrás.
+   */
+  async function votar(rede: string, label: string, voto: Voto) {
+    const antes = votos[rede];
+    setVotos((v) => ({ ...v, [rede]: voto }));
+    if (voto === "nao") {
+      setEscondidas((e) => (e.includes(rede) ? e : [...e, rede]));
+      setUltima({ rede, label });
+    } else {
+      setEscondidas((e) => e.filter((r) => r !== rede));
+      setUltima(null);
+    }
+
+    try {
+      const r = await fetch("/api/elsewhere", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ username, rede, voto }),
+      });
+      if (!r.ok) throw new Error(String(r.status));
+    } catch {
+      setVotos((v) => ({ ...v, [rede]: antes as Voto }));
+      if (voto === "nao") {
+        setEscondidas((e) => e.filter((r) => r !== rede));
+        setUltima(null);
+      }
+    }
+  }
+
+  const visiveis = links.filter((l) => !escondidas.includes(l.network));
+  const mostrarVsco = vscoPossivel && !escondidas.includes("vsco");
+
   /*
    * No perfil público o bloco só aparece quando há o que mostrar: ali ele é um
    * acréscimo no fim da página, e um título sozinho em cima do vazio seria
    * ruído. No privado ele fica de pé mesmo vazio, porque é a única saída da
    * tela — sumir enquanto procura pareceria que nada está acontecendo.
    */
-  if (!isPrivate && links.length === 0) return null;
+  if (!isPrivate && visiveis.length === 0 && !mostrarVsco) return null;
 
   return (
     <div className={destaque ? "mt-6 w-full text-left" : "mt-4"}>
@@ -146,55 +201,56 @@ export function OtherNetworks({
           Outras redes sociais
         </p>
       )}
-      <div
-        className={
-          destaque
-            ? "grid gap-2"
-            : "flex flex-wrap justify-center gap-2 md:justify-start"
-        }
-      >
-        {links.map((l) => (
-          <a
+      <div className={destaque ? "grid gap-2" : "flex flex-wrap justify-center gap-2 md:justify-start"}>
+        {visiveis.map((l) => (
+          <Linha
             key={l.url}
-            href={l.url}
-            target="_blank"
-            rel="noreferrer nofollow"
-            className={`flex items-center gap-2.5 rounded-2xl border border-border bg-muted/50 py-2 pl-2 pr-3.5 transition hover:border-accent/40 ${
-              destaque ? "min-h-[56px]" : ""
-            }`}
-          >
-            {/* A foto real quando a rede publica uma (hoje, o Telegram). Onde
-                não há via oficial para a imagem, fica a silhueta — melhor do
-                que fingir que temos a foto. */}
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-pink/40">
-              {l.avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={l.avatarUrl}
-                  alt=""
-                  className="h-full w-full object-cover"
-                  referrerPolicy="no-referrer"
-                  loading="lazy"
-                />
-              ) : (
-                <svg viewBox="0 0 48 48" className="h-full w-full text-vinho/35" aria-hidden>
-                  <circle cx="24" cy="18" r="8" fill="currentColor" />
-                  <path d="M8 44c0-8.8 7.2-14 16-14s16 5.2 16 14z" fill="currentColor" />
-                </svg>
-              )}
-            </span>
-            <span className="min-w-0 flex-1 text-left leading-tight">
-              <span className="block truncate text-sm font-bold text-foreground">@{l.handle}</span>
-              {/* O nome vem da própria rede, quando ela devolve. */}
-              <span className="block truncate text-[11px] text-muted-foreground">
-                {l.label}
-                {l.displayName ? ` · ${l.displayName}` : ""}
-              </span>
-            </span>
-            {destaque && <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground" />}
-          </a>
+            url={l.url}
+            handle={l.handle}
+            legenda={`${l.label}${l.displayName ? ` · ${l.displayName}` : ""}`}
+            avatarUrl={l.avatarUrl ?? null}
+            destaque={destaque}
+            voto={votos[l.network]}
+            onVotar={(v) => votar(l.network, l.label, v)}
+          />
         ))}
+
+        {/*
+          * O VSCO não é confirmado como as outras: o site está atrás do
+          * Cloudflare e responde 403 a qualquer pedido — inclusive para @
+          * inexistente, então nem "não existe" dá para saber —, e não há ator
+          * no Apify. O endereço é montado a partir do @.
+          *
+          * Fica igual às demais a pedido. O aviso que o segura é o do rodapé
+          * do bloco, que já vale para todas: "pode ser outra pessoa" — e agora
+          * o joinha, que deixa qualquer um tirá-lo da frente.
+          */}
+        {mostrarVsco && (
+          <Linha
+            url={`https://vsco.co/${username}/gallery`}
+            handle={username}
+            legenda="VSCO"
+            avatarUrl={null}
+            destaque={destaque}
+            voto={votos.vsco}
+            onVotar={(v) => votar("vsco", "VSCO", v)}
+            marca={
+              // A marca do VSCO é um anel: círculo cheio com um furo no meio.
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-foreground">
+                <svg viewBox="0 0 36 36" className="h-5 w-5" aria-hidden>
+                  <path
+                    d="M18 2a16 16 0 1 0 0 32 16 16 0 0 0 0-32zm0 10a6 6 0 1 1 0 12 6 6 0 0 1 0-12z"
+                    fill="currentColor"
+                    className="text-background"
+                    fillRule="evenodd"
+                  />
+                </svg>
+              </span>
+            }
+          />
+        )}
       </div>
+
       {/* Enquanto a segunda etapa corre, a tela diz que ainda está procurando
           — sem isso, a lista parece pronta e depois muda sozinha. */}
       {destaque && procurando && (
@@ -204,12 +260,21 @@ export function OtherNetworks({
         </p>
       )}
 
-      {/*
-        * Depois de procurar, a tela precisa dizer o que houve. Antes, quando a
-        * busca não trazia nada novo, o botão simplesmente sumia e nada mudava:
-        * quem clicou esperava dez segundos sem saber se tinha buscado.
-        */}
-      {procurouPagas && links.length === 0 && (
+      {/* Errar escondendo tem volta; por isso o desfazer fica à mão. */}
+      {ultima && (
+        <p className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+          {ultima.label} escondido.
+          <button
+            type="button"
+            onClick={() => votar(ultima.rede, ultima.label, "sim")}
+            className="font-bold text-accent underline underline-offset-2"
+          >
+            Desfazer
+          </button>
+        </p>
+      )}
+
+      {procurouPagas && visiveis.length === 0 && !mostrarVsco && (
         <p className="mt-2 text-[11px] text-muted-foreground">
           Não achamos esse @ em nenhuma outra rede.
         </p>
@@ -221,48 +286,126 @@ export function OtherNetworks({
         </p>
       )}
 
-      {/*
-        * O VSCO não é confirmado como as outras: o site está atrás do
-        * Cloudflare e responde 403 a qualquer pedido — inclusive para @
-        * inexistente, então nem "não existe" dá para saber —, e não há ator no
-        * Apify. O endereço é montado a partir do @.
-        *
-        * Fica igual às demais a seu pedido. O aviso que segura a linha é o do
-        * rodapé do bloco, que já vale para todas: "pode ser outra pessoa".
-        */}
-      {vscoPossivel && (
-        <a
-          href={`https://vsco.co/${username}/gallery`}
-          target="_blank"
-          rel="noreferrer nofollow"
-          className={`mt-2 flex items-center gap-2.5 rounded-2xl border border-border bg-muted/50 py-2 pl-2 pr-3.5 transition hover:border-accent/40 ${
-            destaque ? "min-h-[56px]" : ""
-          }`}
-        >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-foreground">
-            {/* A marca do VSCO é um anel: círculo cheio com um furo no meio. */}
-            <svg viewBox="0 0 36 36" className="h-5 w-5" aria-hidden>
-              <path
-                d="M18 2a16 16 0 1 0 0 32 16 16 0 0 0 0-32zm0 10a6 6 0 1 1 0 12 6 6 0 0 1 0-12z"
-                fill="currentColor"
-                className="text-background"
-                fillRule="evenodd"
-              />
-            </svg>
-          </span>
-          <span className="min-w-0 flex-1 text-left leading-tight">
-            <span className="block truncate text-sm font-bold text-foreground">@{username}</span>
-            <span className="block truncate text-[11px] text-muted-foreground">VSCO</span>
-          </span>
-          {destaque && <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground" />}
-        </a>
-      )}
-
       <p className={`mt-2 text-[11px] leading-relaxed text-muted-foreground ${destaque ? "" : "text-center md:text-left"}`}>
-        {links.some((l) => !l.avatarUrl) ? "Onde não há foto, o desenho é ilustrativo. " : ""}
-        Mesmo @ nessa rede — <b className="font-semibold">pode ser outra pessoa</b>.
+        {visiveis.some((l) => !l.avatarUrl) ? "Onde não há foto, o desenho é ilustrativo. " : ""}
+        Mesmo @ nessa rede — <b className="font-semibold">pode ser outra pessoa</b>. Diga se
+        acertamos com o joinha.
       </p>
     </div>
+  );
+}
+
+/**
+ * Uma linha do bloco: o link para a rede e, ao lado, o joinha.
+ *
+ * O joinha fica **fora** do `<a>` de propósito: botão dentro de link é HTML
+ * inválido, e no celular o toque acabaria abrindo a rede em vez de votar.
+ */
+function Linha({
+  url,
+  handle,
+  legenda,
+  avatarUrl,
+  destaque,
+  voto,
+  onVotar,
+  marca,
+}: {
+  url: string;
+  handle: string;
+  legenda: string;
+  avatarUrl: string | null;
+  destaque: boolean;
+  voto?: "sim" | "nao";
+  onVotar: (voto: "sim" | "nao") => void;
+  marca?: React.ReactNode;
+}) {
+  return (
+    <div
+      className={`flex items-center gap-1 rounded-2xl border bg-muted/50 pl-2 pr-1.5 transition ${
+        voto === "sim" ? "border-accent/50" : "border-border"
+      } ${destaque ? "min-h-[56px]" : ""}`}
+    >
+      <a
+        href={url}
+        target="_blank"
+        rel="noreferrer nofollow"
+        className="flex min-w-0 flex-1 items-center gap-2.5 py-2"
+      >
+        {marca ?? (
+          /* A foto real quando a rede publica uma. Onde não há via oficial
+             para a imagem, fica a silhueta — melhor do que fingir que temos. */
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-pink/40">
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={avatarUrl}
+                alt=""
+                className="h-full w-full object-cover"
+                referrerPolicy="no-referrer"
+                loading="lazy"
+              />
+            ) : (
+              <svg viewBox="0 0 48 48" className="h-full w-full text-vinho/35" aria-hidden>
+                <circle cx="24" cy="18" r="8" fill="currentColor" />
+                <path d="M8 44c0-8.8 7.2-14 16-14s16 5.2 16 14z" fill="currentColor" />
+              </svg>
+            )}
+          </span>
+        )}
+        <span className="min-w-0 flex-1 text-left leading-tight">
+          <span className="block truncate text-sm font-bold text-foreground">@{handle}</span>
+          {/* O nome vem da própria rede, quando ela devolve. */}
+          <span className="block truncate text-[11px] text-muted-foreground">{legenda}</span>
+        </span>
+      </a>
+
+      <Joinha voto={voto} onVotar={onVotar} />
+    </div>
+  );
+}
+
+/**
+ * "É essa pessoa?" — os dois botões.
+ *
+ * O Farejo acha contas pelo **@**, não pela identidade: quem está olhando sabe
+ * se acertamos, e o servidor não tem como saber. O polegar para baixo esconde
+ * a linha na hora para quem clicou, e some para todos quando gente suficiente
+ * concorda — um voto sozinho não apaga um resultado certo para os outros.
+ *
+ * 44px de alvo nos dois, que é o mínimo para o dedo.
+ */
+function Joinha({
+  voto,
+  onVotar,
+}: {
+  voto?: "sim" | "nao";
+  onVotar: (voto: "sim" | "nao") => void;
+}) {
+  const base =
+    "flex h-11 w-9 items-center justify-center rounded-xl transition hover:bg-foreground/5";
+  return (
+    <span className="flex shrink-0 items-center">
+      <button
+        type="button"
+        onClick={() => onVotar("sim")}
+        aria-pressed={voto === "sim"}
+        aria-label="É essa pessoa"
+        title="É essa pessoa"
+        className={`${base} ${voto === "sim" ? "text-accent" : "text-muted-foreground/60"}`}
+      >
+        <ThumbsUp className="h-4 w-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => onVotar("nao")}
+        aria-label="Não é essa pessoa"
+        title="Não é essa pessoa"
+        className={`${base} text-muted-foreground/60`}
+      >
+        <ThumbsDown className="h-4 w-4" />
+      </button>
+    </span>
   );
 }
 
