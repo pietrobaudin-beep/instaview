@@ -8,6 +8,7 @@ import { Nose } from "@/components/ui/doodles";
 import type { ProHome as ProHomeData } from "@/lib/pro-home";
 import { BRAND, greeting, novidades, pistaHeadline, pistas } from "@/lib/voice";
 import { Mascot } from "@/components/ui/mascot";
+import { Panel } from "@/components/ui/brand";
 
 const VERB = {
   follow: "começou a seguir",
@@ -23,7 +24,14 @@ function ago(iso: string) {
   }
 }
 
-/** Quiet card used across the Pro home — white, thin border, generous padding. */
+/**
+ * Os cartões da home PRO são o `Panel` do resto do app — mesma moldura, mesmo
+ * fundo, mesmo respiro. Antes tinham borda, sombra e padding próprios: lado a
+ * lado com o /perfil ou com o Faro, pareciam de outra tela.
+ *
+ * O que sobra aqui é só o que a home precisa: altura cheia (os dois cartões
+ * terminam na mesma linha) e um corpo que rola por dentro em vez de esticar.
+ */
 function Card({
   title,
   icon,
@@ -38,19 +46,20 @@ function Card({
   className?: string;
 }) {
   return (
-    <section
-      className={`flex h-full flex-col rounded-3xl border border-plum/10 bg-white p-6 shadow-[0_1px_2px_rgba(23,16,18,0.04),0_12px_32px_-24px_rgba(23,16,18,0.45)] ${className}`}
-    >
-      <header className="mb-5 flex shrink-0 items-center justify-between gap-3">
-        <h2 className="flex items-center gap-2 text-[15px] font-bold tracking-tight text-plum">
+    <Panel
+      className={`flex h-full flex-col ${className}`}
+      // min-h-0 para o filho poder rolar em vez de empurrar o cartão.
+      bodyClassName="min-h-0 flex-1"
+      title={
+        <h2 className="flex min-w-0 items-center gap-2 text-base font-bold tracking-tight">
           {icon}
           {title}
         </h2>
-        {action}
-      </header>
-      {/* min-h-0 para o filho poder rolar em vez de empurrar o cartão. */}
-      <div className="min-h-0 flex-1">{children}</div>
-    </section>
+      }
+      action={action}
+    >
+      {children}
+    </Panel>
   );
 }
 
@@ -141,7 +150,7 @@ export function ProHome({
             </Link>
           }
         >
-          <ul className="max-h-[22rem] divide-y divide-plum/10 overflow-y-auto pr-1">
+          <ul className="max-h-[22rem] divide-y divide-border overflow-y-auto pr-1">
             {data.profiles.slice(0, 6).map((p) => (
               <li key={p.username}>
                 <Link
