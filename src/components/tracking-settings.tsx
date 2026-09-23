@@ -232,7 +232,11 @@ export function TrackingSettings({
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-2">
+          {/* `items-start`: o "Atualizar agora" às vezes leva um aviso embaixo
+              ("limite de hoje atingido"), e centralizar jogava a engrenagem
+              para baixo do topo do botão. As duas alturas também são as
+              mesmas, 40px, para os dois ficarem na mesma linha. */}
+          <div className="flex w-full shrink-0 items-start justify-between gap-2 sm:w-auto sm:justify-normal">
             {profileId && status && (
               <RefreshButton profileId={profileId} inicial={status} onStatus={setStatus} />
             )}
@@ -242,7 +246,7 @@ export function TrackingSettings({
               aria-expanded={ajustesAbertos}
               aria-label="Configurações do que você vê"
               title="Configurações do que você vê"
-              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-border transition hover:bg-muted/50 ${
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-border transition hover:bg-muted/50 ${
                 ajustesAbertos ? "bg-muted text-foreground" : "text-muted-foreground"
               }`}
             >
