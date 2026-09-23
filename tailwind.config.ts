@@ -58,11 +58,20 @@ const config: Config = {
         mint: "hsl(var(--mint))",
         onyx: "hsl(var(--onyx))",
       },
-      borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
-      },
+      /*
+       * Cantos: três degraus e nada mais.
+       *
+       *   rounded-3xl  24px  cartões e painéis
+       *   rounded-2xl  16px  botões, campos, linhas e chips
+       *   rounded-xl   12px  miudezas (ícones, marcadores)
+       *   rounded-full       círculos e pílulas
+       *
+       * Havia aqui um `borderRadius` que redefinia lg/md/sm a partir de
+       * `--radius` (1.25rem). O efeito era uma escala invertida no meio:
+       * `rounded-lg` valia 20px e `rounded-xl`, 12px — o "grande" menor que o
+       * "extra grande". A sobrescrita saiu; lg/md/sm voltam aos valores
+       * padrão do Tailwind, e o projeto usa os três degraus acima.
+       */
       fontFamily: {
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],
         display: ["var(--font-display)", "var(--font-sans)", "sans-serif"],

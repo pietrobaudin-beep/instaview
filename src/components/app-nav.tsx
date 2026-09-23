@@ -38,7 +38,7 @@ function FaroIcon({ className }: { className?: string }) {
       src="/mascote/faro-app.svg"
       alt=""
       aria-hidden
-      className={cn("shrink-0 rounded-[6px]", className)}
+      className={cn("shrink-0 rounded-xl", className)}
     />
   );
 }

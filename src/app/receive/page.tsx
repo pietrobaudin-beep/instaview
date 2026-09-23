@@ -106,7 +106,7 @@ export default function ReceivePage() {
           </p>
           <Link
             href={`/dashboard/${status.profileId}`}
-            className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground"
+            className="rounded-xl bg-accent px-4 py-2 text-sm font-medium text-accent-foreground"
           >
             Open my dashboard
           </Link>

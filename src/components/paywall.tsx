@@ -81,7 +81,7 @@ export function Paywall({
   ];
 
   return (
-    <div className="premium-surface relative overflow-hidden rounded-[2rem] p-7 sm:p-10">
+    <div className="premium-surface relative overflow-hidden rounded-3xl p-7 sm:p-10">
       <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-pink/20 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-purple/20 blur-3xl" />
       <div className="relative">

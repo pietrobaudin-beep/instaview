@@ -112,7 +112,7 @@ export function ConnectClient() {
               ref={linkRef}
               href="#"
               onClick={(e) => e.preventDefault()}
-              className="inline-flex cursor-grab items-center gap-2 rounded-lg border border-accent/50 bg-accent/10 px-4 py-2 text-sm font-semibold text-accent"
+              className="inline-flex cursor-grab items-center gap-2 rounded-xl border border-accent/50 bg-accent/10 px-4 py-2 text-sm font-semibold text-accent"
               draggable
             >
               <Bookmark className="h-4 w-4" /> Sync Farejo

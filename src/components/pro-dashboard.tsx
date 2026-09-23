@@ -260,7 +260,7 @@ export function ProDashboard(props: Props) {
         icon={Sparkles}
         className="xl:col-span-2"
         action={
-          <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/30 p-0.5">
+          <div className="flex items-center gap-1 rounded-xl border border-border bg-muted/30 p-0.5">
             {([
               ["all", "Todos"],
               ["f", "Mulheres"],
@@ -270,7 +270,7 @@ export function ProDashboard(props: Props) {
                 key={key}
                 type="button"
                 onClick={() => setFilter(key)}
-                className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${
+                className={`rounded-xl px-2.5 py-1 text-xs font-medium transition ${
                   filter === key
                     ? "bg-accent text-accent-foreground"
                     : "text-muted-foreground hover:text-foreground"

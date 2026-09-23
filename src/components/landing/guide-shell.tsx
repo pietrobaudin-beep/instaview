@@ -20,7 +20,7 @@ export function GuideShell({ children }: { children: React.ReactNode }) {
       </header>
       <main className="px-6 pb-24">{children}</main>
       <section className="px-6 pb-24">
-        <div className="brand-panel mx-auto flex max-w-3xl flex-col items-center rounded-[2rem] px-6 py-12 text-center">
+        <div className="brand-panel mx-auto flex max-w-3xl flex-col items-center rounded-3xl px-6 py-12 text-center">
           <h2 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl">Pronto para farejar?</h2>
           <p className="mt-3 max-w-md opacity-75">Digite um @ e veja as pistas em segundos. Sem senha.</p>
           <Link

@@ -437,7 +437,7 @@ export function Landing({ demo }: { demo: boolean }) {
 
       {/* ——— 07 · PRO ——— */}
       <section id="pro" className="scroll-mt-10 px-6 py-24">
-        <Reveal className="vinho-surface relative mx-auto max-w-6xl overflow-hidden rounded-[2rem] px-6 py-12 sm:rounded-[2.5rem] sm:px-14 sm:py-20">
+        <Reveal className="vinho-surface relative mx-auto max-w-6xl overflow-hidden rounded-3xl px-6 py-12 sm:rounded-3xl sm:px-14 sm:py-20">
           {/* min-w-0 nas colunas: sem isso o conteúdo mais largo estica a coluna
               e o texto vaza para fora do painel no celular. */}
           {/* Colunas alinhadas pelo topo: centralizadas, o texto "flutuava" em
@@ -568,7 +568,7 @@ export function Landing({ demo }: { demo: boolean }) {
               </p>
             </Reveal>
             <Reveal className="relative mt-12">
-              <div className="overflow-hidden rounded-[2rem] border border-border bg-card">
+              <div className="overflow-hidden rounded-3xl border border-border bg-card">
                 <div className="grid grid-cols-[1.4fr_1fr_1fr] items-center border-b border-border px-5 py-4 text-xs font-bold uppercase tracking-wider text-muted-foreground sm:px-8">
                   <span>Recurso</span>
                   <span className="text-center">
@@ -612,7 +612,7 @@ export function Landing({ demo }: { demo: boolean }) {
           </Reveal>
           {/* No celular: um cartão de cada vez, arrastando para o lado. */}
           <SwipeDeck className="mt-12" label="Planos do Farejo">
-            <Reveal className="relative flex h-full flex-col rounded-[2rem] border border-border bg-card p-8">
+            <Reveal className="relative flex h-full flex-col rounded-3xl border border-border bg-card p-8">
               <h3 className="text-2xl font-bold">Farejo Free</h3>
               <p className="mt-1 text-muted-foreground">Para matar aquela curiosidade.</p>
               <p className="mt-6 text-4xl font-bold">R$ 0</p>
@@ -633,7 +633,7 @@ export function Landing({ demo }: { demo: boolean }) {
             </Reveal>
 
             {/* Uso único: a compra de quem só quer resolver uma curiosidade. */}
-            <Reveal delay={100} className="relative flex h-full flex-col rounded-[2rem] border-2 border-pink bg-card p-8">
+            <Reveal delay={100} className="relative flex h-full flex-col rounded-3xl border-2 border-pink bg-card p-8">
               <h3 className="text-2xl font-bold">Uso único</h3>
               <p className="mt-1 text-muted-foreground">Para uma curiosidade pontual.</p>
               <p className="mt-6 text-4xl font-bold">
@@ -657,7 +657,7 @@ export function Landing({ demo }: { demo: boolean }) {
               </a>
             </Reveal>
 
-            <Reveal delay={200} className="vinho-surface flex h-full flex-col rounded-[2rem] p-8">
+            <Reveal delay={200} className="vinho-surface flex h-full flex-col rounded-3xl p-8">
               <div className="flex items-center justify-between">
                 <h3 className="text-2xl font-bold">Farejo PRO</h3>
                 <span className="rounded-full bg-yellow px-2.5 py-1 text-[11px] font-bold text-ink">
@@ -703,7 +703,7 @@ export function Landing({ demo }: { demo: boolean }) {
           <Eyebrow>Dúvidas</Eyebrow>
           <SectionTitle className="mt-4">Perguntas frequentes</SectionTitle>
         </Reveal>
-        <Reveal className="mt-12 divide-y divide-border overflow-hidden rounded-[2rem] border border-border bg-card">
+        <Reveal className="mt-12 divide-y divide-border overflow-hidden rounded-3xl border border-border bg-card">
           {FAQ.map((f) => (
             <details key={f.q} className="group px-6 sm:px-8">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-5 font-semibold transition hover:text-vinho [&::-webkit-details-marker]:hidden">
@@ -739,7 +739,7 @@ export function Landing({ demo }: { demo: boolean }) {
 
       {/* ——— 13 · CTA final ——— */}
       <section id="comecar" className="px-6 py-24">
-        <Reveal className="brand-panel relative mx-auto flex max-w-4xl flex-col items-center rounded-[2.5rem] px-6 py-16 text-center sm:px-12">
+        <Reveal className="brand-panel relative mx-auto flex max-w-4xl flex-col items-center rounded-3xl px-6 py-16 text-center sm:px-12">
           <Handnote
             tone="ink"
             underline

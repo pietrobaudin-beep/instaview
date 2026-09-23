@@ -63,7 +63,7 @@ export default async function Home() {
                 hour={brazilHour()}
                 planName={planFor(user.plan).name}
                 search={
-                  <section className="rounded-[1.75rem] border border-plum/10 bg-white p-6 shadow-[0_1px_2px_rgba(23,16,18,0.04),0_12px_32px_-24px_rgba(23,16,18,0.45)]">
+                  <section className="rounded-3xl border border-plum/10 bg-white p-6 shadow-[0_1px_2px_rgba(23,16,18,0.04),0_12px_32px_-24px_rgba(23,16,18,0.45)]">
                     <h2 className="mb-4 text-[15px] font-bold tracking-tight text-plum">
                       Farejar outro @
                     </h2>

@@ -36,7 +36,7 @@ export function FaroUpsell({
       aria-labelledby="faro-upsell-title"
     >
       <div
-        className="premium-surface relative w-full max-w-md overflow-hidden rounded-[2rem] p-7"
+        className="premium-surface relative w-full max-w-md overflow-hidden rounded-3xl p-7"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-pink/25 blur-3xl" />

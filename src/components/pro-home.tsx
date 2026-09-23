@@ -39,7 +39,7 @@ function Card({
 }) {
   return (
     <section
-      className={`flex h-full flex-col rounded-[1.75rem] border border-plum/10 bg-white p-6 shadow-[0_1px_2px_rgba(23,16,18,0.04),0_12px_32px_-24px_rgba(23,16,18,0.45)] ${className}`}
+      className={`flex h-full flex-col rounded-3xl border border-plum/10 bg-white p-6 shadow-[0_1px_2px_rgba(23,16,18,0.04),0_12px_32px_-24px_rgba(23,16,18,0.45)] ${className}`}
     >
       <header className="mb-5 flex shrink-0 items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 text-[15px] font-bold tracking-tight text-plum">
@@ -87,7 +87,7 @@ export function ProHome({
   return (
     <div>
       {/* Header band: the one dark surface, where the day's news lives. */}
-      <header className="overflow-hidden rounded-[2rem] bg-plum px-7 py-8 text-white sm:px-9 sm:py-10">
+      <header className="overflow-hidden rounded-3xl bg-plum px-7 py-8 text-white sm:px-9 sm:py-10">
         <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/50">
           {planName}
         </p>

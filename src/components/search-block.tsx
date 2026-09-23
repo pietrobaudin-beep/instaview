@@ -172,7 +172,7 @@ export function SearchBlock({
         {/* A caixinha: marca e desmarca. */}
         <span
           aria-hidden
-          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border-2 transition ${
+          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-xl border-2 transition ${
             marcado ? "border-accent bg-accent text-white" : "border-border bg-card"
           }`}
         >

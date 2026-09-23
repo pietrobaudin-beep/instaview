@@ -14,7 +14,7 @@ function Frame({ children, className }: { children: React.ReactNode; className?:
   return (
     <div
       className={cn(
-        "rounded-[2rem] border border-border bg-card p-5 shadow-[0_30px_80px_-30px_hsl(var(--vinho)/0.35)]",
+        "rounded-3xl border border-border bg-card p-5 shadow-[0_30px_80px_-30px_hsl(var(--vinho)/0.35)]",
         className,
       )}
     >
@@ -368,7 +368,7 @@ export function ProNarrative() {
   ];
   return (
     <div className="relative">
-      <div className="rounded-[2rem] border border-cream/12 bg-cream/[0.06] p-6 backdrop-blur-sm">
+      <div className="rounded-3xl border border-cream/12 bg-cream/[0.06] p-6 backdrop-blur-sm">
         <div className="flex items-center justify-between">
           <p className="text-sm font-bold text-cream">O que mudou em @{PEOPLE.julia.handle}</p>
           <span className="rounded-full bg-cream/10 px-2.5 py-1 text-[10px] font-semibold text-cream/70">

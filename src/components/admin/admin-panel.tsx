@@ -397,7 +397,7 @@ export function AdminPanel({
                               onClick={() => changePlan(u.id, p.id)}
                               title={p.preco}
                               className={cn(
-                                "rounded-lg px-3 py-1 text-xs font-semibold transition disabled:opacity-50",
+                                "rounded-xl px-3 py-1 text-xs font-semibold transition disabled:opacity-50",
                                 u.plan === p.id
                                   ? "bg-pink text-ink"
                                   : "text-muted-foreground hover:bg-muted",
