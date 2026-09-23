@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
  * App navigation.
  *
  * Two groups, not one row of four: on the left the places you go to *work*
- * (farejar, os perfis no Faro, as pistas); on the right the account. Separating
+ * (farejar, os perfis no Faro AI, as pistas); on the right the account. Separating
  * them means "Perfil" stops competing with the daily destinations, and the bar
  * reads left to right like the app is used.
  *
@@ -19,14 +19,14 @@ import { cn } from "@/lib/utils";
  */
 const TABS = [
   { href: "/", label: "Farejar", icon: Search },
-  // O Faro é onde ficam os perfis acompanhados — por isso leva a cara do cão.
-  { href: "/rastros", label: "Faro", icon: FaroIcon },
+  // O Faro AI é onde ficam os perfis acompanhados — por isso leva a cara do cão.
+  { href: "/rastros", label: "Faro AI", icon: FaroIcon },
   { href: "/pesquisados", label: "Pesquisados", icon: History },
   { href: "/pistas", label: "Pistas", icon: Bell },
 ] as const;
 
 /**
- * O ícone do Faro: o quadradinho rosa com a carinha, como no app.
+ * O ícone do Faro AI: o quadradinho rosa com a carinha, como no app.
  *
  * É colorido, então entra como imagem — máscara CSS só serve para desenho de
  * uma cor. O arquivo vem de public/mascote, nunca redesenhado em código.

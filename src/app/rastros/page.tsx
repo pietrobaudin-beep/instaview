@@ -19,8 +19,8 @@ import { Mascot } from "@/components/ui/mascot";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Faro · Farejo",
-  description: "Os perfis que estão no seu Faro.",
+  title: "Faro AI · Farejo",
+  description: "Os perfis que estão no seu Faro AI.",
 };
 
 const WEEK = 7 * 24 * 60 * 60 * 1000;
@@ -29,20 +29,20 @@ export default async function RastrosPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login?next=/rastros");
 
-  // The Faro is the Pro feature. Free accounts may still have rows created by
+  // The Faro AI is the Pro feature. Free accounts may still have rows created by
   // the old "track on view" behaviour; they are not shown as pinned profiles.
   if (user.plan === "FREE") {
     return (
       <>
         <AppNav plan={user.plan} />
         <main className="mx-auto max-w-3xl px-6 py-8 md:pl-[15.5rem]">
-          <h1 className="mb-6 text-3xl font-bold tracking-tight">Faro</h1>
+          <h1 className="mb-6 text-3xl font-bold tracking-tight">Faro AI</h1>
           <Panel>
             <div className="flex flex-col items-center gap-3 py-10 text-center">
               <Mascot pose="feliz" className="h-24 text-vinho" bob />
               <p className="text-lg font-bold">Quer que o Farejo acompanhe por você?</p>
               <p className="max-w-sm text-sm text-muted-foreground">
-                Coloque perfis no Faro e receba alertas quando houver mudanças detectáveis.
+                Coloque perfis no Faro AI e receba alertas quando houver mudanças detectáveis.
               </p>
               <Link href="/pricing?next=/rastros" className="mt-2">
                 <Button variant="accent">
@@ -84,11 +84,11 @@ export default async function RastrosPage() {
       <AppNav plan={user.plan} />
       <main className="mx-auto max-w-6xl px-6 py-8 md:pl-[15.5rem]">
         <div className="mb-2 flex flex-wrap items-center gap-3">
-          <h1 className="text-3xl font-bold tracking-tight">Faro</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Faro AI</h1>
           {/* Says how much room is left, so the limit never arrives as a surprise. */}
           <StatusPill tone={profiles.length >= planFor(user.plan).maxProfiles ? "yellow" : "green"}>
             <span className="text-[8px]">●</span> {profiles.length} de{" "}
-            {planFor(user.plan).maxProfiles} no Faro
+            {planFor(user.plan).maxProfiles} no Faro AI
           </StatusPill>
         </div>
         <PlanLimits
@@ -104,7 +104,7 @@ export default async function RastrosPage() {
                 <b className="text-foreground">{pistas(totalWeek)}</b> encontradas esta semana.
               </>
             ) : (
-              <>Nada passou pelo Faro esta semana.</>
+              <>Nada passou pelo Faro AI esta semana.</>
             )}
           </p>
         )}
@@ -113,9 +113,9 @@ export default async function RastrosPage() {
           <Panel>
             <div className="flex flex-col items-center gap-3 py-10 text-center">
               <Mascot pose="feliz" className="h-24 text-vinho" bob />
-              <p className="text-lg font-bold">O Faro ainda não está farejando ninguém.</p>
+              <p className="text-lg font-bold">O Faro AI ainda não está farejando ninguém.</p>
               <p className="max-w-sm text-sm text-muted-foreground">
-                Fareje um @ e toque em <b>Colocar no Faro</b>. A partir daí o Farejo observa por
+                Fareje um @ e toque em <b>Colocar no Faro AI</b>. A partir daí o Farejo observa por
                 você e avisa quando algo mudar.
               </p>
               <Link href="/" className="mt-2">
@@ -139,7 +139,7 @@ export default async function RastrosPage() {
                       <div className="rounded-full p-0.5 ring-2 ring-pink">
                         <Avatar src={p.avatarUrl} name={p.displayName ?? p.username} size={52} />
                       </div>
-                      {/* The pink pin: this profile is in your Faro. */}
+                      {/* The pink pin: this profile is in your Faro AI. */}
                       <PawPrint className="absolute -right-1 -top-1 h-5 w-5 fill-pink text-accent" />
                     </div>
                     <div className="min-w-0 flex-1">

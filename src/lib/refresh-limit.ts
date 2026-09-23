@@ -19,7 +19,7 @@ export interface RefreshStatus {
   podeAtualizar: boolean;
   /** Última coleta concluída. */
   ultima: Date | null;
-  /** Quando a rotina automática passa de novo, quando há Faro ativo. */
+  /** Quando a rotina automática passa de novo, quando há Faro AI ativo. */
   proxima: Date | null;
 }
 

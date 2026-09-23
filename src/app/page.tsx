@@ -27,7 +27,7 @@ export default async function Home() {
   const user = await getCurrentUser();
   const paid = !!user && user.plan !== "FREE";
 
-  // Pro with profiles in the Faro: the daily home, not a search box.
+  // Pro with profiles in the Faro AI: the daily home, not a search box.
   const proHome = paid && user ? await getProHome(user.id) : null;
 
   // Free plan includes one profile; show what is left of it.
@@ -42,7 +42,7 @@ export default async function Home() {
     return (
       <>
         <AppNav plan={user.plan} />
-        {/* O Faro passeando no topo — e, no celular, passando na frente da
+        {/* O Faro AI passeando no topo — e, no celular, passando na frente da
             marca. Só na home PRO: na tela de busca ele já aparece ao lado do
             título, e dois cachorros animados na mesma dobra brigavam entre si
             e com o campo. */}

@@ -14,7 +14,7 @@ import { Mascot } from "@/components/ui/mascot";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Pistas · Farejo", description: "Tudo que o Faro encontrou nos perfis do seu Faro." };
+export const metadata = { title: "Pistas · Farejo", description: "Tudo que o Faro AI encontrou nos perfis do seu Faro AI." };
 
 /** Turn a stored change row into the sentence shown in the feed. */
 export default async function NotificacoesPage() {
@@ -63,9 +63,9 @@ export default async function NotificacoesPage() {
           <Panel>
             <div className="flex flex-col items-center gap-3 py-10 text-center">
               <Mascot pose="feliz" className="h-24 text-vinho" bob />
-              <p className="text-lg font-bold">Nada passou pelo Faro ainda</p>
+              <p className="text-lg font-bold">Nada passou pelo Faro AI ainda</p>
               <p className="max-w-sm text-sm text-muted-foreground">
-                Fareje um @ e toque em <b>Colocar no Faro</b>. Cada pista que o Faro encontrar
+                Fareje um @ e toque em <b>Colocar no Faro AI</b>. Cada pista que o Faro AI encontrar
                 aparece aqui.
               </p>
               <Link href="/" className="mt-2">

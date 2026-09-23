@@ -92,12 +92,12 @@ const WHAT = [
 const PRO_PROMISES = [
   "Um farejo por dia em cada perfil da sua lista",
   "Quem entrou e quem saiu da lista de seguidos, sem censura",
-  "Histórico do que mudou, desde o dia em que você colocou no Faro",
-  "Aviso quando o Faro encontrar algo novo",
+  "Histórico do que mudou, desde o dia em que você colocou no Faro AI",
+  "Aviso quando o Faro AI encontrar algo novo",
 ];
 
 const PRO_FEATURES = [
-  { icon: PawPrint, label: "Colocar no Faro" },
+  { icon: PawPrint, label: "Colocar no Faro AI" },
   { icon: Bell, label: "Alertas de mudanças" },
   { icon: PawPrint, label: "Histórico" },
   { icon: Heart, label: "Interações" },
@@ -112,7 +112,7 @@ const STEPS = [
   {
     n: "03",
     title: "Acompanhe",
-    body: "Com o PRO, coloque perfis no seu Faro.",
+    body: "Com o PRO, coloque perfis no seu Faro AI.",
     Mock: StepAlert,
   },
 ];
@@ -159,7 +159,7 @@ const FAQ = [
   },
   {
     q: "O Farejo é grátis?",
-    a: "Você pode analisar 1 perfil de graça, com os nomes em prévia. Para ver um perfil completo sem assinatura, existe o uso único. O PRO revela tudo e acompanha os perfis que você colocar no Faro.",
+    a: "Você pode analisar 1 perfil de graça, com os nomes em prévia. Para ver um perfil completo sem assinatura, existe o uso único. O PRO revela tudo e acompanha os perfis que você colocar no Faro AI.",
   },
   {
     q: "A contagem de mulheres e homens é exata?",
@@ -209,7 +209,7 @@ const FREE_INCLUDES = [
 
 const PRO_INCLUDES = [
   "Tudo do Free, sem censura",
-  "Colocar perfis no Faro",
+  "Colocar perfis no Faro AI",
   "Histórico",
   "Alertas",
   "Mudanças nas conexões",
@@ -281,7 +281,7 @@ export function Landing({ demo }: { demo: boolean }) {
           </p>
 
           <div className="relative mt-14 w-full max-w-xl sm:mt-20">
-            {/* Faro strolling along the top of the search field. */}
+            {/* Faro AI strolling along the top of the search field. */}
             {/* Menor e discreto: quem tem que chamar atenção aqui é o campo. */}
             <HeaderStroll ground={false} size={40} className="absolute inset-x-0 bottom-full h-12 sm:h-14" />
             <SearchBlock
@@ -297,7 +297,7 @@ export function Landing({ demo }: { demo: boolean }) {
           <span aria-hidden className="mt-3 block h-5 w-px bg-border" />
           <Reveal delay={200} className="relative mt-3 w-full max-w-md">
             <HeroResult />
-            {/* O Faro cheirando a pista que acabou de achar. No celular ele fica
+            {/* O Faro AI cheirando a pista que acabou de achar. No celular ele fica
                 encostado na borda do cartão, para não sair da tela. */}
             <Mascot
               pose="cheirando"
@@ -420,11 +420,11 @@ export function Landing({ demo }: { demo: boolean }) {
         </div>
       </section>
 
-      {/* ——— 06 · Colocar no Faro ——— */}
+      {/* ——— 06 · Colocar no Faro AI ——— */}
       <section className="mx-auto grid max-w-6xl items-center gap-14 px-6 py-24 md:grid-cols-2">
         <Reveal delay={150} className="md:order-2">
           <Eyebrow>O diferencial</Eyebrow>
-          <SectionTitle className="mt-4">Coloque no Faro.</SectionTitle>
+          <SectionTitle className="mt-4">Coloque no Faro AI.</SectionTitle>
           <p className="mt-5 text-lg text-muted-foreground">
             Você escolhe o perfil. O Farejo acompanha as mudanças disponíveis e organiza tudo para você.
           </p>
@@ -444,14 +444,14 @@ export function Landing({ demo }: { demo: boolean }) {
               relação ao cartão sempre que uma das duas crescia. */}
           <div className="relative grid gap-12 md:grid-cols-2 md:items-start md:gap-16">
             <div className="min-w-0">
-              {/* No celular já existe o Faro espiando o cartão: um só basta. */}
+              {/* No celular já existe o Faro AI espiando o cartão: um só basta. */}
               <SniffingDog className="mb-6 hidden h-12 text-pink sm:mb-8 sm:block" />
               <Eyebrow dark>Farejo PRO</Eyebrow>
               <h2 className="mt-4 text-balance text-[1.9rem] font-bold leading-[1.08] tracking-tight sm:text-5xl">
-                Você não precisa voltar todo dia. O Faro volta.
+                Você não precisa voltar todo dia. O Faro AI volta.
               </h2>
               <p className="mt-4 max-w-md text-[15px] leading-relaxed text-cream/75 sm:text-lg">
-                Coloque até {pro.maxProfiles} perfis no Faro. Todo dia ele relê cada um e mostra{" "}
+                Coloque até {pro.maxProfiles} perfis no Faro AI. Todo dia ele relê cada um e mostra{" "}
                 <b className="font-semibold text-cream">só o que mudou</b> desde a última vez.
               </p>
 
@@ -506,7 +506,7 @@ export function Landing({ demo }: { demo: boolean }) {
 
             {/* O benefício visto em segundos: a linha do tempo e o aviso. */}
             <div className="relative min-w-0 pb-16 pt-12 md:pt-6">
-              {/* O Faro trabalhando atrás do cartão: espia, se liga, avisa, comemora. */}
+              {/* O Faro AI trabalhando atrás do cartão: espia, se liga, avisa, comemora. */}
               <FaroWatching className="absolute right-4 top-0 z-0 h-20 w-28 sm:right-6 sm:h-24 sm:w-32" />
               <div className="relative z-10">
                 <ProNarrative />

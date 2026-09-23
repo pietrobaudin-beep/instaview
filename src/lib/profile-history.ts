@@ -30,7 +30,7 @@ export interface AlertItem {
   text: string;
 }
 
-/** Something new the daily Faro found (post, reel, story, tag). */
+/** Something new the daily Faro AI found (post, reel, story, tag). */
 export interface NewsItem {
   kind: string;
   detectedAt: string;
@@ -75,7 +75,7 @@ export async function getProfileHistory(profileId: string): Promise<ProfileHisto
       orderBy: { detectedAt: "desc" },
       take: 20,
     }),
-    // What the daily Faro found — never the baseline it started from.
+    // What the daily Faro AI found — never the baseline it started from.
     prisma.profileEvent.findMany({
       where: { profileId, baseline: false },
       orderBy: { detectedAt: "desc" },
@@ -121,7 +121,7 @@ export async function getProfileHistory(profileId: string): Promise<ProfileHisto
   if (today >= 5) {
     alerts.push({
       tone: "accent",
-      text: `🐾 O Faro esteve ocupado hoje. Encontramos ${today} mudanças.`,
+      text: `🐾 O Faro AI esteve ocupado hoje. Encontramos ${today} mudanças.`,
     });
   }
 
@@ -138,8 +138,8 @@ export async function getProfileHistory(profileId: string): Promise<ProfileHisto
       tone: "success",
       text:
         followsToday.length === 1
-          ? "🐶 Faro encontrou alguém novo nas últimas 24 horas."
-          : `🐶 Faro encontrou ${followsToday.length} pessoas novas nas últimas 24 horas.`,
+          ? "🐶 Faro AI encontrou alguém novo nas últimas 24 horas."
+          : `🐶 Faro AI encontrou ${followsToday.length} pessoas novas nas últimas 24 horas.`,
     });
   }
   if (unfollowsToday.length > 0) {
@@ -179,7 +179,7 @@ export async function getProfileHistory(profileId: string): Promise<ProfileHisto
       text:
         snapshots.length <= 1
           ? "🐾 Primeiro rastro salvo. As próximas análises vão comparar com este."
-          : "😴 Faro pode descansar. Nenhuma mudança desde a última análise.",
+          : "😴 Faro AI pode descansar. Nenhuma mudança desde a última análise.",
     });
   }
 

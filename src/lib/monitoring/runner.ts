@@ -13,7 +13,7 @@
  * dado que a pessoa vê (stories, posts, quem começou a seguir) era lido uma
  * vez por dia para todo mundo.
  *
- * Agora roda o Faro de verdade, em modo `stories`: a passagem extra lê só o
+ * Agora roda o Faro AI de verdade, em modo `stories`: a passagem extra lê só o
  * que **expira**. A passagem completa continua sendo a diária das 11h.
  */
 import { prisma } from "@/lib/db";

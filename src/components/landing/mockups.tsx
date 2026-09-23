@@ -119,7 +119,7 @@ export function AppMockup() {
   );
 }
 
-/** A small notification, as it appears around the Faro mockup. */
+/** A small notification, as it appears around the Faro AI mockup. */
 function Notice({
   icon: Icon,
   title,
@@ -162,9 +162,9 @@ function Notice({
 }
 
 /**
- * 06 — a profile placed "no Faro", with the notifications it produces. The
+ * 06 — a profile placed "no Faro AI", with the notifications it produces. The
  * notifications sit beside the card, gently staggered, so they never cover the
- * profile and the "No seu Faro" badge the section is about.
+ * profile and the "No seu Faro AI" badge the section is about.
  */
 export function FaroMockup() {
   return (
@@ -180,7 +180,7 @@ export function FaroMockup() {
         </span>
         <p className="mt-3 font-bold">@{PEOPLE.julia.handle}</p>
         <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-pink px-3.5 py-1.5 text-xs font-bold text-ink">
-          <PawPrint className="h-3.5 w-3.5" /> No seu Faro
+          <PawPrint className="h-3.5 w-3.5" /> No seu Faro AI
         </span>
       </Frame>
 
@@ -189,7 +189,7 @@ export function FaroMockup() {
           <Notice
             icon={UserPlus}
             person={PEOPLE.theo}
-            title="Faro encontrou alguém novo."
+            title="Faro AI encontrou alguém novo."
             body={`@${PEOPLE.julia.handle} começou a seguir @${PEOPLE.theo.handle}.`}
             className="sm:translate-x-3"
           />
@@ -275,7 +275,7 @@ export function StepFollows() {
   );
 }
 
-/** Step 3 — the Faro telling you something changed. */
+/** Step 3 — the Faro AI telling you something changed. */
 export function StepAlert() {
   return (
     <Mini>
@@ -285,7 +285,7 @@ export function StepAlert() {
       >
         <FakeAvatar person={PEOPLE.theo} size={28} />
         <div className="min-w-0">
-          <p className="text-xs font-bold">🐶 Faro encontrou alguém novo.</p>
+          <p className="text-xs font-bold">🐶 Faro AI encontrou alguém novo.</p>
           <p className="truncate text-[10px] text-muted-foreground">
             @{PEOPLE.julia.handle} seguiu @{PEOPLE.theo.handle}
           </p>
@@ -308,7 +308,7 @@ export function StepAlert() {
 /**
  * Hero — o resultado, logo abaixo do campo de busca.
  *
- * A pessoa entende o produto antes de ler: um perfil, a pista que o Faro achou
+ * A pessoa entende o produto antes de ler: um perfil, a pista que o Faro AI achou
  * e quando. Gente fictícia e desenhada, como em todos os mockups.
  */
 export function HeroResult() {
@@ -358,7 +358,7 @@ export function HeroResult() {
 
 /**
  * PRO — a narrativa visual do bloco vinho: a linha do tempo do que mudou e o
- * aviso que chega, um em cima do outro, com o Faro espiando por trás.
+ * aviso que chega, um em cima do outro, com o Faro AI espiando por trás.
  */
 export function ProNarrative() {
   const events = [
@@ -405,7 +405,7 @@ export function ProNarrative() {
         style={{ "--d": "1500ms" } as React.CSSProperties}
       >
         <p className="flex items-center gap-2 text-[13px] font-bold">
-          <Bell className="h-3.5 w-3.5 text-accent" /> Faro encontrou algo novo
+          <Bell className="h-3.5 w-3.5 text-accent" /> Faro AI encontrou algo novo
         </p>
         <p className="mt-0.5 text-[11px] text-muted-foreground">
           @{PEOPLE.julia.handle} começou a seguir alguém.

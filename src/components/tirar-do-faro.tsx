@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { Loader2, X } from "lucide-react";
 
 /**
- * O "x" que tira um perfil do Faro, direto da lista.
+ * O "x" que tira um perfil do Faro AI, direto da lista.
  *
  * Pergunta duas vezes — o primeiro clique troca o "x" por "Tirar?" — e a rota
- * ainda exige `confirm=1`. Tirar apaga junto tudo o que o Faro já encontrou
+ * ainda exige `confirm=1`. Tirar apaga junto tudo o que o Faro AI já encontrou
  * daquele perfil; não tem desfazer.
  */
 export function TirarDoFaro({ profileId, username }: { profileId: string; username: string }) {
@@ -42,7 +42,7 @@ export function TirarDoFaro({ profileId, username }: { profileId: string; userna
         className="absolute right-2 top-2 z-10 flex items-center gap-1 rounded-full bg-destructive px-2.5 py-1 text-[11px] font-bold text-white transition hover:opacity-90 disabled:opacity-60"
       >
         {busy && <Loader2 className="h-3 w-3 animate-spin" />}
-        Tirar do Faro?
+        Tirar do Faro AI?
       </button>
     );
   }
@@ -51,8 +51,8 @@ export function TirarDoFaro({ profileId, username }: { profileId: string; userna
     <button
       type="button"
       onClick={() => setArmado(true)}
-      aria-label={`Tirar @${username} do Faro`}
-      title="Tirar do Faro"
+      aria-label={`Tirar @${username} do Faro AI`}
+      title="Tirar do Faro AI"
       className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive"
     >
       <X className="h-3.5 w-3.5" />

@@ -7,7 +7,7 @@ import { StatusPill } from "@/components/ui/brand";
 import { withParam } from "@/lib/utils";
 
 const BENEFITS = [
-  { emoji: "📌", title: "Coloque perfis no Faro", body: "Acompanhe os perfis que você escolher." },
+  { emoji: "📌", title: "Coloque perfis no Faro AI", body: "Acompanhe os perfis que você escolher." },
   { emoji: "🐾", title: "Histórico de rastros", body: "Veja as mudanças anteriores." },
   { emoji: "🔔", title: "Alertas", body: "Receba as novidades detectadas." },
   { emoji: "❤️", title: "Interações", body: "Interações públicas disponíveis, organizadas." },

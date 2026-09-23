@@ -5,7 +5,7 @@ import { PawPrint } from "lucide-react";
 import { Mascot, POSES, type Pose } from "@/components/ui/mascot";
 
 /**
- * The loading screen's little story: Faro actually searching. He runs (leaving
+ * The loading screen's little story: Faro AI actually searching. He runs (leaving
  * paw prints), stops to sniff the ground, checks with the magnifier, turns
  * round, perks up at a clue, wonders — and, when the analysis is done, shows
  * up with the bone in his mouth.
@@ -180,7 +180,7 @@ export function LoadingScene({
         </div>
       )}
 
-      {/* Faro, anchored to the ground, sliding along x on runs. */}
+      {/* Faro AI, anchored to the ground, sliding along x on runs. */}
       <div
         className="scene-sprite absolute"
         style={{

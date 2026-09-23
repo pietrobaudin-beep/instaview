@@ -9,11 +9,11 @@ import { planFor } from "@/lib/plans";
 import type { Plan } from "@prisma/client";
 
 /**
- * Os stories que o Faro guardou.
+ * Os stories que o Faro AI guardou.
  *
- * No Instagram eles somem em 24h. Aqui, enquanto o perfil está no Faro, a
- * miniatura foi copiada no momento em que o Faro a encontrou — e **continua
- * guardada enquanto o perfil estiver no Faro**, sem prazo (decidido em 21/09).
+ * No Instagram eles somem em 24h. Aqui, enquanto o perfil está no Faro AI, a
+ * miniatura foi copiada no momento em que o Faro AI a encontrou — e **continua
+ * guardada enquanto o perfil estiver no Faro AI**, sem prazo (decidido em 21/09).
  * O prazo curto ficou só para o Farejador, que é consulta única.
  *
  * A tela diz isso com todas as letras: o que já expirou no Instagram leva o
@@ -113,11 +113,11 @@ export function SavedStories({
   const janela = planFor(plan).storiesHours;
   const prazo =
     janela === Number.POSITIVE_INFINITY
-      ? "Guardados desde a entrada no Faro, sem prazo."
+      ? "Guardados desde a entrada no Faro AI, sem prazo."
       : `Guardados por ${janela} horas pelo seu plano.`;
 
   /*
-   * O prazo do plano vale para o que o Faro guardou sozinho. O que a pessoa
+   * O prazo do plano vale para o que o Faro AI guardou sozinho. O que a pessoa
    * marcou com a estrela **escapa dele**: é isso que a estrela compra, e é
    * por isso que ela tem cota mensal.
    *

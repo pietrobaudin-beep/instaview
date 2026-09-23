@@ -5,11 +5,11 @@ import { prisma } from "@/lib/db";
 import { watchProfile } from "@/lib/faro-watch";
 
 /**
- * "Atualizar agora" — uma passagem completa do Faro, a pedido do dono.
+ * "Atualizar agora" — uma passagem completa do Faro AI, a pedido do dono.
  *
  * Antes isto chamava `collectProfile`, que busca a **lista de seguidores** —
  * dado que só o `/dashboard` legado lê. Na prática o botão gastava uma
- * requisição e **não atualizava nada do que a tela do Faro mostra**: a pessoa
+ * requisição e **não atualizava nada do que a tela do Faro AI mostra**: a pessoa
  * clicava, esperava, e as pistas continuavam as mesmas.
  *
  * Agora roda a passagem completa (posts, stories, marcações e quem começou a

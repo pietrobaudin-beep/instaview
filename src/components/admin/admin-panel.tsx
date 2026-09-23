@@ -382,7 +382,7 @@ export function AdminPanel({
                           </span>
                         )}
                         <span className="ml-auto shrink-0 text-xs text-muted-foreground">
-                          {u.profiles} no Faro · entrou em{" "}
+                          {u.profiles} no Faro AI · entrou em{" "}
                           {new Date(u.createdAt).toLocaleDateString("pt-BR")}
                         </span>
                       </div>
@@ -515,7 +515,7 @@ export function AdminPanel({
                     agora={stats.periodo.atual.contas}
                   />
                   <Numero
-                    titulo="Entraram no Faro"
+                    titulo="Entraram no Faro AI"
                     valor={String(stats.periodo.atual.faro)}
                     antes={stats.periodo.anterior.faro}
                     agora={stats.periodo.atual.faro}
@@ -544,7 +544,7 @@ export function AdminPanel({
                 <Numero titulo="Contas" valor={String(stats.usuarios.total)} />
                 <Numero titulo="Novas no mês" valor={String(stats.usuarios.novosMes)} />
                 <Numero titulo="Novas em 7 dias" valor={String(stats.usuarios.novosSemana)} />
-                <Numero titulo="Perfis no Faro" valor={String(stats.usuarios.noFaro)} />
+                <Numero titulo="Perfis no Faro AI" valor={String(stats.usuarios.noFaro)} />
               </div>
 
               <div className="mt-6 grid gap-3 lg:grid-cols-[1fr_1.3fr]">
@@ -606,7 +606,7 @@ export function AdminPanel({
                             {p.preco > 0 ? `${real(p.preco)} ${COBRANCA[p.cobranca]}` : "grátis"}
                           </td>
                           <td className="px-4 py-3 text-xs text-muted-foreground">
-                            {p.maxConsults} consultas · {p.maxProfiles} no Faro ·{" "}
+                            {p.maxConsults} consultas · {p.maxProfiles} no Faro AI ·{" "}
                             {p.storiesHours === null
                               ? "stories desde a entrada"
                               : p.storiesHours > 0
@@ -1041,7 +1041,7 @@ function Api({
           valor={hiker.farejosNoPeriodo.toLocaleString("pt-BR")}
         />
         <Numero
-          titulo={`Coletas do Faro · ${rotulo}`}
+          titulo={`Coletas do Faro AI · ${rotulo}`}
           valor={hiker.coletasNoPeriodo.toLocaleString("pt-BR")}
         />
       </div>
@@ -1066,7 +1066,7 @@ function Api({
           <p className="mt-2 text-sm">
             <b className="text-lg font-bold">{hiker.esperadoPorDia.toLocaleString("pt-BR")}</b>{" "}
             <span className="text-muted-foreground">
-              requisições por dia — {hiker.perfisNoFaro} perfis no Faro × {hiker.secoesPorDia} seções
+              requisições por dia — {hiker.perfisNoFaro} perfis no Faro AI × {hiker.secoesPorDia} seções
               relidas
             </span>
           </p>

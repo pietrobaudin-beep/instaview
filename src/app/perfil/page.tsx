@@ -54,7 +54,7 @@ export default async function PerfilPage() {
           </div>
 
           <div className="mt-5 grid grid-cols-2 gap-3">
-            <StatBox value={tracked} label="perfis no Faro" />
+            <StatBox value={tracked} label="perfis no Faro AI" />
             <StatBox value={detected} label="pistas encontradas" />
           </div>
         </Panel>
@@ -66,7 +66,7 @@ export default async function PerfilPage() {
           <div className="mt-5">
             <Panel title="Farejo PRO">
               <p className="text-sm text-muted-foreground">
-                Seu faro, ligado 24h. Coloque perfis no Faro e receba alertas quando algo mudar.
+                Seu faro, ligado 24h. Coloque perfis no Faro AI e receba alertas quando algo mudar.
               </p>
               <Link href="/pricing" className="mt-4 block">
                 <Button variant="accent" className="w-full sm:w-auto">

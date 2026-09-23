@@ -14,13 +14,13 @@ export interface PlanConfig {
   priceMonthly: number; // BRL, display only — Stripe charges what its price id says
   /** BRL for a year up front, when the plan offers it. Display only. */
   priceYearly?: number;
-  /** Quantos perfis podem entrar no Faro (acompanhamento diário). */
+  /** Quantos perfis podem entrar no Faro AI (acompanhamento diário). */
   maxProfiles: number;
   /** Quantos perfis diferentes o plano deixa consultar por completo. */
   maxConsults: number;
   /**
    * Por quantas horas os stories encontrados ficam guardados.
-   * `Infinity` = **enquanto o perfil estiver no Faro**, sem prazo.
+   * `Infinity` = **enquanto o perfil estiver no Faro AI**, sem prazo.
    *
    * Voltou à tabela fechada em 20/09 (24h · 48h · 72h · sem prazo). Em 21/09
    * eu tinha igualado todos os planos pagos em "sem prazo"; era erro meu — é
@@ -31,7 +31,7 @@ export interface PlanConfig {
   /**
    * Quantos stories novos podem ser **salvos com a estrela** por mês.
    *
-   * O Faro guarda todos sozinho; salvar é separar os que importam, e é por
+   * O Faro AI guarda todos sozinho; salvar é separar os que importam, e é por
    * isso que o teto sobe com o plano. Conta só o que entra: o que já foi
    * salvo fica para sempre e não ocupa a cota do mês seguinte. Desmarcar
    * dentro do mesmo mês devolve o crédito, senão um toque errado custaria
@@ -67,14 +67,14 @@ export const PLANS: Record<Plan, PlanConfig> = {
     para: "Para quem quer matar uma curiosidade.",
     billing: "free",
     priceMonthly: 0,
-    // O Curioso não coloca ninguém no Faro: ele vê um farejo de demonstração,
+    // O Curioso não coloca ninguém no Faro AI: ele vê um farejo de demonstração,
     // com tudo borrado, e escolhe UMA pista depois de criar conta.
     maxProfiles: 0,
     // É sempre O MESMO farejo. Criar conta não dá um perfil novo: dá o direito
     // de revelar UMA informação daquele mesmo perfil.
     maxConsults: 1,
     storiesHours: 0,
-    // O Curioso não coloca ninguém no Faro, então não tem story guardado para salvar.
+    // O Curioso não coloca ninguém no Faro AI, então não tem story guardado para salvar.
     storiesSalvosMes: 0,
     refreshesPorDia: 0,
     minIntervalMinutes: 24 * 60, // once a day
@@ -92,7 +92,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
   WEEK: {
     id: "WEEK",
     name: "Faro de Cão",
-    para: "Para deixar o Faro de olho em uma pista.",
+    para: "Para deixar o Faro AI de olho em uma pista.",
     billing: "weekly",
     priceMonthly: 14.9, // cobrado por semana
     maxProfiles: 1,
@@ -109,23 +109,23 @@ export const PLANS: Record<Plan, PlanConfig> = {
     stripePriceEnv: "NEXT_PUBLIC_STRIPE_PRICE_WEEK",
     features: [
       "Até 3 perfis para consultar",
-      "1 perfil no Faro, com tudo liberado",
-      "Alertas quando o Faro encontrar algo",
-      "Stories guardados enquanto o perfil estiver no Faro",
+      "1 perfil no Faro AI, com tudo liberado",
+      "Alertas quando o Faro AI encontrar algo",
+      "Stories guardados enquanto o perfil estiver no Faro AI",
     ],
   },
 
   PRO: {
     id: "PRO",
     name: "Farejo PRO",
-    para: "Para deixar o Faro trabalhando por você.",
+    para: "Para deixar o Faro AI trabalhando por você.",
     billing: "monthly",
     priceMonthly: 29.9,
     priceYearly: 239.9,
     maxProfiles: 5,
     maxConsults: 10,
     storiesHours: 72, // três dias — tabela de 20/09
-    // Cinco perfis no Faro; dez por perfil é a conta que o preço sustenta.
+    // Cinco perfis no Faro AI; dez por perfil é a conta que o preço sustenta.
     storiesSalvosMes: 50,
     refreshesPorDia: 5,
     // Once a day, on purpose. A story lasts 24h, so a daily pass catches every
@@ -140,11 +140,11 @@ export const PLANS: Record<Plan, PlanConfig> = {
     stripePriceEnv: "NEXT_PUBLIC_STRIPE_PRICE_PRO",
     features: [
       "Até 10 perfis para consultar",
-      "Até 5 perfis no Faro",
+      "Até 5 perfis no Faro AI",
       "Alertas de follows, unfollows e interações",
-      "Histórico desde a entrada no Faro",
-      "Stories guardados enquanto o perfil estiver no Faro",
-      "Área Meu Faro",
+      "Histórico desde a entrada no Faro AI",
+      "Stories guardados enquanto o perfil estiver no Faro AI",
+      "Área Meu Faro AI",
     ],
   },
   AGENCY: {
@@ -154,7 +154,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     // Cobrado UMA vez por ano: R$ 99,90. Preço definido pelo dono do produto.
     //
     /*
-     * R$ 179/ano desde 22/09 (era R$ 99,90), com 8 perfis no Faro e 20
+     * R$ 179/ano desde 22/09 (era R$ 99,90), com 8 perfis no Faro AI e 20
      * consultas por mês (eram 15 e 30).
      *
      * A R$ 99,90 o plano dava prejuízo em qualquer configuração: são R$ 7,96
@@ -189,11 +189,11 @@ export const PLANS: Record<Plan, PlanConfig> = {
     stripePriceEnv: "NEXT_PUBLIC_STRIPE_PRICE_AGENCY",
     features: [
       "Até 20 perfis para consultar por mês",
-      "Até 8 perfis no Faro",
+      "Até 8 perfis no Faro AI",
       "Alertas de conexões, interações e mudanças",
-      "Histórico contínuo desde a entrada no Faro",
-      "Arquivo de stories desde a entrada no Faro",
-      "Área Meu Faro completa",
+      "Histórico contínuo desde a entrada no Faro AI",
+      "Arquivo de stories desde a entrada no Faro AI",
+      "Área Meu Faro AI completa",
     ],
   },
 };

@@ -4,7 +4,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * Faro's poses, served straight from the brand files in /public/mascote.
+ * Faro AI's poses, served straight from the brand files in /public/mascote.
  *
  * The artwork is used as a CSS mask over `currentColor`, so:
  *  - the SVG file is the single source of truth — its paths are never copied
@@ -13,20 +13,20 @@ import { cn } from "@/lib/utils";
  * To update a pose, replace the file; nothing here changes.
  */
 export const POSES = {
-  sentado: { src: "/mascote/sentado.svg", ratio: 205.02 / 182.41, label: "Faro sentado" },
-  lupa: { src: "/mascote/lupa.svg", ratio: 201.9 / 179.25, label: "Faro com a lupa" },
-  feliz: { src: "/mascote/feliz.svg", ratio: 221.44 / 191.67, label: "Faro feliz" },
-  dormindo: { src: "/mascote/dormindo.svg", ratio: 198.56 / 182.23, label: "Faro dormindo" },
+  sentado: { src: "/mascote/sentado.svg", ratio: 205.02 / 182.41, label: "Faro AI sentado" },
+  lupa: { src: "/mascote/lupa.svg", ratio: 201.9 / 179.25, label: "Faro AI com a lupa" },
+  feliz: { src: "/mascote/feliz.svg", ratio: 221.44 / 191.67, label: "Faro AI feliz" },
+  dormindo: { src: "/mascote/dormindo.svg", ratio: 198.56 / 182.23, label: "Faro AI dormindo" },
   /** Front-facing, paws over a top edge. */
-  espiando: { src: "/mascote/espiando.svg", ratio: 197.28 / 102, label: "Faro espiando" },
+  espiando: { src: "/mascote/espiando.svg", ratio: 197.28 / 102, label: "Faro AI espiando" },
   /** Peeking out from behind something on its left. */
-  lateral: { src: "/mascote/lateral.svg", ratio: 132.05 / 164.35, label: "Faro espiando de lado" },
+  lateral: { src: "/mascote/lateral.svg", ratio: 132.05 / 164.35, label: "Faro AI espiando de lado" },
   // The search story, for the loading scene. All face right.
-  correndo: { src: "/mascote/correndo.svg", ratio: 279.24 / 163.94, label: "Faro correndo" },
-  cheirando: { src: "/mascote/cheirando.svg", ratio: 239.4 / 176.83, label: "Faro farejando o chão" },
-  alerta: { src: "/mascote/alerta.svg", ratio: 256.7 / 202.91, label: "Faro atento" },
-  duvida: { src: "/mascote/duvida.svg", ratio: 174.38 / 222.82, label: "Faro em dúvida" },
-  osso: { src: "/mascote/osso.svg", ratio: 206.79 / 141.53, label: "Faro com o osso" },
+  correndo: { src: "/mascote/correndo.svg", ratio: 279.24 / 163.94, label: "Faro AI correndo" },
+  cheirando: { src: "/mascote/cheirando.svg", ratio: 239.4 / 176.83, label: "Faro AI farejando o chão" },
+  alerta: { src: "/mascote/alerta.svg", ratio: 256.7 / 202.91, label: "Faro AI atento" },
+  duvida: { src: "/mascote/duvida.svg", ratio: 174.38 / 222.82, label: "Faro AI em dúvida" },
+  osso: { src: "/mascote/osso.svg", ratio: 206.79 / 141.53, label: "Faro AI com o osso" },
 } as const;
 
 export type Pose = keyof typeof POSES;

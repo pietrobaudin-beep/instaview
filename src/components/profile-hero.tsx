@@ -537,7 +537,7 @@ export function ProfileHero({
           {tracking?.saved && (
             <span
               className="absolute -right-1 top-1 flex h-8 w-8 items-center justify-center rounded-full bg-pink shadow"
-              title="No seu Faro"
+              title="No seu Faro AI"
             >
               <PawPrint className="h-4 w-4 fill-ink text-ink" />
             </span>
@@ -598,11 +598,11 @@ export function ProfileHero({
           {note && <p className="mt-2 text-xs text-muted-foreground">{note}</p>}
 
           {/*
-            * Já está no Faro: o botão vira caminho, não aviso.
+            * Já está no Faro AI: o botão vira caminho, não aviso.
             *
-            * Antes ele ficava desativado dizendo "No seu Faro" — informava um
+            * Antes ele ficava desativado dizendo "No seu Faro AI" — informava um
             * estado e não levava a lugar nenhum, bem no momento em que a
-            * pessoa mais quer ver o que o Faro já encontrou. Agora é um link
+            * pessoa mais quer ver o que o Faro AI já encontrou. Agora é um link
             * para o painel daquele perfil.
             */}
           {onTrack && tracking?.saved ? (
@@ -611,7 +611,7 @@ export function ProfileHero({
               className="mt-4 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-muted px-5 text-sm font-bold text-foreground transition hover:opacity-90 md:w-auto"
             >
               <PawPrint className="h-4 w-4 fill-pink text-accent" />
-              Ir para o painel do Faro
+              Ir para o painel do Faro AI
               <ArrowRight className="h-4 w-4" />
             </NextLink>
           ) : (
@@ -629,7 +629,7 @@ export function ProfileHero({
                 ) : (
                   <PawPrint className="h-4 w-4" />
                 )}
-                Colocar no Faro
+                Colocar no Faro AI
               </button>
             )
           )}

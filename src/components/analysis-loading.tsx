@@ -27,7 +27,7 @@ const OUTRO_MS = 700;
 /**
  * Full-screen loading shown while a profile is analysed.
  *
- * Faro never leaves: he keeps running, sniffing and perking up the whole time.
+ * Faro AI never leaves: he keeps running, sniffing and perking up the whole time.
  * When the provider answers, the profile builds itself above him — the picture
  * arrives as a mosaic and sharpens while name, @, public/private and the
  * account's age appear one after the other. Only at the end does he stop: with
@@ -106,7 +106,7 @@ export function AnalysisLoading({
         <Logo className="h-12 sm:h-16" />
         <p className="mt-3 text-sm tracking-[0.2em] opacity-80">curiosidade conecta.</p>
 
-        {/* The profile builds itself here, above Faro. */}
+        {/* The profile builds itself here, above Faro AI. */}
         <div
           className={`w-full max-w-[340px] overflow-hidden transition-all duration-700 ease-out ${
             found ? "mt-7 max-h-[260px] opacity-100" : "mt-0 max-h-0 opacity-0"
@@ -115,7 +115,7 @@ export function AnalysisLoading({
           {reveal && <RevealCard profile={reveal} onSharp={() => setSharp(true)} />}
         </div>
 
-        {/* Faro stays on the job until the very end. */}
+        {/* Faro AI stays on the job until the very end. */}
         <div className="mt-6 w-full max-w-[340px]">
           <LoadingScene done={sharp} outcome={privateAccount ? "private" : "found"} />
         </div>

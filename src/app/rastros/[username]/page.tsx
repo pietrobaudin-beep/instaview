@@ -41,7 +41,7 @@ export default async function TrackingPage({ params }: { params: { username: str
       orderBy: { detectedAt: "desc" },
       take: 40,
     }),
-    // Stories que o Faro guardou deste perfil.
+    // Stories que o Faro AI guardou deste perfil.
     //
     // Duas coisas escondiam o que já estava guardado:
     // 1. o teto de 24, que com vários stories por dia dava uns dois dias só;

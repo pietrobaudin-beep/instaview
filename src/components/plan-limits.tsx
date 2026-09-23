@@ -29,7 +29,7 @@ export function PlanLimits({
           : null;
   const stories =
     cfg.storiesHours === Number.POSITIVE_INFINITY
-      ? "enquanto estiver no Faro"
+      ? "enquanto estiver no Faro AI"
       : cfg.storiesHours > 0
         ? `até ${cfg.storiesHours} horas`
         : "não incluídos";
@@ -41,7 +41,7 @@ export function PlanLimits({
   const itens = [
     { label: "Perfis consultados", valor: `${consultados} de ${cfg.maxConsults}`, cheio: consultados >= cfg.maxConsults },
     acompanha
-      ? { label: "Perfis no Faro", valor: `${noFaro} de ${cfg.maxProfiles}`, cheio: noFaro >= cfg.maxProfiles }
+      ? { label: "Perfis no Faro AI", valor: `${noFaro} de ${cfg.maxProfiles}`, cheio: noFaro >= cfg.maxProfiles }
       : { label: "Acompanhamento", valor: "disponível no PRO", cheio: false },
     acompanha
       ? { label: "Stories guardados", valor: stories, cheio: false }

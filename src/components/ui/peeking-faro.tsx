@@ -5,7 +5,7 @@ import { Mascot, POSES } from "@/components/ui/mascot";
 import { cn } from "@/lib/utils";
 
 /**
- * Faro playing peek-a-boo around a card: he pops up from behind its top edge,
+ * Faro AI playing peek-a-boo around a card: he pops up from behind its top edge,
  * ducks back down, and reappears somewhere else — from the side, in the side
  * pose, when there is room for it on screen.
  *
@@ -179,7 +179,7 @@ export function PeekingFaro({
   }
 
   return (
-    // Room above the card for Faro to sit on its top edge.
+    // Room above the card for Faro AI to sit on its top edge.
     <div className={cn("pt-14", className)}>
       <div ref={cardRef} className="relative">
         <div className="relative z-10">{children}</div>

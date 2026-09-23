@@ -38,10 +38,10 @@ interface RecentItem extends Person {
   detectedAt: string;
 }
 
-// Faro's loading lines. They cycle while the provider answers — the sequence
+// Faro AI's loading lines. They cycle while the provider answers — the sequence
 // ends when the profile arrives, not on a clock.
 const STEPS = LOADING_LINES;
-/** One line every ~2.4s while Faro searches. */
+/** One line every ~2.4s while Faro AI searches. */
 const STEP_MS = 2400;
 /**
  * O mínimo que a cena de busca ocupa a tela.
@@ -85,7 +85,7 @@ const TABS = [
   // Instagram. A seção continua existindo na API, só não tem entrada aqui.
   //
   // Posts saiu da tela em 23/09, junto com Reels (21/09): as duas eram mais
-  // uma leitura paga por dia em cada perfil do Faro, e o que a pessoa vem ver
+  // uma leitura paga por dia em cada perfil do Faro AI, e o que a pessoa vem ver
   // aqui é o movimento — quem entrou, quem saiu, com quem anda. As seções
   // continuam existindo na API.
   { value: "seguindo", label: "Seguindo" },
@@ -274,10 +274,10 @@ function UpgradeCard({ username }: { username: string }) {
       </p>
       <ul className="mx-auto mt-4 max-w-sm space-y-2 text-left text-sm">
         {[
-          "📌 Coloque perfis no Faro",
+          "📌 Coloque perfis no Faro AI",
           "🐾 Veja quem entrou e quem saiu, sem censura",
           "❤️ Interações públicas organizadas",
-          "🔔 Alertas quando o Faro encontrar algo novo",
+          "🔔 Alertas quando o Faro AI encontrar algo novo",
         ].map((b) => (
           <li key={b} className="flex items-start gap-2">
             <span className="text-foreground/80">{b}</span>
@@ -353,7 +353,7 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
   const [upsell, setUpsell] = React.useState(false);
   const [justPinned, setJustPinned] = React.useState(false);
 
-  // Is this profile already in the user's Faro? DB read only — no provider call.
+  // Is this profile already in the user's Faro AI? DB read only — no provider call.
   // The answer also decides whether the search scene plays: a profile you
   // already follow is not a new discovery, so it opens straight away.
   const [inFaro, setInFaro] = React.useState<boolean | null>(loggedIn ? null : false);
@@ -389,8 +389,8 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
       setIntro("skip");
       return;
     }
-    // Profiles in the Faro open straight away — you already farejou this one,
-    // and the Faro reads it every day anyway.
+    // Profiles in the Faro AI open straight away — you already farejou this one,
+    // and the Faro AI reads it every day anyway.
     if (inFaro === true) {
       setIntro("skip");
       return;
@@ -439,7 +439,7 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
     if (intro === "play" && !analyzing && state.kind === "ok") markSeen(username);
   }, [intro, analyzing, state.kind, username]);
 
-  // Faro searching: the lines cycle while the provider is still answering. The
+  // Faro AI searching: the lines cycle while the provider is still answering. The
   // scene no longer runs on a fixed clock — it ends when the profile arrives.
   React.useEffect(() => {
     if (intro !== "play") {
@@ -471,7 +471,7 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
    *    **depois** da cena de carregamento. Agora corre junto, e o resultado é
    *    passado pronto para o bloco: uma requisição, não duas.
    * 2. Ela não espera o `intro` virar "play". Esperava, e isso a fazia
-   *    arrancar só depois da checagem de "este perfil está no Faro?" — para um
+   *    arrancar só depois da checagem de "este perfil está no Faro AI?" — para um
    *    @ novo, tarde demais: a cena desistia no teto e o bloco aparecia 2,4s
    *    depois da análise, que é exatamente o que se queria evitar.
    */
@@ -525,7 +525,7 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
     };
   }, [intro, state.kind, username]);
 
-  // A missing @ has nothing to reveal — but Faro still gets his moment of
+  // A missing @ has nothing to reveal — but Faro AI still gets his moment of
   // searching before giving up, or the pink screen just blinks.
   React.useEffect(() => {
     if (state.kind === "error" && (searchedEnough || intro !== "play")) setAnalyzing(false);
@@ -639,7 +639,7 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
 
   const ready = following.kind === "ready" ? following : null;
   const paid = !!ready && !ready.locked;
-  // Pro features (Faro, history, extras) need a subscription — a one-off
+  // Pro features (Faro AI, history, extras) need a subscription — a one-off
   // unlock only reveals this profile.
   const isPro = ready?.access === "pro";
 
@@ -683,11 +683,11 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
   return (
     <>
       {loggedIn && <AppNav />}
-      {/* Clip at the SCREEN edge, not the content column: Faro peeks out beside
+      {/* Clip at the SCREEN edge, not the content column: Faro AI peeks out beside
           the card, and clipping at the column cut him down to a sliver. */}
       <div className="overflow-x-clip">
       <main className={`mx-auto max-w-5xl px-6 py-8 ${loggedIn ? "md:pl-[15.5rem]" : ""}`}>
-        {/* Tighter when the profile shows: Faro's peeking area sits just below. */}
+        {/* Tighter when the profile shows: Faro AI's peeking area sits just below. */}
         <div
           className={`flex items-center justify-between ${
             !analyzing && state.kind === "ok" ? "mb-2" : "mb-8"
@@ -793,7 +793,7 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
               Não achei esse perfil. Confere o @ e tenta de novo.
             </p>
             <p className="text-sm text-muted-foreground">
-              O Faro procurou, mas não existe nenhuma conta com o @{username}.
+              O Faro AI procurou, mas não existe nenhuma conta com o @{username}.
             </p>
             <Link href="/">
               <Button variant="outline" size="sm">
@@ -805,7 +805,7 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
 
         {!analyzing && state.kind === "ok" && (
           <>
-            {/* O Faro não fica mais aparecendo e sumindo em volta do cartão:
+            {/* O Faro AI não fica mais aparecendo e sumindo em volta do cartão:
                 no perfil, o que interessa é o perfil. Ele corre no topo das
                 telas de entrada, onde há espaço para brincar. */}
             <div>
@@ -835,7 +835,7 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
 
             {justPinned && (
               <NoteBox className="mt-4 items-center" icon={<Mascot pose="feliz" className="h-10 text-ink" decorative />}>
-                <p className="font-bold">@{state.data.username} está no seu Faro. 🐶</p>
+                <p className="font-bold">@{state.data.username} está no seu Faro AI. 🐶</p>
                 <p className="text-sm opacity-80">
                   A partir de agora você receberá alertas sobre as mudanças disponíveis nesse
                   perfil.
@@ -847,7 +847,7 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
 
             {following.kind === "private" ? (
               <>
-                {/* Uma barra no meio: o Faro de um lado, o recado do outro.
+                {/* Uma barra no meio: o Faro AI de um lado, o recado do outro.
                     Ela separa o perfil, acima, das outras redes, abaixo. */}
                 <div className="mt-4 flex items-center gap-4 rounded-3xl border border-border bg-card p-4">
                   <Mascot pose="duvida" className="h-16 shrink-0 text-vinho" decorative />

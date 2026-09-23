@@ -1,10 +1,10 @@
 /**
- * The daily Faro: once a day, every profile a PRO user put "no Faro" is read
+ * The daily Faro AI: once a day, every profile a PRO user put "no Faro AI" is read
  * again and only what is NEW is kept as news — new posts, reels, stories and
  * places it was tagged, plus the follow changes the existing tracker finds.
  *
  * - The first reading of each kind becomes the baseline (stored, never shown),
- *   so the Faro reports only what appears from then on.
+ *   so the Faro AI reports only what appears from then on.
  * - Reads go through the Raio-X cache with a max age of ~20h, so a section
  *   someone opened today isn't paid for again, and yesterday's copy never
  *   hides today's posts.
@@ -25,20 +25,20 @@ import type { PostItem, StoryItem } from "@/lib/providers/types";
 const log = logger.scope("faro-watch");
 
 /**
- * O que o Faro relê todo dia em cada perfil. **Cada linha é uma requisição
+ * O que o Faro AI relê todo dia em cada perfil. **Cada linha é uma requisição
  * paga por perfil por dia.**
  *
  * Reels saiu em 21/09 junto com a aba: pouca gente abria, e era 25% do custo
- * diário de cada perfil no Faro. Com 15 perfis, isso sozinho era ~R$ 30/ano.
+ * diário de cada perfil no Faro AI. Com 15 perfis, isso sozinho era ~R$ 30/ano.
  */
 /**
- * O que o Faro lê em cada passagem, e por quanto tempo uma leitura serve.
+ * O que o Faro AI lê em cada passagem, e por quanto tempo uma leitura serve.
  *
- * O prazo precisa ser menor do que a vida do conteúdo — senão o Faro olha
+ * O prazo precisa ser menor do que a vida do conteúdo — senão o Faro AI olha
  * para um retrato velho e jura que não há nada.
  *
  * Post e marcação não somem: 20h de reaproveitamento economiza requisição sem
- * perder nada. **Story vive 24h**, e com os mesmos 20h o Faro perdia story de
+ * perder nada. **Story vive 24h**, e com os mesmos 20h o Faro AI perdia story de
  * verdade: bastava alguém apertar "Atualizar agora" num momento sem story
  * para o "não tem nada" valer até quase o dia seguinte. E no Faro Detetive,
  * que passa de 6 em 6 horas, as três passagens seguintes reusavam a primeira
@@ -90,7 +90,7 @@ export interface WatchReport {
 }
 
 /**
- * Uma passagem do Faro.
+ * Uma passagem do Faro AI.
  *
  * `modo` decide o que é lido, e isso é dinheiro:
  *
@@ -143,7 +143,7 @@ export async function watchProfile(
     });
     if (!baseline) news += created.count;
 
-    // Story expira em 24h no Instagram. Como o perfil está no Faro, a
+    // Story expira em 24h no Instagram. Como o perfil está no Faro AI, a
     // miniatura é guardada AGORA — é ela que vai sustentar a tela depois,
     // dentro do prazo do plano. Sem custo de provedor: é só baixar a imagem.
     if (section === "stories") {
@@ -185,7 +185,7 @@ export async function watchProfile(
    * Interações no post mais recente — quem curtiu, quem comentou, quem tirou.
    *
    * Isto ficou de fora quando a coleta virou `watchProfile`, e as pistas de
-   * interação pararam em 17/09: o "Interações" do painel do Faro só voltava a
+   * interação pararam em 17/09: o "Interações" do painel do Faro AI só voltava a
    * ter conteúdo se alguém apertasse "Analisar" na mão. Era um recurso do PRO
    * que tinha deixado de acontecer sozinho.
    *
@@ -204,7 +204,7 @@ export async function watchProfile(
 }
 
 /**
- * Every PRO profile in the Faro, least recently read first. `limit` keeps one
+ * Every PRO profile in the Faro AI, least recently read first. `limit` keeps one
  * run inside the serverless time budget; profiles left over go first next day.
  */
 export async function runFaroDaily(limit = 20): Promise<{ checked: number; news: number; reports: WatchReport[] }> {

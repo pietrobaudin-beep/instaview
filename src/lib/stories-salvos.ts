@@ -1,7 +1,7 @@
 /**
  * Os stories que a pessoa marcou para não perder de vista.
  *
- * O Faro já guarda **todos** os stories que encontra, enquanto o perfil estiver
+ * O Faro AI já guarda **todos** os stories que encontra, enquanto o perfil estiver
  * nele. Isto é outra coisa: dentro desse monte, quais importam. Depois de umas
  * semanas de acompanhamento são dezenas de miniaturas, e a que interessava
  * fica enterrada.

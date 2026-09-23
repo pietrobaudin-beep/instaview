@@ -5,7 +5,7 @@ import { SearchBlock } from "@/components/search-block";
 import { FaroSwap } from "@/components/ui/mascot";
 
 /**
- * The signed-in search screen's header: Faro sits waiting, and picks up the
+ * The signed-in search screen's header: Faro AI sits waiting, and picks up the
  * magnifier the moment you start using the field.
  */
 export function SearchHero() {

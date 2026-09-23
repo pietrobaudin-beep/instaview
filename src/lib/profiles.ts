@@ -40,7 +40,7 @@ export async function trackProfile(user: User, rawUsername: string): Promise<Tra
   const count = await prisma.trackedProfile.count({ where: { userId: user.id } });
   if (count >= plan.maxProfiles) {
     throw new PlanLimitError(
-      `Seu Faro está cheio. O ${plan.name} acompanha até ${plan.maxProfiles} ` +
+      `Seu Faro AI está cheio. O ${plan.name} acompanha até ${plan.maxProfiles} ` +
         `perfis; troque um deles ou passe para um plano com mais vagas.`,
     );
   }
@@ -66,7 +66,7 @@ export async function trackProfile(user: User, rawUsername: string): Promise<Tra
 
   // No provider call here. The baseline is taken from the "following" page the
   // analysis already fetched and cached (see /api/following-preview), so
-  // putting a profile no Faro costs nothing. Collecting here used to fetch the
+  // putting a profile no Faro AI costs nothing. Collecting here used to fetch the
   // FOLLOWERS list — several paid requests for data this product never shows.
   return profile;
 }

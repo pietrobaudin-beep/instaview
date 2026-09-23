@@ -27,7 +27,7 @@ function ago(iso: string) {
 /**
  * Os cartões da home PRO são o `Panel` do resto do app — mesma moldura, mesmo
  * fundo, mesmo respiro. Antes tinham borda, sombra e padding próprios: lado a
- * lado com o /perfil ou com o Faro, pareciam de outra tela.
+ * lado com o /perfil ou com o Faro AI, pareciam de outra tela.
  *
  * O que sobra aqui é só o que a home precisa: altura cheia (os dois cartões
  * terminam na mesma linha) e um corpo que rola por dentro em vez de esticar.
@@ -65,7 +65,7 @@ function Card({
 
 /**
  * The Pro home: Farejo stops being a lookup tool and becomes something you open
- * every day — what Faro found since yesterday, who is in your Faro, and the
+ * every day — what Faro AI found since yesterday, who is in your Faro AI, and the
  * trail of recent changes.
  *
  * The Pro area wears the premium palette: deep plum, closed magenta, blush and
@@ -106,7 +106,7 @@ export function ProHome({
         <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-white/75">
           {found > 0 ? (
             <>
-              Faro encontrou{" "}
+              Faro AI encontrou{" "}
               <b className="font-semibold text-white">{pistas(found)}</b> desde ontem.
               {data.follows > 0 && (
                 <span className="mt-1.5 block font-semibold text-blush">
@@ -115,7 +115,7 @@ export function ProHome({
               )}
             </>
           ) : (
-            <>Faro pode descansar. Nenhuma mudança detectada desde ontem.</>
+            <>Faro AI pode descansar. Nenhuma mudança detectada desde ontem.</>
           )}
         </p>
 
@@ -140,7 +140,7 @@ export function ProHome({
         <Card
           className="lg:col-span-2"
           icon={<PawPrint className="h-4 w-4 text-magenta" />}
-          title="No seu Faro"
+          title="No seu Faro AI"
           action={
             <Link
               href="/rastros"
@@ -185,7 +185,7 @@ export function ProHome({
             <div className="flex h-full flex-col items-center justify-center gap-2 py-6 text-center">
               <Mascot pose="dormindo" className="h-14 text-plum/70" bob />
               <p className="max-w-xs text-sm text-plum/50">
-                Nada passou pelo Faro ainda. As pistas aparecem aqui assim que algo mudar.
+                Nada passou pelo Faro AI ainda. As pistas aparecem aqui assim que algo mudar.
               </p>
             </div>
           ) : (

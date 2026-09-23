@@ -148,7 +148,7 @@ function Vazio({ texto }: { texto: string }) {
     <Panel className="mt-5">
       <div className="flex flex-col items-center gap-2 py-8 text-center">
         <Mascot pose="dormindo" className="h-20 text-vinho" bob />
-        <p className="font-bold">😴 Faro pode descansar.</p>
+        <p className="font-bold">😴 Faro AI pode descansar.</p>
         <p className="text-sm text-muted-foreground">{texto}</p>
       </div>
     </Panel>
@@ -161,7 +161,7 @@ export function NotificationsFeed({
 }: {
   items: Notification[];
   /**
-   * Os perfis do Faro. Quando vêm, a tela pede **primeiro de quem** se quer
+   * Os perfis do Faro AI. Quando vêm, a tela pede **primeiro de quem** se quer
    * ver as pistas e só depois o tipo — na visão geral, misturar os perfis
    * numa lista só era o que fazia perder a pista do que importa.
    */

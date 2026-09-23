@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 /**
  * Os stories salvos de um perfil, em página própria.
  *
- * Ficavam dentro do painel do Faro e dobravam a altura do cartão. Aqui a
+ * Ficavam dentro do painel do Faro AI e dobravam a altura do cartão. Aqui a
  * coleção pode crescer sem espremer as pistas — e ela cresce todo mês, que é
  * o ponto do recurso.
  *

@@ -6,7 +6,7 @@ import { logger } from "@/lib/logger";
 const log = logger.scope("api:profiles");
 
 /**
- * Tirar um perfil do Faro, de vez.
+ * Tirar um perfil do Faro AI, de vez.
  *
  * Leva junto tudo o que era dele: pistas, eventos, fotografias da lista e o
  * agendamento. É o que o `onDelete: Cascade` faz. Não tem desfazer, então a
@@ -31,6 +31,6 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
   if (!profile) return NextResponse.json({ error: "Perfil não encontrado" }, { status: 404 });
 
   await prisma.trackedProfile.delete({ where: { id: profile.id } });
-  log.info("perfil tirado do Faro", { username: profile.username });
+  log.info("perfil tirado do Faro AI", { username: profile.username });
   return NextResponse.json({ ok: true });
 }

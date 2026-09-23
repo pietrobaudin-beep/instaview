@@ -1,6 +1,6 @@
 /**
- * Data for the Pro home: what Faro found since yesterday across every profile
- * the user put in the Faro. Reads stored changes only — opening the home never
+ * Data for the Pro home: what Faro AI found since yesterday across every profile
+ * the user put in the Faro AI. Reads stored changes only — opening the home never
  * calls the data provider.
  */
 import { prisma } from "@/lib/db";

@@ -137,7 +137,7 @@ h3 {
 }
 
 /* ---------------------------------------------------------------------------
-   Faro pose swap (see FaroSwap)
+   Faro AI pose swap (see FaroSwap)
    --------------------------------------------------------------------------- */
 
 /* Both poses share one grid cell and trade places with a small, stable fade. */
@@ -170,7 +170,7 @@ h3 {
   animation: mascot-bob 3.6s ease-in-out infinite;
 }
 
-/* Sleeping Faro: a slow breath, anchored at the ground. */
+/* Sleeping Faro AI: a slow breath, anchored at the ground. */
 @keyframes mascot-breathe {
   0%, 100% { transform: scale(1, 1); }
   50% { transform: scale(1.01); }

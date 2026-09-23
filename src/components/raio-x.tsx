@@ -464,7 +464,7 @@ export function RaioX({ username, section, upgrade }: { username: string; sectio
   } else if (res.kind === "error") {
     body = (
       <div className="flex flex-col items-center gap-3 py-8 text-sm text-muted-foreground">
-        O Faro não conseguiu farejar agora.
+        O Faro AI não conseguiu farejar agora.
         <button type="button" onClick={() => setNonce((n) => n + 1)} className="inline-flex items-center gap-1.5 font-semibold text-vinho hover:underline">
           <RefreshCw className="h-4 w-4" /> Tentar de novo
         </button>

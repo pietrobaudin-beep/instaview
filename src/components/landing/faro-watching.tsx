@@ -4,7 +4,7 @@ import * as React from "react";
 import { Mascot, type Pose } from "@/components/ui/mascot";
 
 /**
- * O Faro trabalhando, ao lado do cartão do PRO.
+ * O Faro AI trabalhando, ao lado do cartão do PRO.
  *
  * Ele conta a rotina em quatro tempos, devagar: espia o perfil, fica atento
  * quando algo muda, avisa — e sai feliz com a pista na boca. Depois recomeça.

@@ -102,8 +102,8 @@ function emailHtml(code: string): string {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:40px 16px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:440px;background:#ffffff;border-radius:24px">
 <tr><td align="center" style="padding:32px 28px 0"><img src="${ASSETS}/farejo-logo.png" width="132" height="35" alt="Farejo" style="display:block;border:0;outline:none;text-decoration:none"></td></tr>
-<tr><td align="center" style="padding:24px 28px 0"><img src="${ASSETS}/faro-carta.png" width="180" height="156" alt="O Faro trazendo sua carta" style="display:block;border:0;outline:none;text-decoration:none"></td></tr>
-<tr><td align="center" style="padding:20px 28px 0;font-size:17px;font-weight:700">O Faro trouxe seu código 🐾</td></tr>
+<tr><td align="center" style="padding:24px 28px 0"><img src="${ASSETS}/faro-carta.png" width="180" height="156" alt="O Faro AI trazendo sua carta" style="display:block;border:0;outline:none;text-decoration:none"></td></tr>
+<tr><td align="center" style="padding:20px 28px 0;font-size:17px;font-weight:700">O Faro AI trouxe seu código 🐾</td></tr>
 <tr><td align="center" style="padding:16px 28px 0"><div style="display:inline-block;background:#F6A8D2;border-radius:16px;padding:14px 22px;font-size:32px;font-weight:800;letter-spacing:0.25em">${code}</div></td></tr>
 <tr><td align="center" style="padding:16px 28px 0;font-size:14px;line-height:1.5;color:#6b5b63">Ele vale por 10 minutos. Se não foi você que pediu, pode ignorar este e-mail.</td></tr>
 <tr><td align="center" style="padding:24px 28px 32px;font-size:13px;color:#6b5b63">Curiosidade conecta.</td></tr>

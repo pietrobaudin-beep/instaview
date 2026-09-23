@@ -86,7 +86,7 @@ export async function GET(req: Request) {
     }
   }
 
-  // History — only for profiles a Pro user put "no Faro". Viewing a profile is
+  // History — only for profiles a Pro user put "no Faro AI". Viewing a profile is
   // a one-off look; it no longer creates a rastro on its own.
   //
   // A snapshot is written when the page was freshly fetched, or when the

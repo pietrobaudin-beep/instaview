@@ -118,7 +118,7 @@ export async function getCachedSection(username: string, section: Section): Prom
 
 /**
  * The section, from the shared cache when it's still fresh. `maxAgeMs` lets the
- * daily Faro ask for something newer than the usual window, so a copy cached
+ * daily Faro AI ask for something newer than the usual window, so a copy cached
  * yesterday at the same hour doesn't hide today's posts.
  */
 export async function getSection(username: string, section: Section, maxAgeMs = TTL_MS[section]): Promise<SectionResult> {

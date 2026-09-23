@@ -88,7 +88,7 @@ export function StickerNote({
 }
 
 /**
- * Faro's nose with the little pink nostril — the mascot's most recognisable
+ * Faro AI's nose with the little pink nostril — the mascot's most recognisable
  * detail, used on its own as a brand mark (badges, bullets, "descobertas").
  */
 export function Nose({ className = "h-5" }: { className?: string }) {

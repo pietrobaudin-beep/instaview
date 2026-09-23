@@ -6,12 +6,12 @@ import { logger } from "@/lib/logger";
 const log = logger.scope("api:profiles");
 
 /**
- * Limpar o histórico de um perfil, sem tirá-lo do Faro.
+ * Limpar o histórico de um perfil, sem tirá-lo do Faro AI.
  *
  * Apaga as pistas, os eventos (posts, stories, marcações) e as fotografias da
  * lista de seguidos. O perfil continua sendo acompanhado, e a **próxima**
  * leitura vira a nova base: dali em diante só o que for novo aparece — do
- * mesmo jeito que aconteceu quando ele entrou no Faro.
+ * mesmo jeito que aconteceu quando ele entrou no Faro AI.
  *
  * As miniaturas de story guardadas somem da tela junto, porque o que as
  * mostrava eram esses eventos.

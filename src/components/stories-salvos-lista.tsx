@@ -9,7 +9,7 @@ import type { SavedStory } from "@/components/saved-stories";
 /**
  * A página dos stories que a pessoa salvou com a estrela.
  *
- * Saiu de dentro do painel do Faro: a lista dobrava a altura do cartão e, no
+ * Saiu de dentro do painel do Faro AI: a lista dobrava a altura do cartão e, no
  * celular, empurrava as pistas para fora da tela. Aqui cabe em grade, com
  * espaço para crescer — que é o ponto, já que a coleção aumenta todo mês.
  *
@@ -77,7 +77,7 @@ export function StoriesSalvosLista({
         <Star className="mx-auto h-8 w-8 text-muted-foreground/40" />
         <p className="mt-3 font-bold">Nenhum story salvo ainda.</p>
         <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-          No painel do Faro, toque na estrela de um story guardado. Ele deixa de expirar e fica
+          No painel do Faro AI, toque na estrela de um story guardado. Ele deixa de expirar e fica
           aqui.
         </p>
         <Link

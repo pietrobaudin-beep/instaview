@@ -40,7 +40,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 /**
  * Apagar a conta de alguém. Admin, e só com `?confirm=1`.
  *
- * Leva junto tudo que é dela (perfis no Faro, histórico, desbloqueios), por
+ * Leva junto tudo que é dela (perfis no Faro AI, histórico, desbloqueios), por
  * causa do `onDelete: Cascade`. Não tem desfazer — por isso a tela pergunta
  * duas vezes e a rota exige a confirmação explícita.
  */

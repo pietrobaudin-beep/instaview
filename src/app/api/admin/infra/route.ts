@@ -264,7 +264,7 @@ export async function GET(req: Request) {
   `;
 
   /**
-   * O que o Faro consome por dia, sem depender de leitura nenhuma: cada perfil
+   * O que o Faro AI consome por dia, sem depender de leitura nenhuma: cada perfil
    * acompanhado custa uma requisição por seção relida (posts, stories,
    * marcações — reels saiu em 21/09).
    */

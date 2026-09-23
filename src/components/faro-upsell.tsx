@@ -6,7 +6,7 @@ import { ArrowRight, PawPrint, X } from "lucide-react";
 import { SniffingDog } from "@/components/ui/dog";
 
 /**
- * Shown when a free user taps "Colocar no Faro": the moment the product sells
+ * Shown when a free user taps "Colocar no Faro AI": the moment the product sells
  * its Pro difference — not more features, but someone watching for you.
  */
 export function FaroUpsell({
@@ -57,7 +57,7 @@ export function FaroUpsell({
             Quer que o Farejo acompanhe por você?
           </h2>
           <p className="mt-3 text-cream/75">
-            Coloque perfis no Faro e receba alertas quando houver mudanças detectáveis.
+            Coloque perfis no Faro AI e receba alertas quando houver mudanças detectáveis.
           </p>
 
           <SniffingDog className="mx-auto my-6 h-20 text-pink" animated />

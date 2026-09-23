@@ -68,10 +68,10 @@ function dia(iso: string | null): string {
 }
 
 /**
- * "No seu Faro": a tela de um perfil acompanhado.
+ * "No seu Faro AI": a tela de um perfil acompanhado.
  *
  * A ordem segue o que se quer saber, nesta sequência: **quem** é o perfil,
- * **quando** o Faro olhou pela última vez (com o botão de atualizar ao lado,
+ * **quando** o Faro AI olhou pela última vez (com o botão de atualizar ao lado,
  * não num cartão perdido), **o que mudou** na semana, os **stories guardados**,
  * as **pistas** e, por último, os **ajustes**. Os limites do plano ficam no
  * topo, porque limite que só aparece quando estoura vira surpresa ruim.
@@ -102,12 +102,12 @@ export function TrackingSettings({
   profileId?: string;
   /** As pistas deste perfil — nunca as de outros. */
   pistas?: Notification[];
-  /** Stories que o Faro guardou deste perfil. */
+  /** Stories que o Faro AI guardou deste perfil. */
   stories?: SavedStory[];
   plan?: Plan;
-  /** Quando este perfil entrou no Faro. */
+  /** Quando este perfil entrou no Faro AI. */
   desde?: string;
-  /** Quando o Faro encontrou a última mudança. */
+  /** Quando o Faro AI encontrou a última mudança. */
   ultimaMudanca?: string | null;
   /** O movimento dos últimos 7 dias. */
   semana?: { follows: number; unfollows: number; interacoes: number };
@@ -163,7 +163,7 @@ export function TrackingSettings({
   return (
     <main className="mx-auto max-w-5xl px-5 py-6 md:pl-[15.5rem]">
       <AppHeader
-        title="No seu Faro"
+        title="No seu Faro AI"
         backHref="/rastros"
         subtitle={
           active ? (
@@ -178,7 +178,7 @@ export function TrackingSettings({
         * "Onde eu estou?" respondido antes de qualquer coisa.
         *
         * Esta tela e a da busca (`/p/<@>`) se pareciam: as duas abrem com a
-        * foto, o @ e números, e quem clicava para vir ao Faro achava que
+        * foto, o @ e números, e quem clicava para vir ao Faro AI achava que
         * tinha voltado para a análise. O título pequeno no topo não dava
         * conta. Aqui a diferença fica dita com todas as letras — e dita pelo
         * que MUDA entre as duas: lá você olha, aqui o Farejo olha por você.
@@ -189,10 +189,10 @@ export function TrackingSettings({
         </span>
         <div className="min-w-0">
           <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-accent">
-            Você está no Faro
+            Você está no Faro AI
           </p>
           <p className="mt-0.5 text-base font-bold leading-snug">
-            {active ? `O Faro está de olho em @${username}` : `O Faro de @${username} está pausado`}
+            {active ? `O Faro AI está de olho em @${username}` : `O Faro AI de @${username} está pausado`}
           </p>
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
             {active ? (
@@ -264,10 +264,10 @@ export function TrackingSettings({
           </div>
         </div>
 
-        {/* As três datas que respondem "o Faro está trabalhando?". */}
+        {/* As três datas que respondem "o Faro AI está trabalhando?". */}
         <dl className="mt-5 grid grid-cols-3 gap-3 border-t border-border pt-4">
           <div>
-            <dt className="text-[11px] text-muted-foreground">No Faro desde</dt>
+            <dt className="text-[11px] text-muted-foreground">No Faro AI desde</dt>
             <dd className="text-sm font-bold" title={completa(desde ?? null)}>
               {dia(desde ?? null)}
             </dd>
@@ -364,7 +364,7 @@ export function TrackingSettings({
                 ) : saved ? (
                   <Check className="h-4 w-4" />
                 ) : null}
-                {saved ? "Faro atualizado 🐶" : "Salvar"}
+                {saved ? "Faro AI atualizado 🐶" : "Salvar"}
               </button>
 
               {profileId && (
@@ -396,9 +396,9 @@ export function TrackingSettings({
             <p className="text-sm text-muted-foreground">
               Nenhum story guardado ainda.{" "}
               {janela === Number.POSITIVE_INFINITY
-                ? "Quando o Faro encontrar um, ele fica guardado desde a entrada no Faro."
+                ? "Quando o Faro AI encontrar um, ele fica guardado desde a entrada no Faro AI."
                 : janela > 0
-                  ? `Quando o Faro encontrar um, ele fica guardado por ${janela} horas pelo seu plano.`
+                  ? `Quando o Faro AI encontrar um, ele fica guardado por ${janela} horas pelo seu plano.`
                   : "Seu plano não guarda stories."}
             </p>
           </Panel>
@@ -431,7 +431,7 @@ export function TrackingSettings({
                 <span className="hand text-lg">
                   {totalSemana === 0 && active
                     ? "Ainda não achei nada por aqui. Eu aviso!"
-                    : "O Faro te avisa quando encontrar algo novo!"}
+                    : "O Faro AI te avisa quando encontrar algo novo!"}
                 </span>
               </NoteBox>
             )}
@@ -475,7 +475,7 @@ function Numero({
 }
 
 /**
- * Tirar o perfil do Faro — pausando, não apagando.
+ * Tirar o perfil do Faro AI — pausando, não apagando.
  *
  * Pausar interrompe as leituras diárias e **guarda** as pistas já encontradas;
  * é reversível com um clique. Apagar de verdade (com o histórico junto) ainda
@@ -517,19 +517,19 @@ function PausarFaro({
         className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border px-6 py-2.5 text-sm font-bold transition hover:bg-muted/50 disabled:opacity-60"
       >
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pause className="h-4 w-4" />}
-        {ativo ? "Pausar o Faro neste perfil" : "Voltar a farejar"}
+        {ativo ? "Pausar o Faro AI neste perfil" : "Voltar a farejar"}
       </button>
       <p className="mt-2 text-center text-[11px] text-muted-foreground">
         {ativo
-          ? `Pausado, o Faro para de olhar @${username} todo dia. As pistas já encontradas ficam guardadas.`
-          : `O Faro não está olhando @${username} no momento.`}
+          ? `Pausado, o Faro AI para de olhar @${username} todo dia. As pistas já encontradas ficam guardadas.`
+          : `O Faro AI não está olhando @${username} no momento.`}
       </p>
     </>
   );
 }
 
 /**
- * As duas ações sem volta: limpar o histórico e tirar do Faro.
+ * As duas ações sem volta: limpar o histórico e tirar do Faro AI.
  *
  * Ficam no fim, dentro dos ajustes, e cada uma pergunta duas vezes — o
  * primeiro clique só arma o botão. As rotas ainda exigem `confirm=1`, para
@@ -566,7 +566,7 @@ function Perigo({ profileId, username }: { profileId: string; username: string }
     <div className="space-y-2">
       {armado === "limpar" ? (
         <Confirma
-          texto={`Apagar todas as pistas, stories e o histórico de @${username}? O perfil continua no Faro, e a próxima leitura vira a nova base.`}
+          texto={`Apagar todas as pistas, stories e o histórico de @${username}? O perfil continua no Faro AI, e a próxima leitura vira a nova base.`}
           rotulo="Limpar mesmo"
           busy={busy}
           onSim={limpar}
@@ -584,8 +584,8 @@ function Perigo({ profileId, username }: { profileId: string; username: string }
 
       {armado === "tirar" ? (
         <Confirma
-          texto={`Tirar @${username} do Faro apaga tudo o que o Faro já encontrou dele. Não tem desfazer.`}
-          rotulo="Tirar do Faro"
+          texto={`Tirar @${username} do Faro AI apaga tudo o que o Faro AI já encontrou dele. Não tem desfazer.`}
+          rotulo="Tirar do Faro AI"
           busy={busy}
           onSim={tirar}
           onNao={() => setArmado(null)}
@@ -596,7 +596,7 @@ function Perigo({ profileId, username }: { profileId: string; username: string }
           onClick={() => setArmado("tirar")}
           className="flex w-full items-center justify-center gap-2 rounded-2xl border border-destructive/30 px-6 py-2.5 text-sm font-semibold text-destructive transition hover:bg-destructive/5"
         >
-          <Trash2 className="h-4 w-4" /> Tirar do Faro
+          <Trash2 className="h-4 w-4" /> Tirar do Faro AI
         </button>
       )}
     </div>

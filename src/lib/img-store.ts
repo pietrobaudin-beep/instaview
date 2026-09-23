@@ -6,7 +6,7 @@
  * 1. **Foto de perfil** — o endereço do Instagram vem assinado e vence; sem a
  *    cópia, a foto some da tela horas depois.
  * 2. **Story** — o story em si expira em 24h no Instagram. Quando o perfil está
- *    no Faro, a miniatura é guardada no momento em que o Faro a encontra, e é
+ *    no Faro AI, a miniatura é guardada no momento em que o Faro AI a encontra, e é
  *    ela que sustenta a tela depois — dentro do prazo do plano.
  *
  * O que se guarda é a **miniatura**, não o vídeo: uma foto de story tem ~100 KB
@@ -24,8 +24,8 @@ import { prisma } from "@/lib/db";
  *
  * Era de 30 dias, o que fazia sentido quando o story só precisava sobreviver a
  * uma janela de 72 horas. Desde 21/09 o story fica guardado **enquanto o perfil
- * estiver no Faro**, então a cópia precisa durar o mesmo tanto: quem apaga é a
- * saída do Faro, não o relógio.
+ * estiver no Faro AI**, então a cópia precisa durar o mesmo tanto: quem apaga é a
+ * saída do Faro AI, não o relógio.
  *
  * O que a pessoa VÊ continua sendo decidido pelo plano, nunca por isto.
  */
@@ -61,11 +61,11 @@ export async function readStored(key: string): Promise<StoredImage | null> {
 }
 
 /**
- * Para que serve a cópia. `story` é a miniatura que o Faro guarda; `rosto` é a
+ * Para que serve a cópia. `story` é a miniatura que o Faro AI guarda; `rosto` é a
  * foto de perfil de quem aparece numa pista.
  *
  * A diferença importa na hora de decidir o que pode ser descartado: o story é
- * promessa de plano e fica enquanto o perfil estiver no Faro; o rosto é
+ * promessa de plano e fica enquanto o perfil estiver no Faro AI; o rosto é
  * conveniência de tela e um dia pode ser podado.
  */
 export type TipoDeCopia = "story" | "rosto";

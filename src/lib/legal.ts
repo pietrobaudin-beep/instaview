@@ -142,7 +142,7 @@ export const PRIVACIDADE: LegalDoc = {
           ["E-mail ou telefone", "enviar o código de acesso e identificar a conta", "enquanto a conta existir"],
           ["Nome (opcional)", "chamar você pelo nome", "enquanto a conta existir"],
           ["Código de acesso", "entrar sem senha", "10 minutos, guardado apenas de forma embaralhada"],
-          ["Perfis pesquisados e perfis no Faro", "entregar o serviço", "até você remover"],
+          ["Perfis pesquisados e perfis no Faro AI", "entregar o serviço", "até você remover"],
           ["Cookies de sessão e de visitante", "manter o login e contar a análise grátis", "30 dias e 1 ano"],
           ["Registro de tentativas erradas no admin", "segurança", "1 dia, com o IP embaralhado"],
           ["Pagamento", "cobrar pelo plano", "fica com a Stripe; o Farejo não vê o cartão"],
