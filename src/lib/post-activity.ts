@@ -11,6 +11,7 @@ import { prisma } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { getProvider } from "@/lib/providers";
 import { getRecentMediaCached } from "@/lib/media-cache";
+import { guardarRostos } from "@/lib/img-store";
 import type { FollowerEntry } from "@/lib/providers/types";
 
 const log = logger.scope("post-activity");
@@ -102,7 +103,12 @@ async function syncOne(profileId: string, mediaId: string, kind: string, current
       isVerified: r.isVerified,
     })),
   ];
-  if (rows.length) await prisma.followerChange.createMany({ data: rows });
+  if (rows.length) {
+    await prisma.followerChange.createMany({ data: rows });
+    // A foto de quem curtiu ou comentou, guardada enquanto o endereço do CDN
+    // ainda vale — ver `guardarRostos`.
+    await guardarRostos(rows.map((r) => r.avatarUrl));
+  }
 }
 
 /** Fetch + diff the newest posts. Returns nothing; read with getPostActivity. */

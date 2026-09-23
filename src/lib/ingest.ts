@@ -9,6 +9,7 @@
  * trustworthy.
  */
 import { prisma } from "@/lib/db";
+import { guardarRostos } from "@/lib/img-store";
 import { logger } from "@/lib/logger";
 import { computeDiff } from "@/lib/monitoring/diff";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
@@ -108,6 +109,8 @@ export async function ingestSnapshot(userId: string, payload: BridgePayload): Pr
         })),
       });
       newFollowerCount = added.length;
+      // A foto de quem seguiu, guardada enquanto o endereço do CDN vale.
+      await guardarRostos(added.map((f) => f.avatarUrl));
     }
     // Bridge sends the full list, so removed followers are genuine unfollows.
     if (mode === "full" && removed.length > 0) {

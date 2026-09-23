@@ -60,9 +60,24 @@ export async function readStored(key: string): Promise<StoredImage | null> {
   return { type: data.type || "image/jpeg", bytes: Buffer.from(data.b64, "base64"), at: row.fetchedAt };
 }
 
-export async function writeStored(key: string, type: string, bytes: Buffer): Promise<void> {
+/**
+ * Para que serve a cópia. `story` é a miniatura que o Faro guarda; `rosto` é a
+ * foto de perfil de quem aparece numa pista.
+ *
+ * A diferença importa na hora de decidir o que pode ser descartado: o story é
+ * promessa de plano e fica enquanto o perfil estiver no Faro; o rosto é
+ * conveniência de tela e um dia pode ser podado.
+ */
+export type TipoDeCopia = "story" | "rosto";
+
+export async function writeStored(
+  key: string,
+  type: string,
+  bytes: Buffer,
+  kind: TipoDeCopia = "story",
+): Promise<void> {
   if (bytes.byteLength > MAX_BYTES) return;
-  const data = { type, b64: bytes.toString("base64") };
+  const data = { type, b64: bytes.toString("base64"), kind };
   await prisma.sectionCache
     .upsert({
       where: { username_section: { username: key, section: "img" } },
@@ -73,7 +88,10 @@ export async function writeStored(key: string, type: string, bytes: Buffer): Pro
 }
 
 /** Baixa e guarda, se ainda não houver cópia. Devolve se há cópia no fim. */
-export async function keepImage(rawUrl: string | null | undefined): Promise<boolean> {
+export async function keepImage(
+  rawUrl: string | null | undefined,
+  kind: TipoDeCopia = "story",
+): Promise<boolean> {
   if (!rawUrl) return false;
   let url: URL;
   try {
@@ -98,9 +116,39 @@ export async function keepImage(rawUrl: string | null | undefined): Promise<bool
     });
     if (!res.ok) return false;
     const bytes = Buffer.from(await res.arrayBuffer());
-    await writeStored(key, res.headers.get("content-type") || "image/jpeg", bytes);
+    await writeStored(key, res.headers.get("content-type") || "image/jpeg", bytes, kind);
     return true;
   } catch {
     return false;
   }
+}
+
+/**
+ * Guarda os rostos de quem acabou de virar pista, **enquanto o endereço vale**.
+ *
+ * O endereço do CDN do Instagram é assinado e vence em poucos dias. Medido em
+ * 23/09: foto de pista com até 3 dias carrega sempre; com mais de 3, nunca —
+ * as duas amostras deram 6 de 6 e 0 de 6. Como a cópia só era feita quando
+ * alguém abria a tela, a pista antiga já nascia condenada a virar inicial num
+ * quadrado cinza.
+ *
+ * Aqui o momento é outro: a pista acabou de ser detectada, o endereço está
+ * fresco, e baixar não custa provedor — é só largura de banda.
+ *
+ * O teto existe porque um perfil pode render dezenas de pistas numa passagem,
+ * e a coleta roda dentro do tempo de uma função serverless.
+ */
+export async function guardarRostos(
+  urls: (string | null | undefined)[],
+  limite = 60,
+): Promise<number> {
+  const unicas = [...new Set(urls.filter((u): u is string => !!u))].slice(0, limite);
+  let guardados = 0;
+  // De seis em seis: em fila demoraria demais, e todas de uma vez seria
+  // sessenta conexões abertas ao mesmo tempo.
+  for (let i = 0; i < unicas.length; i += 6) {
+    const lote = await Promise.all(unicas.slice(i, i + 6).map((u) => keepImage(u, "rosto")));
+    guardados += lote.filter(Boolean).length;
+  }
+  return guardados;
 }

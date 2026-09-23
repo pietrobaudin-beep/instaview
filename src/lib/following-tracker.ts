@@ -9,6 +9,7 @@
  *    unfollowed). This avoids false "unfollows" from the sliding window.
  */
 import { prisma } from "@/lib/db";
+import { guardarRostos } from "@/lib/img-store";
 import { logger } from "@/lib/logger";
 import type { FollowerEntry } from "@/lib/providers/types";
 
@@ -129,6 +130,15 @@ export async function recordFollowing(
         })),
       });
     }
+
+    /*
+     * As fotos de quem entrou e de quem saiu, guardadas agora.
+     *
+     * O endereço do CDN vence em poucos dias e a pista fica na tela por
+     * semanas: sem a cópia feita aqui, ela vira um quadrado cinza com as
+     * iniciais. Não custa provedor — ver `guardarRostos`.
+     */
+    await guardarRostos([...added, ...stopped].map((u) => u.avatarUrl));
 
     await prisma.followerSnapshot.update({
       where: { id: snapshot.id },
