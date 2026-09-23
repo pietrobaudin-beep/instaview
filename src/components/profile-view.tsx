@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, BadgeCheck, Check, ChevronDown, Loader2, Lock, Unlock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
-import { Panel, PersonRow } from "@/components/ui/brand";
+import { Panel, PersonRow, StatusPill } from "@/components/ui/brand";
 import {
   OtherNetworks,
   ProfileHero,
@@ -653,7 +653,24 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
           >
             <ArrowLeft className="h-4 w-4" /> Voltar
           </Link>
-          {!loggedIn && <Logo className="h-6" />}
+
+          {/*
+            * O plano de quem está olhando, no canto — não colado no @ da
+            * pessoa, onde lia como se fosse dela ("nasa PRO").
+            *
+            * Aqui ele responde "com o que eu estou vendo esta tela?", que é a
+            * pergunta certa: para quem paga, confirma o acesso; para quem não
+            * paga, é o aviso de que a tela está limitada.
+            */}
+          <div className="flex items-center gap-2">
+            {(() => {
+              const t = ready?.access ?? (isPro ? "pro" : "free");
+              if (t === "pro") return <StatusPill tone="yellow">PRO</StatusPill>;
+              if (t === "single") return <StatusPill tone="dark">DESBLOQUEADO</StatusPill>;
+              return <StatusPill tone="pink">GRÁTIS</StatusPill>;
+            })()}
+            {!loggedIn && <Logo className="h-6" />}
+          </div>
         </div>
 
         {intro === "play" && (analyzing || state.kind === "loading") && (
@@ -738,7 +755,6 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
               <ProfileHero
                 profile={state.data}
                 premium={isPro}
-                tier={ready?.access ?? "free"}
                 note={state.note}
                 tracking={tracking}
                 locked={!isPro}

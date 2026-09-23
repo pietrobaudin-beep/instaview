@@ -4,7 +4,6 @@ import * as React from "react";
 import { ArrowRight, BadgeCheck, Globe, Link as LinkIcon, Loader2, Lock, PawPrint, ThumbsDown, ThumbsUp } from "lucide-react";
 import NextLink from "next/link";
 import { Avatar } from "@/components/ui/avatar";
-import { StatusPill } from "@/components/ui/brand";
 import { formatNumber } from "@/lib/utils";
 
 /** Só o domínio: a URL inteira polui e às vezes é longa demais. */
@@ -453,7 +452,6 @@ export function ProfileHero({
   onTrack,
   locked = false,
   onVerStories,
-  tier,
 }: {
   profile: HeroProfile;
   premium?: boolean;
@@ -465,7 +463,6 @@ export function ProfileHero({
   /** Abre os stories em tela cheia; ausente quando não há nenhum. */
   onVerStories?: () => void;
   /** Which badge to show beside the name. */
-  tier?: "free" | "single" | "pro";
   /**
    * Abre a aba de stories. A foto com anel é o lugar onde todo mundo procura
    * story — sem isto, ele ficava escondido atrás do seletor de seções.
@@ -543,21 +540,6 @@ export function ProfileHero({
               {profile.username}
             </h1>
             {profile.isVerified && <BadgeCheck className="h-5 w-5 shrink-0 text-[#3897F0]" />}
-            {(() => {
-              /*
-               * Este selo é o plano de QUEM OLHA, não o do perfil — e colado
-               * no @ da pessoa ele lia como se fosse dela ("nasa PRO").
-               *
-               * Para quem paga ele sumiu: assinante já sabe que assina, e o
-               * selo só acrescentava ruído em cima do nome de outra pessoa.
-               * Para quem não paga ele fica, porque ali não é vaidade: é o
-               * aviso de que a tela está limitada.
-               */
-              const t = tier ?? (premium ? "pro" : "free");
-              if (t === "pro") return null;
-              if (t === "single") return <StatusPill tone="dark">DESBLOQUEADO</StatusPill>;
-              return <StatusPill tone="pink">GRÁTIS</StatusPill>;
-            })()}
           </div>
 
             {profile.displayName && (
