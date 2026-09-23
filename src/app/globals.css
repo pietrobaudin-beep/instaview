@@ -411,3 +411,11 @@ h3 {
 .wheel-scroll::-webkit-scrollbar {
   display: none;
 }
+
+/* Faixa que rola de lado sem barra à vista — as abas da análise no celular. */
+.sem-barra {
+  scrollbar-width: none;
+}
+.sem-barra::-webkit-scrollbar {
+  display: none;
+}

@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, BadgeCheck, Check, ChevronDown, Loader2, Lock, Unlock } from "lucide-react";
+import { ArrowLeft, ArrowRight, BadgeCheck, Check, Loader2, Lock, Unlock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
 import { Panel, PersonRow, StatusPill } from "@/components/ui/brand";
@@ -69,9 +69,11 @@ const TABS = [
   { value: "visao", label: "Visão geral" },
   // Stories não é aba: abre em tela cheia pela foto do perfil, como no
   // Instagram. A seção continua existindo na API, só não tem entrada aqui.
-  { value: "posts", label: "Posts" },
-  // Reels saiu da tela em 21/09: pouca gente abria e era mais uma leitura
-  // paga por dia em cada perfil do Faro. A seção continua existindo na API.
+  //
+  // Posts saiu da tela em 23/09, junto com Reels (21/09): as duas eram mais
+  // uma leitura paga por dia em cada perfil do Faro, e o que a pessoa vem ver
+  // aqui é o movimento — quem entrou, quem saiu, com quem anda. As seções
+  // continuam existindo na API.
   { value: "seguindo", label: "Seguindo" },
   { value: "interacoes", label: "Interações" },
   { value: "tagged", label: "Marcações" },
@@ -84,57 +86,46 @@ const TABS = [
 
 type Tab = (typeof TABS)[number]["value"];
 
-/**
- * No computador, as abas em linha: as cinco que quase todo mundo abre, mais
- * um "Mais" com o resto. Onze pílulas lado a lado viravam um muro — e a maior
- * parte delas é consulta ocasional.
- *
- * Cada aba continua valendo **uma** requisição, aberta só quando escolhida:
- * agrupar seções numa aba só faria o clique custar o dobro.
- */
-const PRINCIPAIS: readonly Tab[] = ["visao", "posts", "seguindo", "interacoes", "historico"];
-
 // Tabs served by the Raio-X (one provider request each, fetched when opened).
 const RAIO_X_TABS: readonly Section[] = ["stories", "posts", "reels", "tagged", "highlights", "reposts", "suggested", "about"];
 const isRaioX = (t: Tab): t is Tab & Section => (RAIO_X_TABS as readonly string[]).includes(t);
 
 /**
- * As abas da análise: as principais em linha e um menu "Mais" com as demais.
+ * As abas da análise, todas numa faixa só.
  *
- * No celular a linha rola de lado, com a aba escolhida sempre à vista. Cada
- * aba só pede a sua seção quando é aberta — trocar de aba não multiplica
- * chamada ao provedor.
+ * Antes eram cinco em linha e um menu "Mais" com o resto: com onze abas, as
+ * pílulas lado a lado viravam um muro. Hoje são seis, e seis cabem — no
+ * computador elas se acomodam em duas linhas, e no celular a faixa rola de
+ * lado. Um menu escondendo metade das abas custava um toque a mais para
+ * achar o que já cabia na tela.
+ *
+ * Cada aba continua valendo **uma** requisição, aberta só quando escolhida:
+ * juntar seções numa aba só faria o clique custar o dobro.
  */
 function Abas({ value, onChange }: { value: Tab; onChange: (t: Tab) => void }) {
-  const [aberto, setAberto] = React.useState(false);
-  const principais = TABS.filter((t) => PRINCIPAIS.includes(t.value));
-  const outras = TABS.filter((t) => !PRINCIPAIS.includes(t.value));
-  const escolhidaFora = outras.find((t) => t.value === value);
-
-  React.useEffect(() => {
-    if (!aberto) return;
-    const fechar = () => setAberto(false);
-    window.addEventListener("click", fechar);
-    return () => window.removeEventListener("click", fechar);
-  }, [aberto]);
+  const faixa = React.useRef<HTMLDivElement>(null);
 
   /*
-   * O "Mais" fica FORA da faixa que rola, de propósito.
+   * No celular a aba escolhida pode estar fora da vista — seja porque a pessoa
+   * rolou a faixa, seja porque a escolha veio de outro lugar da tela. Trazê-la
+   * para o centro é o que mostra, de quebra, que a faixa rola.
    *
-   * Dentro dela o menu aberto era recortado no celular — quem tem
-   * `overflow-x: auto` também recorta o que passa por cima e por baixo — e no
-   * computador a faixa ganhava uma barra de rolagem vertical só para tentar
-   * caber o menu aberto. Agora só as abas principais rolam de lado, e o botão
-   * fica ancorado na direita, sempre à vista.
+   * `block: "nearest"` para a página não dar um pulo vertical junto.
    */
+  React.useEffect(() => {
+    const ativa = faixa.current?.querySelector<HTMLElement>('[aria-selected="true"]');
+    ativa?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+  }, [value]);
+
   return (
-    <div className="-mx-5 mt-3 flex items-start gap-2 px-5 sm:mx-0 sm:px-0">
+    <div className="relative -mx-5 mt-3 sm:mx-0">
       <div
+        ref={faixa}
         role="tablist"
         aria-label="O que você quer ver"
-        className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible"
+        className="sem-barra flex items-center gap-2 overflow-x-auto px-5 pb-1 sm:flex-wrap sm:overflow-visible sm:px-0"
       >
-        {principais.map((t) => (
+        {TABS.map((t) => (
           <button
             key={t.value}
             type="button"
@@ -152,46 +143,17 @@ function Abas({ value, onChange }: { value: Tab; onChange: (t: Tab) => void }) {
         ))}
       </div>
 
-      <div className="relative shrink-0">
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setAberto((a) => !a);
-          }}
-          aria-expanded={aberto}
-          className={`flex min-h-[44px] shrink-0 items-center gap-1 rounded-2xl px-4 text-sm font-semibold transition ${
-            escolhidaFora ? "bg-pink text-ink" : "bg-muted text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          {escolhidaFora ? escolhidaFora.label : "Mais"}
-          <ChevronDown className="h-3.5 w-3.5" />
-        </button>
-
-        {aberto && (
-          <ul
-            onClick={(e) => e.stopPropagation()}
-            className="absolute right-0 top-full z-30 mt-1.5 w-48 overflow-hidden rounded-2xl border border-border bg-card py-1 shadow-lg"
-          >
-            {outras.map((t) => (
-              <li key={t.value}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onChange(t.value);
-                    setAberto(false);
-                  }}
-                  className={`min-h-[44px] w-full px-4 text-left text-sm transition hover:bg-muted/50 ${
-                    value === t.value ? "font-bold text-accent" : ""
-                  }`}
-                >
-                  {t.label}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      {/* As dobras das pontas: sem barra de rolagem à vista, são elas que
+          dizem que tem mais aba adiante — e que a faixa rola. Só no celular,
+          e sem roubar o toque de quem passa por cima. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-background to-transparent sm:hidden"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-background to-transparent sm:hidden"
+      />
     </div>
   );
 }
