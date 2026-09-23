@@ -13,6 +13,7 @@
  */
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { syncPostActivity } from "@/lib/post-activity";
 import { getProvider } from "@/lib/providers";
 import { recordFollowing } from "@/lib/following-tracker";
 import { logger } from "@/lib/logger";
@@ -178,6 +179,24 @@ export async function watchProfile(
     );
   } catch (e) {
     log.warn("following read failed", { username, error: (e as Error).message });
+  }
+
+  /*
+   * Interações no post mais recente — quem curtiu, quem comentou, quem tirou.
+   *
+   * Isto ficou de fora quando a coleta virou `watchProfile`, e as pistas de
+   * interação pararam em 17/09: o "Interações" do painel do Faro só voltava a
+   * ter conteúdo se alguém apertasse "Analisar" na mão. Era um recurso do PRO
+   * que tinha deixado de acontecer sozinho.
+   *
+   * Preço: `WATCHED_POSTS` post × 2 requisições (quem curtiu, quem comentou)
+   * por passagem completa — hoje, ~2 por perfil por dia. Se o provedor não
+   * oferecer esses endpoints, a função sai sozinha sem gastar nada.
+   */
+  try {
+    await syncPostActivity(profileId, username);
+  } catch (e) {
+    log.warn("post activity failed", { username, error: (e as Error).message });
   }
 
   await prisma.trackedProfile.update({ where: { id: profileId }, data: { lastCollectedAt: new Date(), lastError: null } });
