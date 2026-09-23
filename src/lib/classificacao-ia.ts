@@ -75,13 +75,17 @@ function valida(v: unknown): Quem | null {
   return v === "f" || v === "m" || v === "marca" || v === "u" ? v : null;
 }
 
-/** Corta o que não ajuda a decidir: bio longa é custo sem ganho. */
+/**
+ * Só o que ajuda a decidir.
+ *
+ * Campo vazio não vai: `"b":""` em cinquenta pessoas é meio milhar de tokens
+ * pagos para dizer nada. E bio longa é custo sem ganho — a decisão se faz nas
+ * primeiras palavras.
+ */
 function resumir(p: PessoaParaLer) {
-  return {
-    u: p.username,
-    n: (p.displayName ?? "").slice(0, 40),
-    b: (p.bio ?? "").replace(/\s+/g, " ").slice(0, 120),
-  };
+  const n = (p.displayName ?? "").trim().slice(0, 40);
+  const b = (p.bio ?? "").replace(/\s+/g, " ").trim().slice(0, 120);
+  return { u: p.username, ...(n ? { n } : {}), ...(b ? { b } : {}) };
 }
 
 const INSTRUCAO =
@@ -107,6 +111,9 @@ async function perguntar(pessoas: PessoaParaLer[]): Promise<Map<string, Quem>> {
         { role: "user", content: JSON.stringify(pessoas.map(resumir)) },
       ],
       response_format: { type: "json_object" },
+      // Dez respostas cabem folgado. Passou disso, o modelo saiu do trilho —
+      // e aí é melhor cortar do que pagar para ver.
+      max_completion_tokens: 400,
     }),
     signal: AbortSignal.timeout(TETO_MS),
   });

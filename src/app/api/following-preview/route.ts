@@ -147,8 +147,24 @@ export async function GET(req: Request) {
   // A lista de "seguindo" não traz bio — só @ e nome. É com isso que dá para
   // trabalhar aqui; ler a bio de cada um custaria uma requisição paga por
   // pessoa, que é exatamente o que não vale a pena.
+  /*
+   * A IA é perguntada só sobre quem a heurística NÃO resolve.
+   *
+   * Medido em 23/09 contra 40 pessoas reais: onde o palpite pelo primeiro nome
+   * tem convicção, ele e o modelo concordam — 22 de 23. Toda a diferença
+   * estava nos "não sei": 16 das 17 divergências, mais as marcas, que a
+   * heurística nunca reconhece e sempre deixa em aberto.
+   *
+   * Então perguntar sobre os óbvios era pagar para confirmar o que já se
+   * sabia. Isto corta perto da metade do gasto sem tirar nada da tela.
+   *
+   * O preço disto, dito às claras: marca com nome de gente ("Amanda
+   * Cosméticos") continua passando como pessoa, porque a heurística decide
+   * sozinha e a IA nem é consultada.
+   */
+  const duvidosos = all.filter((u) => guessGender(u.displayName, u.username) === "u");
   const lidos = await quemSao(
-    all.map((u) => ({ username: u.username, displayName: u.displayName })),
+    duvidosos.map((u) => ({ username: u.username, displayName: u.displayName })),
   );
   let marcasIA = 0;
   const quemEh = (u: { username: string; displayName: string | null }): "f" | "m" | "u" => {
