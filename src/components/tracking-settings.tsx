@@ -8,13 +8,13 @@ import {
   Bell,
   Camera,
   Check,
-  ChevronDown,
   Clock,
   Eraser,
   Heart,
   Loader2,
   Pause,
   PawPrint,
+  Settings,
   Trash2,
   UserMinus,
   UserPlus,
@@ -232,11 +232,23 @@ export function TrackingSettings({
             </div>
           </div>
 
-          {profileId && status && (
-            <div className="shrink-0">
+          <div className="flex shrink-0 items-center gap-2">
+            {profileId && status && (
               <RefreshButton profileId={profileId} inicial={status} onStatus={setStatus} />
-            </div>
-          )}
+            )}
+            <button
+              type="button"
+              onClick={() => setAjustesAbertos((a) => !a)}
+              aria-expanded={ajustesAbertos}
+              aria-label="Configurações do que você vê"
+              title="Configurações do que você vê"
+              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-border transition hover:bg-muted/50 ${
+                ajustesAbertos ? "bg-muted text-foreground" : "text-muted-foreground"
+              }`}
+            >
+              <Settings className="h-[18px] w-[18px]" />
+            </button>
+          </div>
         </div>
 
         {/* As três datas que respondem "o Faro está trabalhando?". */}
@@ -271,6 +283,56 @@ export function TrackingSettings({
           </p>
         )}
       </Panel>
+
+      {/* 3. Os ajustes abrem pela engrenagem do cartão, logo abaixo dele.
+          Antes eram uma gaveta no pé da página: para mudar o que se vê aqui
+          em cima, era preciso rolar até o fim e voltar. O rótulo fala do
+          efeito, não do mecanismo — cada chave decide o que aparece neste
+          painel, e não só o que dispara alerta. */}
+      {ajustesAbertos && (
+        <Panel title="Configurações do que você vê" className="mt-3" bodyClassName="px-5 py-1">
+          <ul className="divide-y divide-border">
+            {ROWS.map((r) => (
+              <li key={r.key}>
+                <SettingRow
+                  icon={r.icon}
+                  title={r.title}
+                  hint={r.hint}
+                  right={
+                    <Toggle
+                      label={r.title}
+                      checked={prefs[r.key]}
+                      disabled={r.disabled}
+                      onChange={(v) => set(r.key, v)}
+                    />
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+
+          <button
+            type="button"
+            onClick={save}
+            disabled={saving}
+            className="my-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-pink px-6 py-3 text-sm font-bold text-ink transition hover:opacity-90 disabled:opacity-60"
+          >
+            {saving ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : saved ? (
+              <Check className="h-4 w-4" />
+            ) : null}
+            {saved ? "Faro atualizado 🐶" : "Salvar"}
+          </button>
+
+          {profileId && (
+            <div className="space-y-4 border-t border-border py-4">
+              <PausarFaro profileId={profileId} ativo={active} username={username} />
+              <Perigo profileId={profileId} username={username} />
+            </div>
+          )}
+        </Panel>
+      )}
 
       {/* 2. Os stories vêm antes de tudo: é o que some em 24h no Instagram.
           O resto do painel continua lá depois de amanhã; eles, não. */}
@@ -336,67 +398,6 @@ export function TrackingSettings({
           {/* O histórico deste perfil: só banco, nenhuma chamada paga. */}
           <HistoryPanel username={username} loggedIn isPro={plan !== "FREE"} />
 
-          {/* 5. Ajustes, fechados por padrão: quem entra aqui quer ver pistas.
-              O rótulo fala do efeito, não do mecanismo: cada chave decide o
-              que aparece neste painel, e não só o que dispara alerta. */}
-          <Panel bodyClassName="px-5 py-1">
-            <button
-              type="button"
-              onClick={() => setAjustesAbertos((a) => !a)}
-              aria-expanded={ajustesAbertos}
-              className="flex w-full items-center justify-between py-4 text-left"
-            >
-              <span className="text-sm font-bold">Configurações do que você vê</span>
-              <ChevronDown
-                className={`h-4 w-4 transition ${ajustesAbertos ? "rotate-180" : ""}`}
-              />
-            </button>
-
-            {ajustesAbertos && (
-              <>
-                <ul className="divide-y divide-border border-t border-border">
-                  {ROWS.map((r) => (
-                    <li key={r.key}>
-                      <SettingRow
-                        icon={r.icon}
-                        title={r.title}
-                        hint={r.hint}
-                        right={
-                          <Toggle
-                            label={r.title}
-                            checked={prefs[r.key]}
-                            disabled={r.disabled}
-                            onChange={(v) => set(r.key, v)}
-                          />
-                        }
-                      />
-                    </li>
-                  ))}
-                </ul>
-
-                <button
-                  type="button"
-                  onClick={save}
-                  disabled={saving}
-                  className="my-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-pink px-6 py-3 text-sm font-bold text-ink transition hover:opacity-90 disabled:opacity-60"
-                >
-                  {saving ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : saved ? (
-                    <Check className="h-4 w-4" />
-                  ) : null}
-                  {saved ? "Faro atualizado 🐶" : "Salvar"}
-                </button>
-
-                {profileId && (
-                  <div className="space-y-4 border-t border-border py-4">
-                    <PausarFaro profileId={profileId} ativo={active} username={username} />
-                    <Perigo profileId={profileId} username={username} />
-                  </div>
-                )}
-              </>
-            )}
-          </Panel>
         </div>
       </div>
     </main>
