@@ -55,10 +55,6 @@ export function FollowsBreakdown({
         <BarRow label="Mulheres" percent={share(counts.girls)} value={counts.girls} tone="pink" />
         <BarRow label="Homens" percent={share(counts.boys)} value={counts.boys} tone="blue" />
       </div>
-      <p className="mt-4 text-[11px] text-muted-foreground">
-        Classificação automática pelo nome — pode conter erros. Baseado nas {people} pessoas mais
-        recentes que essa pessoa começou a seguir.
-      </p>
     </Panel>
   );
 }
@@ -96,9 +92,6 @@ export function TopInteraction({
         blurred={locked}
         className="py-0"
       />
-      <p className="mt-3 text-[11px] text-muted-foreground">
-        Entre os sinais disponíveis, este perfil aparece com frequência.
-      </p>
     </Panel>
   );
 }
