@@ -64,7 +64,7 @@ export function FaroUpsell({
 
           <Link
             href={`/pricing?next=${encodeURIComponent(next)}`}
-            className="flex w-full items-center justify-center gap-2 rounded-full bg-pink px-6 py-4 font-bold text-ink transition hover:opacity-90"
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-pink px-6 py-4 font-bold text-ink transition hover:opacity-90"
           >
             Desbloquear Farejo PRO <ArrowRight className="h-5 w-5" />
           </Link>

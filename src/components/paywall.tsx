@@ -149,7 +149,7 @@ export function Paywall({
         type="button"
         onClick={subscribe}
         disabled={loading}
-        className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-pink px-6 py-4 text-base font-bold text-ink transition hover:opacity-90 disabled:opacity-60"
+        className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-pink px-6 py-4 text-base font-bold text-ink transition hover:opacity-90 disabled:opacity-60"
       >
         {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
         Assinar agora

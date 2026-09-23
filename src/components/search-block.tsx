@@ -209,7 +209,7 @@ export function SearchBlock({
             disabled={loading || !escolhida}
             aria-label={buttonLabel}
             title={escolhida ? undefined : "Escolha o perfil primeiro"}
-            className={`flex h-[52px] w-full shrink-0 items-center justify-center gap-2 rounded-2xl px-5 font-bold transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 sm:h-14 sm:w-auto sm:rounded-full ${buttonTone}`}
+            className={`flex h-[52px] w-full shrink-0 items-center justify-center gap-2 rounded-2xl px-5 font-bold transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 sm:h-14 sm:w-auto ${buttonTone}`}
           >
             {loading ? (
               <Loader2 className="h-5 w-5 animate-spin" />

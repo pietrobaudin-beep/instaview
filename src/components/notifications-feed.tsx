@@ -300,7 +300,7 @@ export function NotificationsFeed({
                 <button
                   type="button"
                   onClick={() => setMostrando((m) => m + PAGINA)}
-                  className="w-full rounded-full border border-border bg-card px-6 py-3 text-sm font-bold transition hover:bg-muted/40"
+                  className="w-full rounded-2xl border border-border bg-card px-6 py-3 text-sm font-bold transition hover:bg-muted/40"
                 >
                   Mostrar mais ({visible.length - mostrando} restantes)
                 </button>

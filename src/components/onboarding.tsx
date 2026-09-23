@@ -97,7 +97,7 @@ export function Onboarding({ next = "/" }: { next?: string }) {
         <button
           type="button"
           onClick={() => (last ? finish() : setI(i + 1))}
-          className="flex w-full items-center justify-center gap-2 rounded-full bg-ink px-6 py-4 text-base font-bold text-cream transition hover:opacity-90"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-ink px-6 py-4 text-base font-bold text-cream transition hover:opacity-90"
         >
           {last ? "Começar agora" : "Continuar"}
           <ArrowRight className="h-5 w-5" />

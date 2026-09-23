@@ -96,7 +96,7 @@ export function RefreshButton({
         onClick={atualizar}
         disabled={esgotou}
         title={esgotou ? "Limite diário de atualizações atingido. Volte amanhã." : undefined}
-        className={`flex w-full items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold transition sm:w-auto ${
+        className={`flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-bold transition sm:w-auto ${
           esgotou
             ? "cursor-not-allowed bg-muted text-muted-foreground"
             : "bg-pink text-ink hover:opacity-90"

@@ -68,7 +68,7 @@ export function SingleUnlockButton({
         onClick={buy}
         disabled={loading}
         className={cn(
-          "flex w-full items-center justify-center gap-2 rounded-full px-6 py-3.5 font-bold transition disabled:opacity-60",
+          "flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-3.5 font-bold transition disabled:opacity-60",
           variant === "primary"
             ? "bg-vinho text-cream hover:opacity-90"
             : "border-2 border-vinho text-vinho hover:bg-vinho hover:text-cream",

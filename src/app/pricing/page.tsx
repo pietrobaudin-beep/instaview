@@ -91,7 +91,7 @@ export default async function PricingPage({
           ) : (
             <Link
               href="/"
-              className="block rounded-full border-2 border-vinho px-6 py-3.5 text-center font-bold text-vinho transition hover:bg-vinho hover:text-cream"
+              className="block rounded-2xl border-2 border-vinho px-6 py-3.5 text-center font-bold text-vinho transition hover:bg-vinho hover:text-cream"
             >
               Buscar um perfil
             </Link>

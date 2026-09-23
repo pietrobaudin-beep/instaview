@@ -374,7 +374,7 @@ export function TrackingSettings({
                   type="button"
                   onClick={save}
                   disabled={saving}
-                  className="my-4 flex w-full items-center justify-center gap-2 rounded-full bg-pink px-6 py-3 text-sm font-bold text-ink transition hover:opacity-90 disabled:opacity-60"
+                  className="my-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-pink px-6 py-3 text-sm font-bold text-ink transition hover:opacity-90 disabled:opacity-60"
                 >
                   {saving ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -465,7 +465,7 @@ function PausarFaro({
         type="button"
         onClick={trocar}
         disabled={busy}
-        className="flex w-full items-center justify-center gap-2 rounded-full border border-border px-6 py-2.5 text-sm font-bold transition hover:bg-muted/50 disabled:opacity-60"
+        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border px-6 py-2.5 text-sm font-bold transition hover:bg-muted/50 disabled:opacity-60"
       >
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pause className="h-4 w-4" />}
         {ativo ? "Pausar o Faro neste perfil" : "Voltar a farejar"}
@@ -527,7 +527,7 @@ function Perigo({ profileId, username }: { profileId: string; username: string }
         <button
           type="button"
           onClick={() => setArmado("limpar")}
-          className="flex w-full items-center justify-center gap-2 rounded-full border border-border px-6 py-2.5 text-sm font-semibold transition hover:bg-muted/50"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border px-6 py-2.5 text-sm font-semibold transition hover:bg-muted/50"
         >
           <Eraser className="h-4 w-4" /> Limpar histórico
         </button>
@@ -545,7 +545,7 @@ function Perigo({ profileId, username }: { profileId: string; username: string }
         <button
           type="button"
           onClick={() => setArmado("tirar")}
-          className="flex w-full items-center justify-center gap-2 rounded-full border border-destructive/30 px-6 py-2.5 text-sm font-semibold text-destructive transition hover:bg-destructive/5"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-destructive/30 px-6 py-2.5 text-sm font-semibold text-destructive transition hover:bg-destructive/5"
         >
           <Trash2 className="h-4 w-4" /> Tirar do Faro
         </button>
