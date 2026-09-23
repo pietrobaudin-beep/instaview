@@ -154,7 +154,7 @@ export function AppNav({ plan }: { plan?: Plan }) {
                 >
                   <span
                     className={cn(
-                      "flex h-8 w-12 items-center justify-center rounded-full transition",
+                      "flex h-8 w-12 items-center justify-center rounded-2xl transition",
                       active && "bg-blush",
                     )}
                   >
