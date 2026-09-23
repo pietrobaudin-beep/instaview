@@ -18,6 +18,7 @@ import {
   Trash2,
   UserMinus,
   UserPlus,
+  X,
 } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { RefreshButton, completa, quando } from "@/components/refresh-card";
@@ -125,6 +126,14 @@ export function TrackingSettings({
   const [saved, setSaved] = React.useState(false);
   const [status, setStatus] = React.useState<Status | undefined>(refresh);
   const [ajustesAbertos, setAjustesAbertos] = React.useState(false);
+
+  // Esc fecha: é o que se espera de qualquer janela que cobre a tela.
+  React.useEffect(() => {
+    if (!ajustesAbertos) return;
+    const aoTeclar = (e: KeyboardEvent) => e.key === "Escape" && setAjustesAbertos(false);
+    window.addEventListener("keydown", aoTeclar);
+    return () => window.removeEventListener("keydown", aoTeclar);
+  }, [ajustesAbertos]);
 
   function set<K extends keyof TrackingPrefs>(key: K, value: boolean) {
     setPrefs((p) => ({ ...p, [key]: value }));
@@ -288,54 +297,85 @@ export function TrackingSettings({
         )}
       </Panel>
 
-      {/* 3. Os ajustes abrem pela engrenagem do cartão, logo abaixo dele.
-          Antes eram uma gaveta no pé da página: para mudar o que se vê aqui
-          em cima, era preciso rolar até o fim e voltar. O rótulo fala do
-          efeito, não do mecanismo — cada chave decide o que aparece neste
-          painel, e não só o que dispara alerta. */}
+      {/* 3. Os ajustes abrem num pop-up, não numa gaveta.
+          Mexer no que se vê é uma parada curta: abre, muda, fecha e a página
+          continua onde estava. A gaveta empurrava o painel inteiro para baixo
+          e fazia perder o lugar da leitura.
+
+          O rótulo fala do efeito, não do mecanismo — cada chave decide o que
+          aparece neste painel, e não só o que dispara alerta. */}
       {ajustesAbertos && (
-        <Panel title="Configurações do que você vê" className="mt-3" bodyClassName="px-5 py-1">
-          <ul className="divide-y divide-border">
-            {ROWS.map((r) => (
-              <li key={r.key}>
-                <SettingRow
-                  icon={r.icon}
-                  title={r.title}
-                  hint={r.hint}
-                  right={
-                    <Toggle
-                      label={r.title}
-                      checked={prefs[r.key]}
-                      disabled={r.disabled}
-                      onChange={(v) => set(r.key, v)}
-                    />
-                  }
-                />
-              </li>
-            ))}
-          </ul>
-
-          <button
-            type="button"
-            onClick={save}
-            disabled={saving}
-            className="my-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-pink px-6 py-3 text-sm font-bold text-ink transition hover:opacity-90 disabled:opacity-60"
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-ink/50 p-4 backdrop-blur-sm sm:items-center"
+          onClick={() => setAjustesAbertos(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="ajustes-titulo"
+        >
+          {/* `max-h` com rolagem própria: a lista mais o pausar/remover não
+              cabem numa tela de celular deitado. */}
+          <div
+            className="relative max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-3xl border border-border bg-card"
+            onClick={(e) => e.stopPropagation()}
           >
-            {saving ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : saved ? (
-              <Check className="h-4 w-4" />
-            ) : null}
-            {saved ? "Faro atualizado 🐶" : "Salvar"}
-          </button>
+            <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-border bg-card px-5 py-4">
+              <h2 id="ajustes-titulo" className="text-base font-bold tracking-tight">
+                Configurações do que você vê
+              </h2>
+              <button
+                type="button"
+                onClick={() => setAjustesAbertos(false)}
+                aria-label="Fechar"
+                className="ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </header>
 
-          {profileId && (
-            <div className="space-y-4 border-t border-border py-4">
-              <PausarFaro profileId={profileId} ativo={active} username={username} />
-              <Perigo profileId={profileId} username={username} />
+            <div className="px-5">
+              <ul className="divide-y divide-border">
+                {ROWS.map((r) => (
+                  <li key={r.key}>
+                    <SettingRow
+                      icon={r.icon}
+                      title={r.title}
+                      hint={r.hint}
+                      right={
+                        <Toggle
+                          label={r.title}
+                          checked={prefs[r.key]}
+                          disabled={r.disabled}
+                          onChange={(v) => set(r.key, v)}
+                        />
+                      }
+                    />
+                  </li>
+                ))}
+              </ul>
+
+              <button
+                type="button"
+                onClick={save}
+                disabled={saving}
+                className="my-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-pink px-6 py-3 text-sm font-bold text-ink transition hover:opacity-90 disabled:opacity-60"
+              >
+                {saving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : saved ? (
+                  <Check className="h-4 w-4" />
+                ) : null}
+                {saved ? "Faro atualizado 🐶" : "Salvar"}
+              </button>
+
+              {profileId && (
+                <div className="space-y-4 border-t border-border py-4">
+                  <PausarFaro profileId={profileId} ativo={active} username={username} />
+                  <Perigo profileId={profileId} username={username} />
+                </div>
+              )}
             </div>
-          )}
-        </Panel>
+          </div>
+        </div>
       )}
 
       {/* 2. Os stories vêm antes de tudo: é o que some em 24h no Instagram.
