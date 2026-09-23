@@ -37,6 +37,12 @@ const schema = z.object({
    * O que o modelo escrever nunca vira fato na tela: vira leitura.
    */
   OPENAI_API_KEY: z.string().default(""),
+  /**
+   * Com a data no nome, de propósito: apelido sem data (`gpt-5.4-nano`) muda
+   * de modelo sozinho quando a OpenAI promove a próxima versão, e a
+   * classificação viraria outra da noite para o dia sem ninguém pedir.
+   */
+  OPENAI_MODEL: z.string().default("gpt-5.4-nano-2026-03-17"),
   HIKERAPI_BASE_URL: z.string().default("https://api.hikerapi.com"),
 
 
@@ -77,6 +83,7 @@ const raw = {
   HIKERAPI_KEY: clean(process.env.HIKERAPI_KEY),
   APIFY_TOKEN: clean(process.env.APIFY_TOKEN),
   OPENAI_API_KEY: clean(process.env.OPENAI_API_KEY),
+  OPENAI_MODEL: clean(process.env.OPENAI_MODEL),
   HIKERAPI_BASE_URL: clean(process.env.HIKERAPI_BASE_URL),
   CRON_SECRET: clean(process.env.CRON_SECRET),
   DEFAULT_COLLECTION_INTERVAL_MINUTES: clean(process.env.DEFAULT_COLLECTION_INTERVAL_MINUTES),

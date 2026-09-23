@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getProvider } from "@/lib/providers";
-import { countGenders, guessGender } from "@/lib/gender";
+import { guessGender } from "@/lib/gender";
+import { quemSao } from "@/lib/classificacao-ia";
 import {
   FOLLOWING_KIND,
   getRecentFollowingChanges,
@@ -131,24 +132,57 @@ export async function GET(req: Request) {
     }
   }
 
+  /*
+   * Quem é cada um: a IA lê @, nome e bio; o palpite pelo primeiro nome fica
+   * de reserva.
+   *
+   * A reserva não é decoração — ela entra sempre que a IA está desligada, não
+   * respondeu a tempo ou não soube de alguém. A tela nunca fica sem resposta
+   * por causa disto.
+   *
+   * O que a IA marca como **marca** sai da conta de mulheres e homens: até
+   * hoje a única defesa contra loja era o selo de verificado, e loja de bairro
+   * não tem selo — ela entrava na conta como se fosse gente.
+   */
+  // A lista de "seguindo" não traz bio — só @ e nome. É com isso que dá para
+  // trabalhar aqui; ler a bio de cada um custaria uma requisição paga por
+  // pessoa, que é exatamente o que não vale a pena.
+  const lidos = await quemSao(
+    all.map((u) => ({ username: u.username, displayName: u.displayName })),
+  );
+  let marcasIA = 0;
+  const quemEh = (u: { username: string; displayName: string | null }): "f" | "m" | "u" => {
+    const ia = lidos.get(u.username.toLowerCase());
+    if (ia === "marca") return "u";
+    if (ia === "f" || ia === "m") return ia;
+    return guessGender(u.displayName, u.username);
+  };
+  for (const u of all) if (lidos.get(u.username.toLowerCase()) === "marca") marcasIA++;
+
   // Aggregate gender estimate over everything we fetched (safe to show free —
   // it's a count, not an identity). Computed from the same single request.
-  const g = countGenders(all.map((u) => ({ displayName: u.displayName, username: u.username })));
+  const g = { girls: 0, boys: 0 };
+  for (const u of all) {
+    const q = quemEh(u);
+    if (q === "f") g.girls++;
+    else if (q === "m") g.boys++;
+  }
   // Share of the page we read, so the three bars add up to something honest.
   const total = all.length + brands;
+  const marcas = brands + marcasIA;
   const pct = (n: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
   const counts = {
     ...g,
-    brands,
+    brands: marcas,
     total,
-    percent: { girls: pct(g.girls), boys: pct(g.boys), brands: pct(brands) },
+    percent: { girls: pct(g.girls), boys: pct(g.boys), brands: pct(marcas) },
   };
 
   // Only the first rows are shown; masked for free so names don't leak — but we
   // always send the estimated gender so the teaser can label each row.
   const out = all.slice(0, 12).map((u) => ({
     ...(paid ? u : mask(u)),
-    gender: guessGender(u.displayName, u.username),
+    gender: quemEh(u),
   }));
   const maskRecent = (items: RecentItem[]) =>
     paid ? items : items.map((i) => ({ ...mask(i), detectedAt: i.detectedAt }));
