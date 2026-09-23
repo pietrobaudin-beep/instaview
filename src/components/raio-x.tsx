@@ -187,10 +187,14 @@ function Grid({ posts, locked, showOwner, reels }: { posts: PostItem[]; locked: 
 /** Quantos nomes o ranking mostra antes do "Ver mais". */
 const RANKING = 4;
 
+/** E quantos, no máximo, depois dele. Dez é o que se lê de uma vez. */
+const RANKING_MAX = 10;
+
 function People({ title, note, items, locked }: { title: string; note: string; items: Ranked[]; locked: boolean }) {
-  // Listas de 20 nomes viravam uma parede; quatro dão a ideia e o resto abre.
+  // Listas de 20 nomes viravam uma parede; quatro dão a ideia, e o "Ver mais"
+  // abre até dez — não a lista inteira.
   const [tudo, setTudo] = React.useState(false);
-  const visiveis = tudo ? items : items.slice(0, RANKING);
+  const visiveis = items.slice(0, tudo ? RANKING_MAX : RANKING);
 
   if (!items.length) return null;
   return (
@@ -217,7 +221,7 @@ function People({ title, note, items, locked }: { title: string; note: string; i
           onClick={() => setTudo((t) => !t)}
           className="mt-3 flex min-h-[44px] w-full items-center justify-center rounded-2xl border border-border text-sm font-bold text-accent transition hover:bg-muted/40"
         >
-          {tudo ? "Ver menos" : `Ver mais ${items.length - RANKING}`}
+          {tudo ? "Ver menos" : `Ver mais ${Math.min(items.length, RANKING_MAX) - RANKING}`}
         </button>
       )}
     </Panel>

@@ -117,7 +117,9 @@ export function OtherInteractions({
   // o próximo bloco para fora da tela no celular.
   const [tudo, setTudo] = React.useState(false);
   const PREVIA = 3;
-  const visiveis = tudo ? people.slice(0, 12) : people.slice(0, PREVIA);
+  /** O teto desta lista, aberta: dez pessoas, como nas outras da tela. */
+  const MAXIMO = 10;
+  const visiveis = people.slice(0, tudo ? MAXIMO : PREVIA);
 
   if (people.length === 0) return null;
   return (
@@ -164,7 +166,7 @@ export function OtherInteractions({
           onClick={() => setTudo((t) => !t)}
           className="mt-4 flex min-h-[44px] w-full items-center justify-center gap-1 rounded-2xl border border-border text-sm font-bold text-accent transition hover:bg-muted/40"
         >
-          {tudo ? "Ver menos" : `Ver mais ${Math.min(people.length, 12) - PREVIA}`}
+          {tudo ? "Ver menos" : `Ver mais ${Math.min(people.length, MAXIMO) - PREVIA}`}
         </button>
       )}
 
