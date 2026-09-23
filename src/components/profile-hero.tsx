@@ -544,8 +544,17 @@ export function ProfileHero({
             </h1>
             {profile.isVerified && <BadgeCheck className="h-5 w-5 shrink-0 text-[#3897F0]" />}
             {(() => {
+              /*
+               * Este selo é o plano de QUEM OLHA, não o do perfil — e colado
+               * no @ da pessoa ele lia como se fosse dela ("nasa PRO").
+               *
+               * Para quem paga ele sumiu: assinante já sabe que assina, e o
+               * selo só acrescentava ruído em cima do nome de outra pessoa.
+               * Para quem não paga ele fica, porque ali não é vaidade: é o
+               * aviso de que a tela está limitada.
+               */
               const t = tier ?? (premium ? "pro" : "free");
-              if (t === "pro") return <StatusPill tone="yellow">PRO</StatusPill>;
+              if (t === "pro") return null;
               if (t === "single") return <StatusPill tone="dark">DESBLOQUEADO</StatusPill>;
               return <StatusPill tone="pink">GRÁTIS</StatusPill>;
             })()}
