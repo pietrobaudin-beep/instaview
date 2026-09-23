@@ -86,7 +86,7 @@ export function AppNav({ plan }: { plan?: Plan }) {
                 href={t.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex items-center gap-3 rounded-3xl px-3.5 py-4 text-sm transition",
+                  "flex items-center gap-3 rounded-2xl px-3.5 py-4 text-sm transition",
                   active
                     ? "bg-plum font-semibold text-white"
                     : "font-medium text-plum/60 hover:bg-plum/5 hover:text-plum",
@@ -116,7 +116,7 @@ export function AppNav({ plan }: { plan?: Plan }) {
             href={ACCOUNT.href}
             aria-current={isActive(pathname, ACCOUNT.href) ? "page" : undefined}
             className={cn(
-              "flex items-center gap-3 rounded-3xl px-3.5 py-4 text-sm transition",
+              "flex items-center gap-3 rounded-2xl px-3.5 py-4 text-sm transition",
               isActive(pathname, ACCOUNT.href)
                 ? "bg-plum font-semibold text-white"
                 : "font-medium text-plum/60 hover:bg-plum/5 hover:text-plum",

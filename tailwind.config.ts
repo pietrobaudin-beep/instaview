@@ -61,7 +61,7 @@ const config: Config = {
       /*
        * Cantos: três degraus e nada mais.
        *
-       *   rounded-3xl  24px  cartões, painéis e os itens da navegação
+       *   rounded-3xl  24px  cartões e painéis
        *   rounded-2xl  16px  botões, campos, linhas e chips
        *   rounded-xl   12px  miudezas (ícones, marcadores)
        *   rounded-full       círculos e pílulas
