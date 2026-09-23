@@ -7,7 +7,12 @@ import { ArrowLeft, ArrowRight, BadgeCheck, Check, ChevronDown, Loader2, Lock, U
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
 import { Panel, PersonRow } from "@/components/ui/brand";
-import { OtherNetworks, ProfileHero, type HeroProfile } from "@/components/profile-hero";
+import {
+  OtherNetworks,
+  ProfileHero,
+  type HeroProfile,
+  type RedesIniciais,
+} from "@/components/profile-hero";
 import {
   FollowsBreakdown,
   OtherInteractions,
@@ -46,6 +51,19 @@ const STEP_MS = 2400;
  * resposta vier antes, ela aparece.
  */
 const MIN_SEARCH_MS = 900;
+
+/**
+ * Quanto a cena de busca espera pelas outras redes antes de desistir.
+ *
+ * A tela só termina quando o "mesmo @ em outras redes" responde — é parte do
+ * que a pessoa veio ver, e aparecer depois, com a tela já montada, faz o bloco
+ * passar despercebido.
+ *
+ * Mas espera **com teto**: rede lenta ou fora do ar não pode prender ninguém
+ * olhando o cachorro correr. Estourado o prazo, a análise entra e o bloco se
+ * completa sozinho quando chegar.
+ */
+const TETO_REDES_MS = 6000;
 
 const TABS = [
   { value: "visao", label: "Visão geral" },
@@ -278,6 +296,9 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
   const [temStories, setTemStories] = React.useState<boolean | null>(null);
   const [step, setStep] = React.useState(0);
   const [analyzing, setAnalyzing] = React.useState(true);
+  /** As outras redes, buscadas JUNTO com a análise — ver `TETO_REDES_MS`. */
+  const [redes, setRedes] = React.useState<RedesIniciais | null>(null);
+  const [redesProntas, setRedesProntas] = React.useState(false);
   const [tracking, setTracking] = React.useState({ saved: false, busy: false });
   const [upsell, setUpsell] = React.useState(false);
   const [justPinned, setJustPinned] = React.useState(false);
@@ -380,10 +401,43 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
     };
   }, [intro, username]);
 
+  /*
+   * As outras redes começam a ser buscadas no primeiro instante, em paralelo
+   * com tudo.
+   *
+   * Duas coisas que custaram medição para descobrir:
+   *
+   * 1. Antes esta busca só começava quando o bloco entrava na tela — ou seja,
+   *    **depois** da cena de carregamento. Agora corre junto, e o resultado é
+   *    passado pronto para o bloco: uma requisição, não duas.
+   * 2. Ela não espera o `intro` virar "play". Esperava, e isso a fazia
+   *    arrancar só depois da checagem de "este perfil está no Faro?" — para um
+   *    @ novo, tarde demais: a cena desistia no teto e o bloco aparecia 2,4s
+   *    depois da análise, que é exatamente o que se queria evitar.
+   */
+  React.useEffect(() => {
+    let vivo = true;
+    setRedes(null);
+    setRedesProntas(false);
+
+    const teto = window.setTimeout(() => vivo && setRedesProntas(true), TETO_REDES_MS);
+
+    fetch(`/api/elsewhere?username=${encodeURIComponent(username)}`)
+      .then((r) => r.json())
+      .then((b) => vivo && setRedes(b))
+      .catch(() => {})
+      .finally(() => vivo && setRedesProntas(true));
+
+    return () => {
+      vivo = false;
+      window.clearTimeout(teto);
+    };
+  }, [username]);
+
   // The profile is in: hand the loading screen over to the reveal. The real
   // picture only ever exists from here on.
   const reveal: RevealProfile | null =
-    intro === "play" && analyzing && searchedEnough && state.kind === "ok"
+    intro === "play" && analyzing && searchedEnough && redesProntas && state.kind === "ok"
       ? {
           username: state.data.username,
           displayName: state.data.displayName,
@@ -719,7 +773,12 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
 
                 {/* O caminho que sobra: o mesmo @ em outra rede, onde o perfil
                     pode estar aberto. Só aparece quando a conta existe mesmo. */}
-                <OtherNetworks username={state.data.username} isPrivate destaque />
+                <OtherNetworks
+                  username={state.data.username}
+                  isPrivate
+                  destaque
+                  inicial={redes}
+                />
 
                 <div className="mt-6 flex justify-center">
                   <Link href="/">
@@ -860,7 +919,7 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
 
                 {/* O mesmo @ em outras redes também no perfil público, no fim
                     da página. Some sozinho quando não há nenhuma. */}
-                <OtherNetworks username={state.data.username} destaque />
+                <OtherNetworks username={state.data.username} destaque inicial={redes} />
               </>
             )}
           </>

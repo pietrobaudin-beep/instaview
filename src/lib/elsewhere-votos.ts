@@ -50,31 +50,6 @@ async function ler(username: string): Promise<Placar> {
   return ((row?.data as unknown as Placar) ?? {}) as Placar;
 }
 
-/**
- * As redes que não devem aparecer para quem está pedindo.
- *
- * `chave` é a identidade de quem olha (`peekUsageKey`); sem ela, resta só a
- * regra global.
- */
-export async function redesEscondidas(username: string, chave: string | null): Promise<string[]> {
-  const placar = await ler(username);
-  const fora: string[] = [];
-
-  for (const [rede, v] of Object.entries(placar)) {
-    const meuVoto = chave ? v.quem?.[chave] : undefined;
-    if (meuVoto === "nao") {
-      fora.push(rede);
-      continue;
-    }
-    // Quem disse que está certa continua vendo, mesmo que outros escondam:
-    // ela pode ser a única que conhece a pessoa de verdade.
-    if (meuVoto === "sim") continue;
-    if (v.nao >= LIMITE_GLOBAL && v.nao > v.sim) fora.push(rede);
-  }
-
-  return fora;
-}
-
 /** Registra (ou troca) o voto de uma identidade. Devolve o placar da rede. */
 export async function votar(
   username: string,
@@ -116,17 +91,33 @@ export async function votar(
   return { sim: atual.sim, nao: atual.nao };
 }
 
-/** O voto que esta identidade já deu, por rede — para a tela marcar o joinha. */
-export async function meusVotos(
+/**
+ * Escondidas e votos da pessoa, em UMA leitura.
+ *
+ * `redesEscondidas` e `meusVotos` liam a mesma linha do banco separadamente —
+ * duas idas para o mesmo dado, e num banco remoto cada ida custa uns 300ms.
+ * Esta rota é esperada pela tela de carregamento, então o tempo dela aparece.
+ */
+export async function votosDoPerfil(
   username: string,
   chave: string | null,
-): Promise<Record<string, Voto>> {
-  if (!chave) return {};
+): Promise<{ escondidas: string[]; meus: Record<string, Voto> }> {
   const placar = await ler(username);
+  const escondidas: string[] = [];
   const meus: Record<string, Voto> = {};
+
   for (const [rede, v] of Object.entries(placar)) {
-    const voto = v.quem?.[chave];
-    if (voto) meus[rede] = voto;
+    const meuVoto = chave ? v.quem?.[chave] : undefined;
+    if (meuVoto) meus[rede] = meuVoto;
+
+    if (meuVoto === "nao") {
+      escondidas.push(rede);
+      continue;
+    }
+    // Quem disse que está certa continua vendo, mesmo que outros escondam.
+    if (meuVoto === "sim") continue;
+    if (v.nao >= LIMITE_GLOBAL && v.nao > v.sim) escondidas.push(rede);
   }
-  return meus;
+
+  return { escondidas, meus };
 }

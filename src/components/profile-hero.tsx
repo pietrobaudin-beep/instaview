@@ -47,6 +47,20 @@ function Stat({ value, label }: { value: string; label: string }) {
  * Centred on a phone like the app screens; on desktop it lays out sideways so
  * the width is not wasted.
  */
+/** O que a busca das redes de graça devolve — ver `OtherNetworks.inicial`. */
+export interface RedesIniciais {
+  links?: {
+    network: string;
+    label: string;
+    handle: string;
+    url: string;
+    displayName?: string | null;
+    avatarUrl?: string | null;
+  }[];
+  escondidas?: string[];
+  votos?: Record<string, "sim" | "nao">;
+}
+
 /**
  * O mesmo @ em outra rede — só quando a conta existe de verdade.
  *
@@ -62,11 +76,20 @@ export function OtherNetworks({
   username,
   isPrivate,
   destaque = false,
+  inicial = null,
 }: {
   username: string;
   isPrivate?: boolean;
   /** No beco sem saída do perfil privado, o bloco vira a saída principal. */
   destaque?: boolean;
+  /**
+   * O resultado das redes de graça. Quem busca é a tela de perfil, em paralelo
+   * com a análise — este bloco **nunca** pede essa etapa.
+   *
+   * Chega `null` enquanto a busca corre e preenchido quando ela volta, mesmo
+   * que volte depois da cena de carregamento ter desistido de esperar.
+   */
+  inicial?: RedesIniciais | null;
 }) {
   type Elsewhere = {
     network: string;
@@ -85,24 +108,25 @@ export function OtherNetworks({
    */
   const vscoPossivel = /^[\w.-]{2,30}$/.test(username);
 
-  const [links, setLinks] = React.useState<Elsewhere[]>([]);
+  const [links, setLinks] = React.useState<Elsewhere[]>((inicial?.links as Elsewhere[]) ?? []);
   const [procurando, setProcurando] = React.useState(false);
   const [procurouPagas, setProcurouPagas] = React.useState(false);
   const [falhou, setFalhou] = React.useState(false);
 
   /** O que esta pessoa já respondeu, por rede. */
-  const [votos, setVotos] = React.useState<Record<string, Voto>>({});
+  const [votos, setVotos] = React.useState<Record<string, Voto>>(inicial?.votos ?? {});
   /** As que ela escondeu — some da tela na hora, sem esperar o servidor. */
-  const [escondidas, setEscondidas] = React.useState<string[]>([]);
+  const [escondidas, setEscondidas] = React.useState<string[]>(inicial?.escondidas ?? []);
   /** A última escondida, para oferecer o desfazer. */
   const [ultima, setUltima] = React.useState<{ rede: string; label: string } | null>(null);
 
   /**
    * Busca em duas etapas, sozinha.
    *
-   * Primeiro as redes de graça, que respondem em ~4s e já enchem a lista.
-   * Depois, sem pedir nada a ninguém, as que passam pelo Apify — TikTok e
-   * YouTube, que trazem a foto. Quem está olhando vê a lista aparecer e
+   * As redes de graça vêm prontas em `inicial` — a tela de perfil as busca
+   * enquanto a cena de carregamento roda, e a cena só termina quando elas
+   * respondem. Aqui sobra a segunda etapa: as que passam pelo Apify — TikTok
+   * e YouTube, que trazem a foto e entram depois. Quem está olhando vê a lista aparecer e
    * depois ganhar as fotos, em vez de encarar um botão e um vazio.
    *
    * O botão que havia aqui saiu porque exigia descobrir que ele existia. A
@@ -110,33 +134,41 @@ export function OtherNetworks({
    * primeira vez e fica 7 dias no cache — a segunda pessoa que abrir o mesmo
    * perfil não paga.
    */
+  /*
+   * Quando as redes de graça chegam, elas entram aqui — inclusive se chegarem
+   * atrasadas, depois de a cena de carregamento ter desistido de esperar.
+   */
   React.useEffect(() => {
-    let vivo = true;
+    if (!inicial) return;
+    setLinks((inicial.links as Elsewhere[]) ?? []);
+    setEscondidas(inicial.escondidas ?? []);
+    setVotos(inicial.votos ?? {});
+  }, [inicial]);
 
-    const aplicar = (b: { links?: Elsewhere[]; escondidas?: string[]; votos?: Record<string, Voto> }) => {
-      setLinks(b.links ?? []);
-      setEscondidas(b.escondidas ?? []);
-      setVotos(b.votos ?? {});
-    };
+  /**
+   * A segunda etapa: as redes que passam pelo Apify.
+   *
+   * TikTok e YouTube, que trazem a foto. Só roda depois que as de graça
+   * chegaram — sem isso, as duas listas brigariam pelo mesmo estado e a paga,
+   * mais lenta, sobrescreveria a outra com um resultado incompleto.
+   *
+   * Cada @ custa cerca de US$ 0,003 na primeira vez e fica 7 dias no cache: a
+   * segunda pessoa que abrir o mesmo perfil não paga.
+   */
+  React.useEffect(() => {
+    if (!inicial) return;
+    let vivo = true;
+    setProcurando(true);
 
     (async () => {
-      try {
-        const r = await fetch(`/api/elsewhere?username=${encodeURIComponent(username)}`);
-        const b = await r.json();
-        if (!vivo) return;
-        aplicar(b);
-      } catch {
-        // As de graça falharem não impede de tentar as outras.
-      }
-
-      if (!vivo) return;
-      setProcurando(true);
       try {
         const r = await fetch(`/api/elsewhere?username=${encodeURIComponent(username)}&pagas=1`);
         if (!r.ok) throw new Error(String(r.status));
         const b = await r.json();
         if (!vivo) return;
-        aplicar(b);
+        setLinks(b.links ?? []);
+        setEscondidas(b.escondidas ?? []);
+        setVotos(b.votos ?? {});
         setProcurouPagas(true);
       } catch {
         if (vivo) setFalhou(true);
@@ -148,7 +180,10 @@ export function OtherNetworks({
     return () => {
       vivo = false;
     };
-  }, [username]);
+    // Só o @ reinicia a etapa paga; `inicial` mudando de null para pronto é o
+    // gatilho, e relê-lo a cada mudança pediria duas vezes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [username, Boolean(inicial)]);
 
   /**
    * Registra o voto e some na hora com o que foi marcado como errado.

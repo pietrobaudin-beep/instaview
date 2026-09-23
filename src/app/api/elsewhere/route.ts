@@ -3,7 +3,7 @@ import { handleElsewhere } from "@/lib/handle-elsewhere";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
 import { getCurrentUser } from "@/lib/auth";
 import { peekUsageKey, usageKey } from "@/lib/usage";
-import { meusVotos, redesEscondidas, votar, type Voto } from "@/lib/elsewhere-votos";
+import { votar, votosDoPerfil, type Voto } from "@/lib/elsewhere-votos";
 import { TETO_REDES_PAGAS, consumirTeto } from "@/lib/teto-diario";
 
 export const dynamic = "force-dynamic";
@@ -41,10 +41,11 @@ export async function GET(req: Request) {
     ? (await consumirTeto(chave, "redes-pagas", TETO_REDES_PAGAS)).ok
     : false;
 
-  const [links, escondidas, votos] = await Promise.all([
+  // As duas em paralelo, e os votos numa leitura só: esta rota é esperada
+  // pela tela de carregamento, então cada ida ao banco aparece para quem olha.
+  const [links, { escondidas, meus }] = await Promise.all([
     handleElsewhere(username, podePagar),
-    redesEscondidas(username, chave),
-    meusVotos(username, chave),
+    votosDoPerfil(username, chave),
   ]);
 
   return NextResponse.json({
@@ -53,7 +54,7 @@ export async function GET(req: Request) {
     // O VSCO é montado na tela, não vem daqui — por isso a lista vai inteira,
     // para a tela poder escondê-lo também.
     escondidas,
-    votos,
+    votos: meus,
   });
 }
 

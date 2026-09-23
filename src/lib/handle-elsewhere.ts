@@ -201,41 +201,52 @@ export async function handleElsewhere(
   const handle = username.trim().replace(/^@+/, "").toLowerCase();
   const out: Elsewhere[] = [];
 
-  for (const network of Object.keys(NETWORKS) as RedeGratis[]) {
-    const cfg = NETWORKS[network];
-    if (!cfg.valid.test(handle)) continue; // o @ nem é válido nessa rede
+  /*
+   * As três redes de graça em paralelo, não em fila.
+   *
+   * Cada uma faz uma leitura no banco e, em caso de cache velho, um pedido
+   * externo. Em sequência isso somava — e esta rota é esperada pela tela de
+   * carregamento, então o tempo dela aparece para quem está olhando.
+   */
+  const gratis = await Promise.all(
+    (Object.keys(NETWORKS) as RedeGratis[]).map(async (network) => {
+      const cfg = NETWORKS[network];
+      if (!cfg.valid.test(handle)) return null; // o @ nem é válido nessa rede
 
-    const row = await prisma.sectionCache
-      .findUnique({ where: { username_section: { username: handle, section: key(network) } } })
-      .catch(() => null);
-
-    let result: Result;
-    if (row && Date.now() - row.fetchedAt.getTime() < TTL) {
-      result = row.data as Result;
-    } else {
-      result = await check(network, handle);
-      log.info("checked", { network, handle, verdict: result.verdict });
-      const data = result as unknown as Parameters<typeof prisma.sectionCache.create>[0]["data"]["data"];
-      await prisma.sectionCache
-        .upsert({
-          where: { username_section: { username: handle, section: key(network) } },
-          create: { username: handle, section: key(network), data },
-          update: { data, fetchedAt: new Date() },
-        })
+      const row = await prisma.sectionCache
+        .findUnique({ where: { username_section: { username: handle, section: key(network) } } })
         .catch(() => null);
-    }
 
-    if (result?.verdict === "yes") {
-      out.push({
+      let result: Result;
+      if (row && Date.now() - row.fetchedAt.getTime() < TTL) {
+        result = row.data as Result;
+      } else {
+        result = await check(network, handle);
+        log.info("checked", { network, handle, verdict: result.verdict });
+        const data = result as unknown as Parameters<typeof prisma.sectionCache.create>[0]["data"]["data"];
+        await prisma.sectionCache
+          .upsert({
+            where: { username_section: { username: handle, section: key(network) } },
+            create: { username: handle, section: key(network), data },
+            update: { data, fetchedAt: new Date() },
+          })
+          .catch(() => null);
+      }
+
+      if (result?.verdict !== "yes") return null;
+      return {
         network,
         label: cfg.label,
         handle,
         url: cfg.url(handle),
         displayName: result.displayName ?? null,
         avatarUrl: result.avatarUrl ?? null,
-      });
-    }
-  }
+      } as Elsewhere;
+    }),
+  );
+
+  // A ordem da lista segue a ordem de `NETWORKS`, não quem respondeu primeiro.
+  for (const item of gratis) if (item) out.push(item);
 
   if (incluirPagas && apifyLigado()) {
     // Em paralelo, e não em fila: medido em 21/09, o TikTok leva ~11s e o
