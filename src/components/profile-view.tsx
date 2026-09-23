@@ -77,7 +77,9 @@ const TABS = [
   { value: "seguindo", label: "Seguindo" },
   { value: "interacoes", label: "Interações" },
   { value: "tagged", label: "Marcações" },
-  { value: "highlights", label: "Destaques" },
+  // Destaques saiu da tela em 23/09: a prévia do grátis era um punhado de
+  // círculos vazios, e para quem paga era mais uma leitura por perfil. A
+  // seção continua existindo na API.
   // Reposts e "Parecidos" saíram da tela: pouca gente abria e cada uma era
   // mais uma requisição paga. "Sobre" também deixou de ser aba — virou a linha
   // em letra miúda no rodapé de todas as seções. As três seguem na API.
@@ -112,7 +114,16 @@ function Abas({ value, onChange }: { value: Tab; onChange: (t: Tab) => void }) {
    *
    * `block: "nearest"` para a página não dar um pulo vertical junto.
    */
+  const anterior = React.useRef(value);
   React.useEffect(() => {
+    // Só quando a aba MUDA de verdade. Na montagem, não: a faixa costuma estar
+    // abaixo da dobra, e `scrollIntoView` traria a PÁGINA até ela — quem abre o
+    // perfil caía direto nas abas, sem ver a foto e os números.
+    //
+    // Comparar o valor, e não um "já montou": em desenvolvimento o React roda
+    // cada efeito duas vezes, e uma bandeira de montagem escorrega na segunda.
+    if (anterior.current === value) return;
+    anterior.current = value;
     const ativa = faixa.current?.querySelector<HTMLElement>('[aria-selected="true"]');
     ativa?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
   }, [value]);
@@ -154,6 +165,54 @@ function Abas({ value, onChange }: { value: Tab; onChange: (t: Tab) => void }) {
         aria-hidden
         className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-background to-transparent sm:hidden"
       />
+    </div>
+  );
+}
+
+/**
+ * O fundo da tela de limite: a silhueta de uma análise, borrada.
+ *
+ * São barras e círculos cinzas — nenhum dado real, nenhum nome inventado. A
+ * análise nem chegou a ser pedida ao provedor (é para isso que o limite
+ * existe), então não há o que borrar de verdade. O papel desta peça é só
+ * dizer, pela forma, que tem uma tela inteira do outro lado.
+ */
+function EsqueletoBorrado() {
+  const linhas = [0, 1, 2, 3, 4];
+  return (
+    <div className="space-y-5 blur-[6px]">
+      <div className="rounded-3xl border border-border bg-card p-5">
+        <div className="flex items-center gap-4">
+          <div className="h-20 w-20 shrink-0 rounded-full bg-muted" />
+          <div className="min-w-0 flex-1 space-y-2">
+            <div className="h-5 w-40 max-w-full rounded bg-muted" />
+            <div className="h-3 w-24 max-w-full rounded bg-muted/70" />
+          </div>
+        </div>
+        <div className="mt-6 grid grid-cols-3 gap-3">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="space-y-2">
+              <div className="h-6 w-14 rounded bg-muted" />
+              <div className="h-2.5 w-16 rounded bg-muted/70" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="rounded-3xl border border-border bg-card p-5">
+        <div className="h-4 w-44 max-w-full rounded bg-muted" />
+        <ul className="mt-4 space-y-4">
+          {linhas.map((i) => (
+            <li key={i} className="flex items-center gap-3">
+              <div className="h-10 w-10 shrink-0 rounded-full bg-muted" />
+              <div className="min-w-0 flex-1 space-y-1.5">
+                <div className="h-3 w-32 max-w-full rounded bg-muted" />
+                <div className="h-2.5 w-20 max-w-full rounded bg-muted/70" />
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
@@ -665,40 +724,51 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
         )}
 
         {!analyzing && state.kind === "limited" && (
-          <div className="mx-auto max-w-lg">
-            <Panel>
-              <div className="flex flex-col items-center gap-3 py-8 text-center">
-                <Mascot pose="feliz" className="h-20 text-vinho" bob />
-                <h1 className="text-2xl font-bold">Sua análise gratuita já foi usada</h1>
-                <p className="max-w-sm text-sm text-muted-foreground">
-                  O plano grátis inclui <b>1 perfil</b>. Veja só este perfil com um pagamento
-                  único, ou assine o PRO para farejar quantos quiser.
-                </p>
-                <SingleUnlockButton username={username} className="mt-2 w-full max-w-xs" />
-                <Link
-                  href={`/pricing?next=${encodeURIComponent(`/p/${username}`)}`}
-                  className="w-full max-w-xs"
-                >
-                  <Button variant="outline" size="lg" className="w-full">
-                    Conhecer o Farejo PRO <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </Link>
-                {state.spentOn && state.spentOn !== username && (
+          <div className="relative isolate min-h-[78vh]">
+            {/* A prévia por trás do convite: formas, não dados. Não há o que
+                mostrar aqui — a análise nem foi pedida ao provedor, que é o
+                ponto do limite. O que vale é dizer, com a tela, que TEM coisa
+                do outro lado; o que não vale é inventar nome de ninguém. */}
+            <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+              <EsqueletoBorrado />
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/75 to-background" />
+            </div>
+
+            <div className="mx-auto max-w-md px-1 pt-[12vh]">
+              <Panel>
+                <div className="flex flex-col items-center gap-3 py-8 text-center">
+                  <Mascot pose="feliz" className="h-20 text-vinho" bob />
+                  <h1 className="text-2xl font-bold">Sua análise gratuita já foi usada</h1>
+                  <p className="max-w-sm text-sm text-muted-foreground">
+                    O plano grátis inclui <b>1 perfil</b>. Veja só este perfil com um pagamento
+                    único, ou assine o PRO para farejar quantos quiser.
+                  </p>
+                  <SingleUnlockButton username={username} className="mt-2 w-full max-w-xs" />
                   <Link
-                    href={`/p/${encodeURIComponent(state.spentOn)}`}
-                    className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                    href={`/pricing?next=${encodeURIComponent(`/p/${username}`)}`}
+                    className="w-full max-w-xs"
                   >
-                    voltar para @{state.spentOn}
+                    <Button variant="outline" size="lg" className="w-full">
+                      Conhecer o Farejo PRO <ArrowRight className="h-4 w-4" />
+                    </Button>
                   </Link>
-                )}
-                <Link
-                  href={`/login?next=${encodeURIComponent(`/p/${username}`)}`}
-                  className="text-xs text-muted-foreground hover:text-foreground"
-                >
-                  já é assinante? entrar
-                </Link>
-              </div>
-            </Panel>
+                  {state.spentOn && state.spentOn !== username && (
+                    <Link
+                      href={`/p/${encodeURIComponent(state.spentOn)}`}
+                      className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                    >
+                      voltar para @{state.spentOn}
+                    </Link>
+                  )}
+                  <Link
+                    href={`/login?next=${encodeURIComponent(`/p/${username}`)}`}
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    já é assinante? entrar
+                  </Link>
+                </div>
+              </Panel>
+            </div>
           </div>
         )}
 
