@@ -272,7 +272,34 @@ export function TrackingSettings({
         )}
       </Panel>
 
-      {/* 2. O que mudou na semana, em três números. */}
+      {/* 2. Os stories vêm antes de tudo: é o que some em 24h no Instagram.
+          O resto do painel continua lá depois de amanhã; eles, não. */}
+      <div className="mt-5">
+        {stories.length > 0 ? (
+          <SavedStories
+            stories={stories}
+            plan={plan}
+            username={username}
+            avatarUrl={avatarUrl}
+            profileId={profileId}
+            salvosIniciais={storiesSalvos}
+            cotaInicial={cotaSalvos}
+          />
+        ) : (
+          <Panel title="Stories">
+            <p className="text-sm text-muted-foreground">
+              Nenhum story guardado ainda.{" "}
+              {janela === Number.POSITIVE_INFINITY
+                ? "Quando o Faro encontrar um, ele fica guardado desde a entrada no Faro."
+                : janela > 0
+                  ? `Quando o Faro encontrar um, ele fica guardado por ${janela} horas pelo seu plano.`
+                  : "Seu plano não guarda stories."}
+            </p>
+          </Panel>
+        )}
+      </div>
+
+      {/* 3. O que mudou na semana, em três números. */}
       {semana && (
         <>
           <p className="mb-2 mt-5 text-[11px] font-bold uppercase tracking-[0.14em] text-plum/50">
@@ -288,18 +315,6 @@ export function TrackingSettings({
 
       <div className="mt-5 grid items-start gap-5 lg:grid-cols-[1.4fr_1fr]">
         <div className="min-w-0 space-y-5">
-          {stories.length > 0 && (
-            <SavedStories
-              stories={stories}
-              plan={plan}
-              username={username}
-              avatarUrl={avatarUrl}
-              profileId={profileId}
-              salvosIniciais={storiesSalvos}
-              cotaInicial={cotaSalvos}
-            />
-          )}
-
           {/* 3. As pistas deste perfil. */}
           <section>
             <h2 className="mb-3 text-lg font-bold tracking-tight">Pistas de @{username}</h2>
@@ -321,20 +336,9 @@ export function TrackingSettings({
           {/* O histórico deste perfil: só banco, nenhuma chamada paga. */}
           <HistoryPanel username={username} loggedIn isPro={plan !== "FREE"} />
 
-          {stories.length === 0 && (
-            <Panel title="Stories">
-              <p className="text-sm text-muted-foreground">
-                Nenhum story guardado ainda.{" "}
-                {janela === Number.POSITIVE_INFINITY
-                  ? "Quando o Faro encontrar um, ele fica guardado desde a entrada no Faro."
-                  : janela > 0
-                    ? `Quando o Faro encontrar um, ele fica guardado por ${janela} horas pelo seu plano.`
-                    : "Seu plano não guarda stories."}
-              </p>
-            </Panel>
-          )}
-
-          {/* 4. Ajustes, fechados por padrão: quem entra aqui quer ver pistas. */}
+          {/* 5. Ajustes, fechados por padrão: quem entra aqui quer ver pistas.
+              O rótulo fala do efeito, não do mecanismo: cada chave decide o
+              que aparece neste painel, e não só o que dispara alerta. */}
           <Panel bodyClassName="px-5 py-1">
             <button
               type="button"
@@ -342,7 +346,7 @@ export function TrackingSettings({
               aria-expanded={ajustesAbertos}
               className="flex w-full items-center justify-between py-4 text-left"
             >
-              <span className="text-sm font-bold">Alertas deste perfil</span>
+              <span className="text-sm font-bold">Configurações do que você vê</span>
               <ChevronDown
                 className={`h-4 w-4 transition ${ajustesAbertos ? "rotate-180" : ""}`}
               />

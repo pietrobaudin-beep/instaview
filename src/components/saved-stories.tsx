@@ -123,10 +123,16 @@ export function SavedStories({
    *
    * No Faro Detetive a janela já é infinita, então lá marcar é só organizar.
    */
-  const dentroDoPrazo = stories.filter((s) => horas(s.detectedAt) <= janela);
   const marcados = stories.filter((s) => salvos.includes(s.id));
-  const visiveis = dentroDoPrazo;
-  if (!visiveis.length && !marcados.length) return null;
+  /*
+   * O prazo corta — a estrela protege. Antes a lista mostrava só o que estava
+   * dentro do prazo do plano, e o story marcado sumia daqui junto com os
+   * outros: parecia que a estrela não tinha guardado nada. Ela continuava
+   * valendo (o story estava na página de salvos), mas o lugar onde a pessoa
+   * clicou não dizia isso.
+   */
+  const visiveis = stories.filter((s) => horas(s.detectedAt) <= janela || salvos.includes(s.id));
+  if (!visiveis.length) return null;
 
   const paraViewer = (lista: SavedStory[]) =>
     lista.map((s) => ({
