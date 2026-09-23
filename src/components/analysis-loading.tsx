@@ -75,18 +75,34 @@ export function AnalysisLoading({
         ? "Encontrei o perfil, mas não consigo farejar além daqui."
         : "Achei.";
 
+  /*
+   * Tudo em fluxo, nada solto por cima.
+   *
+   * As frases escritas à mão eram `absolute` dentro deste mesmo quadro, que
+   * rola. Elas ficavam grudadas nas bordas da tela enquanto o conteúdo passava
+   * por baixo — e no celular, com o cartão do perfil já montado, a frase de
+   * baixo caía em cima da barra de progresso. Agora cada uma tem o seu lugar
+   * na coluna, e o miolo cresce entre elas.
+   *
+   * O respiro de baixo respeita a área segura do aparelho: no iPhone, a barra
+   * de gestos comia a última linha.
+   */
   return (
     <div className="brand-panel fixed inset-0 z-50 overflow-y-auto">
-      {/* Handwritten annotations, as in the designs. */}
-      <span className="hand absolute left-6 top-14 -rotate-[8deg] text-2xl leading-tight sm:left-12 sm:top-20 sm:text-3xl">
-        toda curiosidade
-        <br />
-        deixa um rastro
-        <span className="mt-1 block h-[3px] w-14 rounded-full bg-current" />
-      </span>
-      <Heart className="absolute right-8 top-16 h-8 sm:right-16 sm:top-20 sm:h-10" />
+      <div className="flex min-h-full flex-col items-center px-6 pt-10 text-center sm:px-8 sm:pt-14"
+           style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1.5rem)" }}>
+        {/* As duas anotações do topo, lado a lado. */}
+        <div className="flex w-full items-start justify-between gap-4">
+          <span className="hand -rotate-[8deg] text-left text-2xl leading-tight sm:text-3xl">
+            toda curiosidade
+            <br />
+            deixa um rastro
+            <span className="mt-1 block h-[3px] w-14 rounded-full bg-current" />
+          </span>
+          <Heart className="h-8 shrink-0 sm:h-10" />
+        </div>
 
-      <div className="flex min-h-full flex-col items-center justify-center px-8 py-28 text-center">
+        <div className="flex w-full flex-1 flex-col items-center justify-center py-8">
         <Logo className="h-12 sm:h-16" />
         <p className="mt-3 text-sm tracking-[0.2em] opacity-80">curiosidade conecta.</p>
 
@@ -122,17 +138,16 @@ export function AnalysisLoading({
             farejando <b>@{username}</b>
           </p>
         )}
+        </div>
+
+        <span className="hand mt-6 self-end rotate-[8deg] text-right text-xl leading-tight sm:text-2xl">
+          algumas respostas
+          <br />
+          precisam ser farejadas <span className="align-middle">♥</span>
+        </span>
+
+        <p className="mt-6 text-[11px] tracking-[0.25em] opacity-70">FAREJE ALÉM DO @</p>
       </div>
-
-      <span className="hand absolute bottom-24 right-6 rotate-[8deg] text-right text-xl leading-tight sm:bottom-28 sm:right-14 sm:text-2xl">
-        algumas respostas
-        <br />
-        precisam ser farejadas <span className="align-middle">♥</span>
-      </span>
-
-      <p className="absolute inset-x-0 bottom-8 text-center text-[11px] tracking-[0.25em] opacity-70">
-        FAREJE ALÉM DO @
-      </p>
     </div>
   );
 }
