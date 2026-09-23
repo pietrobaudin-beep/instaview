@@ -65,6 +65,16 @@ const MIN_SEARCH_MS = 900;
  */
 const TETO_REDES_MS = 6000;
 
+/**
+ * Quantas pessoas a lista de "Novos seguindo" mostra.
+ *
+ * A leitura traz as 50 mais recentes — e as 50 continuam valendo para a conta
+ * de mulheres e homens, que é uma estatística. Mas cinquenta linhas seguidas
+ * viram rolagem sem fim, e as últimas já são de meses atrás. Dez é o que se lê
+ * de uma vez.
+ */
+const MAX_SEGUINDO = 10;
+
 const TABS = [
   { value: "visao", label: "Visão geral" },
   // Stories não é aba: abre em tela cheia pela foto do perfil, como no
@@ -900,8 +910,9 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
                   <div className="mt-5">
                     <Panel title="Novos seguindo">
                       <p className="-mt-1 mb-3 text-[11px] text-muted-foreground">
-                        Perfis que @{state.data.username} começou a seguir recentemente. Apenas
-                        pessoas reais — contas verificadas e de marcas ficam de fora.
+                        Os {MAX_SEGUINDO} perfis mais recentes que @{state.data.username} começou
+                        a seguir. Apenas pessoas reais — contas verificadas e de marcas ficam de
+                        fora.
                       </p>
                       {following.kind === "loading" ? (
                         <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
@@ -909,7 +920,7 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
                         </div>
                       ) : ready && ready.users.length > 0 ? (
                         <ul className="divide-y divide-border">
-                          {ready.users.map((u, i) => (
+                          {ready.users.slice(0, MAX_SEGUINDO).map((u, i) => (
                             <li key={u.username + i}>
                               <PersonRow
                                 username={u.username}
