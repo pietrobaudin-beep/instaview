@@ -118,30 +118,41 @@ function Abas({ value, onChange }: { value: Tab; onChange: (t: Tab) => void }) {
     return () => window.removeEventListener("click", fechar);
   }, [aberto]);
 
+  /*
+   * O "Mais" fica FORA da faixa que rola, de propósito.
+   *
+   * Dentro dela o menu aberto era recortado no celular — quem tem
+   * `overflow-x: auto` também recorta o que passa por cima e por baixo — e no
+   * computador a faixa ganhava uma barra de rolagem vertical só para tentar
+   * caber o menu aberto. Agora só as abas principais rolam de lado, e o botão
+   * fica ancorado na direita, sempre à vista.
+   */
   return (
-    <div
-      role="tablist"
-      aria-label="O que você quer ver"
-      className="-mx-5 mt-3 flex items-center gap-2 overflow-x-auto px-5 pb-1 sm:mx-0 sm:flex-wrap sm:px-0"
-    >
-      {principais.map((t) => (
-        <button
-          key={t.value}
-          type="button"
-          role="tab"
-          aria-selected={value === t.value}
-          onClick={() => onChange(t.value)}
-          className={`min-h-[44px] shrink-0 rounded-2xl px-4 text-sm font-semibold transition ${
-            value === t.value
-              ? "bg-pink text-ink"
-              : "bg-muted text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          {t.label}
-        </button>
-      ))}
+    <div className="-mx-5 mt-3 flex items-start gap-2 px-5 sm:mx-0 sm:px-0">
+      <div
+        role="tablist"
+        aria-label="O que você quer ver"
+        className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible"
+      >
+        {principais.map((t) => (
+          <button
+            key={t.value}
+            type="button"
+            role="tab"
+            aria-selected={value === t.value}
+            onClick={() => onChange(t.value)}
+            className={`min-h-[44px] shrink-0 rounded-2xl px-4 text-sm font-semibold transition ${
+              value === t.value
+                ? "bg-pink text-ink"
+                : "bg-muted text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
 
-      <div className="relative">
+      <div className="relative shrink-0">
         <button
           type="button"
           onClick={(e) => {
