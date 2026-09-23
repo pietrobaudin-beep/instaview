@@ -37,20 +37,28 @@ export async function GET(req: Request) {
   // não tem nenhuma. Sem chave, vale só a regra global.
   const chave = peekUsageKey(await getCurrentUser());
 
-  const podePagar = pagas
-    ? (await consumirTeto(chave, "redes-pagas", TETO_REDES_PAGAS)).ok
-    : false;
+  /*
+   * O teto só é cobrado quando o Apify vai MESMO rodar.
+   *
+   * Antes ele era consumido aqui em cima, antes de qualquer leitura: abrir
+   * cinco perfis já guardados queimava o dia inteiro, e o sexto — esse sim
+   * novo — voltava sem a foto do TikTok. Agora quem decide o momento é a
+   * busca, que só pede permissão depois de o cache não responder.
+   */
+  const permitir = async () => (await consumirTeto(chave, "redes-pagas", TETO_REDES_PAGAS)).ok;
 
   // As duas em paralelo, e os votos numa leitura só: esta rota é esperada
   // pela tela de carregamento, então cada ida ao banco aparece para quem olha.
   const [links, { escondidas, meus }] = await Promise.all([
-    handleElsewhere(username, podePagar),
+    handleElsewhere(username, pagas ? permitir : false),
     votosDoPerfil(username, chave),
   ]);
 
   return NextResponse.json({
     links: links.filter((l) => !escondidas.includes(l.network)),
-    pagas: podePagar,
+    // `true` quando a etapa paga foi pedida — tenha ela gastado ou vindo do
+    // cache. É o que diz à tela que não falta mais nada por vir.
+    pagas,
     // O VSCO é montado na tela, não vem daqui — por isso a lista vai inteira,
     // para a tela poder escondê-lo também.
     escondidas,

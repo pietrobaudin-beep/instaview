@@ -58,6 +58,11 @@ export interface RedesIniciais {
   }[];
   escondidas?: string[];
   votos?: Record<string, "sim" | "nao">;
+  /**
+   * Presente quando quem buscou já pediu a etapa paga — com ou sem sucesso.
+   * É por ele que este bloco sabe que não precisa pedir de novo.
+   */
+  pagas?: boolean;
 }
 
 /**
@@ -109,7 +114,7 @@ export function OtherNetworks({
 
   const [links, setLinks] = React.useState<Elsewhere[]>((inicial?.links as Elsewhere[]) ?? []);
   const [procurando, setProcurando] = React.useState(false);
-  const [procurouPagas, setProcurouPagas] = React.useState(false);
+  const [procurouPagas, setProcurouPagas] = React.useState(inicial?.pagas !== undefined);
   const [falhou, setFalhou] = React.useState(false);
 
   /** O que esta pessoa já respondeu, por rede. */
@@ -142,6 +147,7 @@ export function OtherNetworks({
     setLinks((inicial.links as Elsewhere[]) ?? []);
     setEscondidas(inicial.escondidas ?? []);
     setVotos(inicial.votos ?? {});
+    if (inicial.pagas !== undefined) setProcurouPagas(true);
   }, [inicial]);
 
   /**
@@ -156,6 +162,10 @@ export function OtherNetworks({
    */
   React.useEffect(() => {
     if (!inicial) return;
+    // Quem buscou já pediu a etapa paga — pedir de novo seria pagar duas vezes
+    // pelo mesmo @. É o caso normal hoje: a tela de perfil busca as duas
+    // etapas de uma vez, e a cena de carregamento espera as duas.
+    if (inicial.pagas !== undefined) return;
     let vivo = true;
     setProcurando(true);
 

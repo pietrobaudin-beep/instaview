@@ -55,15 +55,19 @@ const MIN_SEARCH_MS = 900;
 /**
  * Quanto a cena de busca espera pelas outras redes antes de desistir.
  *
- * A tela só termina quando o "mesmo @ em outras redes" responde — é parte do
- * que a pessoa veio ver, e aparecer depois, com a tela já montada, faz o bloco
- * passar despercebido.
+ * A tela só termina quando o "mesmo @ em outras redes" responde — **inteiro**,
+ * com as fotos. Antes a espera cobria só as redes de graça, e a foto do TikTok
+ * (que vem pelo Apify) chegava depois, com o perfil já montado: a linha pulava
+ * de desenho para foto na frente de quem estava lendo.
  *
  * Mas espera **com teto**: rede lenta ou fora do ar não pode prender ninguém
  * olhando o cachorro correr. Estourado o prazo, a análise entra e o bloco se
  * completa sozinho quando chegar.
+ *
+ * 10s porque agora a espera inclui o Apify. O @ que já está no cache responde
+ * em ~1,5s; o teto é para o @ novo, em que um ator pode demorar.
  */
-const TETO_REDES_MS = 6000;
+const TETO_REDES_MS = 10000;
 
 /**
  * Quantas pessoas a lista de "Novos seguindo" mostra.
@@ -478,7 +482,7 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
 
     const teto = window.setTimeout(() => vivo && setRedesProntas(true), TETO_REDES_MS);
 
-    fetch(`/api/elsewhere?username=${encodeURIComponent(username)}`)
+    fetch(`/api/elsewhere?username=${encodeURIComponent(username)}&pagas=1`)
       .then((r) => r.json())
       .then((b) => vivo && setRedes(b))
       .catch(() => {})

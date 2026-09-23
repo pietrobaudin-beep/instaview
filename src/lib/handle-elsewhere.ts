@@ -191,15 +191,25 @@ const key = (network: Network) => `net:${network}`;
  * Consulta com memória de 7 dias; só devolve as redes confirmadas.
  *
  * `incluirPagas` liga as redes que passam pelo Apify (TikTok com foto e
- * YouTube). Elas custam por execução, então só rodam quando alguém aperta
- * "Procurar em outras redes" — nunca sozinhas.
+ * YouTube). Pode ser um booleano ou uma **função**: a função é chamada só
+ * quando o Apify vai mesmo ser acionado — ou seja, quando o cache não
+ * respondeu. É assim que o teto diário do visitante para de ser gasto por
+ * um @ que já estava guardado.
+ *
+ * Chamada uma vez por consulta, no máximo: as duas redes pagas correm em
+ * paralelo e dividem a mesma permissão.
  */
 export async function handleElsewhere(
   username: string,
-  incluirPagas = false,
+  incluirPagas: boolean | (() => Promise<boolean>) = false,
 ): Promise<Elsewhere[]> {
   const handle = username.trim().replace(/^@+/, "").toLowerCase();
   const out: Elsewhere[] = [];
+
+  let permissao: Promise<boolean> | null = null;
+  const podeGastar = (): Promise<boolean> =>
+    (permissao ??=
+      typeof incluirPagas === "function" ? incluirPagas() : Promise.resolve(incluirPagas));
 
   /*
    * As três redes de graça em paralelo, não em fila.
@@ -248,7 +258,7 @@ export async function handleElsewhere(
   // A ordem da lista segue a ordem de `NETWORKS`, não quem respondeu primeiro.
   for (const item of gratis) if (item) out.push(item);
 
-  if (incluirPagas && apifyLigado()) {
+  if (incluirPagas !== false && apifyLigado()) {
     // Em paralelo, e não em fila: medido em 21/09, o TikTok leva ~11s e o
     // YouTube ~6s. Juntos, a espera é a da rede mais lenta, não a soma.
     const achados = await Promise.all(
@@ -267,6 +277,9 @@ export async function handleElsewhere(
         if (row && Date.now() - row.fetchedAt.getTime() < validade) {
           return [rede, row.data as unknown as Achado] as const;
         }
+
+        // Só agora o gasto é real — e só agora a permissão é pedida.
+        if (!(await podeGastar())) return [rede, undefined] as const;
 
         const achado = await viaApify(rede, handle);
         log.info("apify", { rede, handle, verdict: achado.verdict });
