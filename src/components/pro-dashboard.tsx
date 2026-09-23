@@ -129,7 +129,13 @@ function Section({
       <header className="flex flex-wrap items-center gap-2 border-b border-border px-5 py-4">
         <Icon className="h-4 w-4 shrink-0 text-accent" />
         <h2 className="font-semibold">{title}</h2>
-        <span className="ml-auto shrink-0">{action}</span>
+        {/* No celular o que está à direita do título (os filtros do ranking,
+            o botão "Analisar") ocupa a linha de baixo inteira e fica no meio:
+            encostado na direita, passava despercebido. No computador segue
+            ao lado do título. */}
+        <span className="ml-auto flex shrink-0 items-center justify-center max-sm:w-full">
+          {action}
+        </span>
       </header>
       <div className="p-5">{children}</div>
     </section>
