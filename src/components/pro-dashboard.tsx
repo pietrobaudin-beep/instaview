@@ -105,6 +105,9 @@ function PodiumCard({ person, rank }: { person: ProPerson; rank: number }) {
   );
 }
 
+/** Quantas pessoas o ranking mostra — o mesmo teto das listas da análise. */
+const RANKING_MAX = 10;
+
 function Section({
   title,
   icon: Icon,
@@ -119,11 +122,14 @@ function Section({
   className?: string;
 }) {
   return (
-    <section className={`rounded-2xl border border-border bg-card ${className}`}>
-      <header className="flex items-center gap-2 border-b border-border px-5 py-4">
-        <Icon className="h-4 w-4 text-accent" />
+    <section className={`rounded-3xl border border-border bg-card ${className}`}>
+      {/* `flex-wrap`: no celular os filtros do ranking não cabem ao lado do
+          título e saíam pela direita. Sem lugar na linha, descem para a
+          seguinte em vez de sumir. */}
+      <header className="flex flex-wrap items-center gap-2 border-b border-border px-5 py-4">
+        <Icon className="h-4 w-4 shrink-0 text-accent" />
         <h2 className="font-semibold">{title}</h2>
-        <span className="ml-auto">{action}</span>
+        <span className="ml-auto shrink-0">{action}</span>
       </header>
       <div className="p-5">{children}</div>
     </section>
@@ -282,7 +288,41 @@ export function ProDashboard(props: Props) {
           </div>
         }
       >
-        <div className="overflow-x-auto">
+        {/* No celular, lista. A tabela pede 420px de largura e rolava de lado
+            numa tela de 375: a coluna das interações ficava fora da vista, e
+            ninguém rola uma tabela de lado para descobrir que ela existe. */}
+        <ul className="divide-y divide-border sm:hidden">
+          {ranking.slice(0, RANKING_MAX).map((p, i) => {
+            const g = genderLabel(p.gender);
+            return (
+              <li key={p.username + i} className="flex items-center gap-3 py-2.5">
+                <span className="w-4 shrink-0 text-xs tabular-nums text-muted-foreground">
+                  {i + 1}
+                </span>
+                <Avatar src={p.avatarUrl} name={p.displayName ?? p.username} size={34} />
+                <div className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium">@{p.username}</span>
+                  {p.displayName && (
+                    <span className="block truncate text-xs text-muted-foreground">
+                      {p.displayName}
+                    </span>
+                  )}
+                  <span className={`mt-1 inline-block rounded-full border px-2 py-0.5 text-[10px] ${g.cls}`}>
+                    {g.text}
+                  </span>
+                </div>
+                {/* Sem contagem, nada: um "—×" pendurado na linha não informa. */}
+                {p.count != null && (
+                  <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-bold tabular-nums">
+                    {p.count}×
+                  </span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+
+        <div className="hidden overflow-x-auto sm:block">
           <table className="w-full min-w-[420px] text-sm">
             <thead>
               <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
@@ -293,7 +333,7 @@ export function ProDashboard(props: Props) {
               </tr>
             </thead>
             <tbody>
-              {ranking.slice(0, 20).map((p, i) => {
+              {ranking.slice(0, RANKING_MAX).map((p, i) => {
                 const g = genderLabel(p.gender);
                 return (
                   <tr key={p.username + i} className="border-b border-border/60 last:border-0">
