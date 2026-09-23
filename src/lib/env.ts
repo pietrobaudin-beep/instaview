@@ -29,6 +29,14 @@ const schema = z.object({
   HIKERAPI_KEY: z.string().default(""),
   /** Token do Apify, para procurar o mesmo @ em outras redes. Vazio = desligado. */
   APIFY_TOKEN: z.string().default(""),
+  /**
+   * Chave da OpenAI. Vazia = desligado, e é o padrão: nada no Farejo depende
+   * dela para funcionar. Entra para ler nome e bio e dizer se a conta é de
+   * mulher, de homem ou de marca — hoje isso é um palpite pelo primeiro nome.
+   *
+   * O que o modelo escrever nunca vira fato na tela: vira leitura.
+   */
+  OPENAI_API_KEY: z.string().default(""),
   HIKERAPI_BASE_URL: z.string().default("https://api.hikerapi.com"),
 
 
@@ -68,6 +76,7 @@ const raw = {
   PROVIDER_PAGE_SIZE: clean(process.env.PROVIDER_PAGE_SIZE),
   HIKERAPI_KEY: clean(process.env.HIKERAPI_KEY),
   APIFY_TOKEN: clean(process.env.APIFY_TOKEN),
+  OPENAI_API_KEY: clean(process.env.OPENAI_API_KEY),
   HIKERAPI_BASE_URL: clean(process.env.HIKERAPI_BASE_URL),
   CRON_SECRET: clean(process.env.CRON_SECRET),
   DEFAULT_COLLECTION_INTERVAL_MINUTES: clean(process.env.DEFAULT_COLLECTION_INTERVAL_MINUTES),
