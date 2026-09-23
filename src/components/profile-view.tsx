@@ -292,6 +292,10 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
    * A pergunta só é feita ao **cache** (`cached=1`), que não custa nada. Saber
    * de verdade exigiria a requisição paga em todo perfil aberto, e o anel some
    * de qualquer jeito assim que uma abertura mostrar que não há nenhum.
+   *
+   * **Conta privada nunca tem.** O provedor recusa story de perfil privado
+   * (`publicUser` lança `PRIVATE`), então o anel ali prometia uma coisa que
+   * não ia acontecer: a pessoa tocava na foto e não vinha nada.
    */
   const [temStories, setTemStories] = React.useState<boolean | null>(null);
   const [step, setStep] = React.useState(0);
@@ -360,6 +364,16 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
   React.useEffect(() => {
     let vivo = true;
     setTemStories(null);
+
+    // Só pergunta depois de saber quem é o perfil: antes disso a resposta não
+    // muda nada na tela, e para conta privada a pergunta nem faz sentido —
+    // story de perfil privado não existe para nós.
+    if (state.kind !== "ok") return;
+    if (state.data.isPrivate) {
+      setTemStories(false);
+      return;
+    }
+
     fetch(`/api/raio-x?username=${encodeURIComponent(username)}&section=stories&cached=1`)
       .then((r) => r.json())
       .then((b) => {
@@ -370,7 +384,7 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
     return () => {
       vivo = false;
     };
-  }, [username]);
+  }, [username, state.kind, state.kind === "ok" && state.data.isPrivate]);
 
   // Remember it once the scene has played through to the result. Only then:
   // a skipped revisit must not push the 24h window forward, or someone coming
@@ -728,7 +742,11 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
                 note={state.note}
                 tracking={tracking}
                 locked={!isPro}
-                onVerStories={temStories === false ? undefined : () => setStoriesAbertos(true)}
+                onVerStories={
+                  state.data.isPrivate || temStories === false
+                    ? undefined
+                    : () => setStoriesAbertos(true)
+                }
                 onTrack={following.kind === "private" ? undefined : startTracking}
               />
             </div>
