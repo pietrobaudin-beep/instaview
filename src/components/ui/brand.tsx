@@ -30,14 +30,21 @@ export function Panel({
 }) {
   return (
     <section className={cn("rounded-3xl border border-border bg-card", className)}>
+      {/* No celular o título vai para o meio, e o que estiver à direita dele
+          desce centrado na linha de baixo: numa tela estreita, encostado na
+          borda, passava despercebido. No computador, tudo como era. */}
       {(title || action) && (
-        <header className="flex items-center gap-3 px-5 pt-5">
+        <header className="flex flex-wrap items-center gap-3 px-5 pt-5 max-sm:justify-center max-sm:text-center">
           {typeof title === "string" ? (
             <h2 className="min-w-0 text-base font-bold tracking-tight">{title}</h2>
           ) : (
             title
           )}
-          {action && <span className="ml-auto shrink-0">{action}</span>}
+          {action && (
+            <span className="ml-auto flex shrink-0 items-center justify-center max-sm:w-full">
+              {action}
+            </span>
+          )}
         </header>
       )}
       <div className={cn("p-5", bodyClassName)}>{children}</div>

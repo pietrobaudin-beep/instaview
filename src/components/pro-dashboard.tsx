@@ -126,7 +126,7 @@ function Section({
       {/* `flex-wrap`: no celular os filtros do ranking não cabem ao lado do
           título e saíam pela direita. Sem lugar na linha, descem para a
           seguinte em vez de sumir. */}
-      <header className="flex flex-wrap items-center gap-2 border-b border-border px-5 py-4">
+      <header className="flex flex-wrap items-center gap-2 border-b border-border px-5 py-4 max-sm:justify-center max-sm:text-center">
         <Icon className="h-4 w-4 shrink-0 text-accent" />
         <h2 className="font-semibold">{title}</h2>
         {/* No celular o que está à direita do título (os filtros do ranking,
@@ -172,7 +172,7 @@ function MiniColumn({
 }) {
   return (
     <div className="rounded-xl border border-border bg-muted/20 p-3">
-      <div className="mb-2 flex items-center gap-1.5">
+      <div className="mb-2 flex items-center gap-1.5 max-sm:justify-center">
         <Icon className={`h-3.5 w-3.5 ${tone}`} />
         <span className="text-xs font-semibold">{title}</span>
         <span className="ml-auto text-[11px] text-muted-foreground">{items.length}</span>
@@ -254,7 +254,7 @@ export function ProDashboard(props: Props) {
 
       {top3.length > 0 && (
         <>
-          <h2 className="mb-3 mt-8 text-lg font-semibold">Pódio de interações</h2>
+          <h2 className="mb-3 mt-8 text-lg font-semibold max-sm:text-center">Pódio de interações</h2>
           <div className="grid gap-3 sm:grid-cols-3">
             {top3.map((p, i) => (
               <PodiumCard key={p.username} person={p} rank={i} />
