@@ -10,6 +10,7 @@ import { Chips, Panel } from "@/components/ui/brand";
 import { WheelPicker } from "@/components/ui/wheel-picker";
 import { pistaHeadline, type PistaKind } from "@/lib/voice";
 import { Mascot } from "@/components/ui/mascot";
+import { EXPLICACAO } from "@/lib/pista-text";
 
 export type NotificationAction =
   | "comecou_a_seguir"
@@ -119,8 +120,11 @@ function Linha({ n, compacta = false }: { n: Notification; compacta?: boolean })
   const quem = interacao ? n.target : n.subject;
   const quemAvatar = interacao ? n.targetAvatarUrl : n.subjectAvatarUrl;
   const alvo = interacao ? n.subject : n.target;
+  const [explicando, setExplicando] = React.useState(false);
+  const explicacao = EXPLICACAO[n.action];
 
   return (
+    <div className="relative">
     <Link
       href={`/p/${encodeURIComponent(n.subject)}`}
       className={`flex items-center gap-3 transition hover:bg-muted/40 ${
@@ -139,7 +143,41 @@ function Linha({ n, compacta = false }: { n: Notification; compacta?: boolean })
         </p>
         <span className="text-[11px] text-muted-foreground">{ago(n.detectedAt)}</span>
       </div>
+
+      {/* Fora do fluxo do link: quem quer entender não quer sair da página. */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setExplicando((x) => !x);
+        }}
+        aria-expanded={explicando}
+        aria-label="Como o Faro AI soube disto?"
+        title="Como o Faro AI soube disto?"
+        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-xl text-[13px] font-bold transition ${
+          explicando ? "bg-muted text-foreground" : "text-muted-foreground/60 hover:bg-muted hover:text-foreground"
+        }`}
+      >
+        ?
+      </button>
     </Link>
+
+    {/* O texto é fixo, escrito à mão — não sai de modelo nenhum. A pista é
+        uma afirmação sobre uma pessoa real; explicá-la com texto gerado
+        seria convidar o modelo a inventar intenção. */}
+    {explicando && (
+      <div className="mb-2 ml-[4.25rem] mr-4 rounded-2xl border border-border bg-muted/30 p-3 text-[12px] leading-relaxed">
+        <p>
+          <b className="font-semibold">Como soubemos:</b> {explicacao.como}
+        </p>
+        <p className="mt-1.5 text-muted-foreground">
+          <b className="font-semibold text-foreground">O que não dá para saber:</b>{" "}
+          {explicacao.limite}
+        </p>
+      </div>
+    )}
+    </div>
   );
 }
 
