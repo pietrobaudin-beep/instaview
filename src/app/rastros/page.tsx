@@ -12,6 +12,8 @@ import { PlanLimits } from "@/components/plan-limits";
 import { ResumoDoFaro, type PerfilResumo } from "@/components/resumo-do-faro";
 import type { EventData } from "@/lib/faro-watch";
 import { visivel } from "@/lib/acervo";
+import { StoriesDoFaro } from "@/components/stories-do-faro";
+import type { ViewerStory } from "@/components/story-viewer";
 import { lerSalvos } from "@/lib/stories-salvos";
 import { resumoDaFranquia } from "@/lib/franquia";
 import { direitosDe } from "@/lib/direitos";
@@ -93,6 +95,11 @@ export default async function RastrosPage() {
   // provedor. São poucos perfis por conta (o PRO tem 1), então uma leva de
   // consultas por perfil é barata.
   const desde = new Date(Date.now() - WEEK);
+  // Os stories no prazo de cada perfil, para a faixa do topo.
+  const storiesPorPerfil = new Map<string, ViewerStory[]>();
+  const proxied = (url: string | null) =>
+    url && /(?:\.fbcdn\.net|\.cdninstagram\.com)/i.test(url) ? `/api/img?url=${encodeURIComponent(url)}` : url;
+
   const resumos: PerfilResumo[] = await Promise.all(
     profiles.map(async (p) => {
       const seguindo = (type: "FOLLOW" | "UNFOLLOW") => ({
@@ -118,6 +125,23 @@ export default async function RastrosPage() {
         ]);
       const fav = new Set(favoritos);
       const stories = todosStories.filter((e) => visivel(user, e, fav));
+      // Do mais antigo ao mais novo, como o Instagram mostra.
+      storiesPorPerfil.set(
+        p.id,
+        stories
+          .slice(0, 30)
+          .reverse()
+          .map((e) => {
+            const d = e.data as unknown as EventData | null;
+            return {
+              id: e.id,
+              imageUrl: proxied(d?.thumbnailUrl ?? null),
+              takenAt: d?.takenAt ?? e.detectedAt.toISOString(),
+              mentions: d?.people ?? [],
+              expirou: Date.now() - e.detectedAt.getTime() >= 24 * 60 * 60 * 1000,
+            };
+          }),
+      );
       const pessoa = (c: (typeof seguiu)[number]) => ({ username: c.followerUsername, avatarUrl: c.avatarUrl });
       const item = (e: (typeof todosStories)[number]) => ({
         id: e.id,
@@ -177,11 +201,21 @@ export default async function RastrosPage() {
             </div>
           </Panel>
         ) : (
+          <>
+          <StoriesDoFaro
+            perfis={profiles.map((p) => ({
+              username: p.username,
+              avatarUrl: p.avatarUrl,
+              displayName: p.displayName,
+              stories: storiesPorPerfil.get(p.id) ?? [],
+            }))}
+          />
           <div className="grid items-start gap-5 xl:grid-cols-2">
             {resumos.map((r) => (
               <ResumoDoFaro key={r.id} perfil={r} />
             ))}
           </div>
+          </>
         )}
       </main>
       <NavSpacer />

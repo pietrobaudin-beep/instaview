@@ -121,9 +121,10 @@ export function ResumoDoFaro({ perfil }: { perfil: PerfilResumo }) {
         </span>
       </Link>
 
-      {/* A prévia fica fechada: a lista de perfis continua curta de ler, e o
-          conteúdo abre só para quem pedir. `<details>` dispensa JavaScript. */}
-      <details className="group border-t border-border">
+      {/* Tudo à vista, como era: quem abre o Faro AI quer ver o que ele
+          achou sem mais um clique. "Esconder prévia" fica para quem quiser a
+          lista curta. `<details>` dispensa JavaScript. */}
+      <details open className="group border-t border-border">
         <summary className="mx-5 my-4 flex min-h-[44px] cursor-pointer list-none items-center justify-center gap-1 rounded-2xl bg-muted text-sm font-semibold transition hover:bg-pink [&::-webkit-details-marker]:hidden">
           <span className="group-open:hidden">Exibir prévia</span>
           <span className="hidden group-open:inline">Esconder prévia</span>
