@@ -129,7 +129,18 @@ export const PLANS: Record<Plan, PlanConfig> = {
     // — R$ 9,90/mês a US$ 0,02 a requisição. Com 5 perfis o PRO custava
     // R$ 63 e recebia R$ 29,90: cada assinante saía do bolso do dono.
     maxProfiles: 2,
-    maxConsults: 3,
+    /*
+     * 5, e não 3.
+     *
+     * Três saiu do cálculo de margem e travou em um dia de uso normal — o
+     * dono bateu o teto testando o próprio produto. Cada análise nova custa
+     * R$ 1,32; duas a mais são R$ 2,64 por assinante, e a margem cai de 33%
+     * para 24%. Um plano em que a pessoa esbarra no primeiro dia cancela mais
+     * do que custa.
+     *
+     * Reabrir um @ já analisado nunca contou, e continua não contando.
+     */
+    maxConsults: 5,
     // Sem prazo, como o arquivo do plano de cima costumava ser. Guardar story
     // não custa provedor — é imagem que o Farejo já baixou. Cobrar por prazo
     // aqui era criar escassez artificial no plano que deveria ser o melhor.
@@ -150,7 +161,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     stripePriceEnv: "NEXT_PUBLIC_STRIPE_PRICE_PRO",
     features: [
       "2 perfis no Faro AI, vigiados todo dia",
-      "3 análises novas por mês",
+      "5 análises novas por mês",
       "Quem eles começam a seguir, e quem deixam",
       "Stories guardados SEM PRAZO, com busca por dentro",
       "Resumir stories: o Faro AI lê o que está escrito neles",

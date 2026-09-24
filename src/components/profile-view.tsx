@@ -848,18 +848,39 @@ export function ProfileView({
               <Panel>
                 <div className="flex flex-col items-center gap-3 py-8 text-center">
                   <Mascot pose="feliz" className="h-20 text-vinho" bob />
-                  <h1 className="text-2xl font-bold">Sua análise gratuita já foi usada</h1>
+                  {/* Quem paga e bateu no teto do MÊS não pode ler "sua
+                      análise gratuita já foi usada": ele não é do grátis, e a
+                      frase faz parecer que o plano sumiu. São duas situações
+                      diferentes e agora têm dois textos diferentes. */}
+                  <h1 className="text-2xl font-bold">
+                    {planoPro
+                      ? "Você já usou as análises novas deste mês"
+                      : "Sua análise gratuita já foi usada"}
+                  </h1>
                   <p className="max-w-sm text-sm text-muted-foreground">
-                    O plano grátis inclui <b>1 perfil</b>. Veja só este perfil com um pagamento
-                    único, ou assine o PRO para farejar quantos quiser.
+                    {planoPro ? (
+                      <>
+                        Seu plano inclui um número de <b>perfis novos</b> por mês, e ele acabou.
+                        Reabrir um @ que você já analisou <b>continua livre</b> — e os perfis do
+                        seu Faro AI seguem sendo lidos todo dia.
+                      </>
+                    ) : (
+                      <>
+                        O plano grátis inclui <b>1 perfil</b>. Veja só este perfil com um pagamento
+                        único, ou assine o PRO para farejar mais.
+                      </>
+                    )}
                   </p>
-                  <SingleUnlockButton username={username} className="mt-2 w-full max-w-xs" />
+                  {!planoPro && (
+                    <SingleUnlockButton username={username} className="mt-2 w-full max-w-xs" />
+                  )}
                   <Link
-                    href={`/pricing?next=${encodeURIComponent(`/p/${username}`)}`}
+                    href={planoPro ? "/rastros" : `/pricing?next=${encodeURIComponent(`/p/${username}`)}`}
                     className="w-full max-w-xs"
                   >
                     <Button variant="outline" size="lg" className="w-full">
-                      Conhecer o Farejo PRO <ArrowRight className="h-4 w-4" />
+                      {planoPro ? "Ir para o meu Faro AI" : "Conhecer o Farejo PRO"}{" "}
+                      <ArrowRight className="h-4 w-4" />
                     </Button>
                   </Link>
                   {state.spentOn && state.spentOn !== username && (
