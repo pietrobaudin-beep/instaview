@@ -70,6 +70,22 @@ const MIN_SEARCH_MS = 900;
 const TETO_REDES_MS = 10000;
 
 /**
+ * Quanto a cena espera pela ANÁLISE antes de soltar a tela.
+ *
+ * Sem isto, a cena soltava em 10s (o teto das outras redes) e a análise ainda
+ * estava no ar — medido em 24/09: de 5 a 11 segundos, mais desde que a IA
+ * entrou no caminho. Nesse intervalo a tela mostrava o perfil no estado
+ * **trancado**: cartões de "desbloqueie", listas borradas, nenhum painel. Quem
+ * paga via a tela de quem não paga por alguns segundos e concluía, com razão,
+ * que tinha quebrado.
+ *
+ * Maior que o das redes de propósito: as redes são um bloco a mais, a análise
+ * é a tela inteira. Estourado o prazo, a tela entra assim mesmo e se completa
+ * quando a resposta chegar — esperar para sempre seria pior.
+ */
+const TETO_ANALISE_MS = 18000;
+
+/**
  * Quantas pessoas a lista de "Novos seguindo" mostra.
  *
  * A leitura traz as 50 mais recentes — e as 50 continuam valendo para a conta
@@ -360,6 +376,13 @@ export function ProfileView({
   /** As outras redes, buscadas JUNTO com a análise — ver `TETO_REDES_MS`. */
   const [redes, setRedes] = React.useState<RedesIniciais | null>(null);
   const [redesProntas, setRedesProntas] = React.useState(false);
+  /** Estourou o tempo de esperar a análise: entra do jeito que estiver. */
+  const [analiseDemorou, setAnaliseDemorou] = React.useState(false);
+  React.useEffect(() => {
+    setAnaliseDemorou(false);
+    const id = window.setTimeout(() => setAnaliseDemorou(true), TETO_ANALISE_MS);
+    return () => window.clearTimeout(id);
+  }, [username]);
   const [tracking, setTracking] = React.useState({ saved: false, busy: false });
   const [upsell, setUpsell] = React.useState(false);
   const [justPinned, setJustPinned] = React.useState(false);
@@ -508,7 +531,14 @@ export function ProfileView({
   // The profile is in: hand the loading screen over to the reveal. The real
   // picture only ever exists from here on.
   const reveal: RevealProfile | null =
-    intro === "play" && analyzing && searchedEnough && redesProntas && state.kind === "ok"
+    intro === "play" &&
+    analyzing &&
+    searchedEnough &&
+    redesProntas &&
+    // A análise entra na conta: soltar a tela sem ela mostrava o perfil
+    // trancado para quem paga.
+    (following.kind !== "loading" || analiseDemorou) &&
+    state.kind === "ok"
       ? {
           username: state.data.username,
           displayName: state.data.displayName,
@@ -632,8 +662,21 @@ export function ProfileView({
         setFollowing({
           kind: "ready",
           seguindoOculto: !!body.seguindoOculto,
-          locked: !!body.locked || !body.real,
-          access: body.real ? (body.access ?? (body.locked ? "free" : "pro")) : "free",
+          /*
+           * Quem decide o acesso é o SERVIDOR, não o tamanho da lista.
+           *
+           * Aqui havia `locked: !!body.locked || !body.real` e
+           * `access: body.real ? ... : "free"`, onde `real` é só
+           * "a lista de seguindo veio com gente". A consequência, em 24/09:
+           * um perfil que FECHOU a lista de quem segue derrubava o plano de
+           * quem estava olhando — selo "GRÁTIS", tudo borrado, cartão de
+           * "desbloqueie" para quem já assina.
+           *
+           * Lista vazia é informação sobre o perfil olhado. Nunca sobre quem
+           * paga.
+           */
+          locked: !!body.locked,
+          access: body.access ?? (body.locked ? "free" : "pro"),
           users: body.following ?? [],
           real: !!body.real,
           counts: body.counts,
@@ -699,6 +742,18 @@ export function ProfileView({
   }
 
   const locked = !paid;
+  /*
+   * A análise ainda está no ar.
+   *
+   * Importa porque `locked` é `!paid`, e `paid` só existe quando a resposta
+   * chega: enquanto ela não chega, a tela é idêntica à de quem não pagou —
+   * cartões de "desbloqueie", listas borradas, nenhum painel. Na primeira
+   * visita a cena de carregamento esconde isso; na segunda ela é pulada, e
+   * quem paga via a tela de quem não paga por alguns segundos.
+   *
+   * Carregando não é o mesmo que trancado. A tela passa a dizer qual dos dois.
+   */
+  const carregandoAnalise = following.kind === "loading";
   const topInteraction = interactions.items[0] ?? ready?.users[0];
   const others = interactions.items.length > 1 ? interactions.items.slice(1) : ready?.users ?? [];
 
@@ -732,7 +787,10 @@ export function ProfileView({
             */}
           <div className="flex items-center gap-2">
             {(() => {
-              const t = ready?.access ?? (isPro ? "pro" : "free");
+              // `isPro` primeiro: ele vem da sessão e não depende de nenhuma
+            // leitura dar certo. `ready.access` só refina o caso do
+            // desbloqueio avulso, que é por perfil.
+            const t = isPro ? "pro" : (ready?.access ?? "free");
               if (t === "pro") return <StatusPill tone="yellow">PRO</StatusPill>;
               if (t === "single") return <StatusPill tone="dark">DESBLOQUEADO</StatusPill>;
               return <StatusPill tone="pink">GRÁTIS</StatusPill>;
@@ -924,6 +982,15 @@ export function ProfileView({
                         </span>
                       </NoteBox>
                     )}
+                    {carregandoAnalise && (
+                      <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Analisando @{state.data.username}…
+                      </div>
+                    )}
+
+                    {!carregandoAnalise && (
+                    <>
                     <div className="grid gap-5 lg:grid-cols-2">
                       <FollowsBreakdown
                         counts={ready?.counts}
@@ -941,7 +1008,9 @@ export function ProfileView({
                       locked={locked}
                       username={state.data.username}
                     />
-                    {locked && <UpgradeCard username={state.data.username} />}
+                    </>
+                    )}
+                    {locked && !carregandoAnalise && <UpgradeCard username={state.data.username} />}
                   </div>
                 )}
 
