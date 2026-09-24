@@ -72,7 +72,20 @@ const PLAN_LABEL: Record<Plan, string> = {
   PRO: "FAREJO PRO",
   AGENCY: "DETETIVE",
 };
-const ALL = [...TABS, ACCOUNT];
+/**
+ * A ordem da barra de baixo, no celular — diferente da lateral de propósito.
+ *
+ * No computador a barra se lê de cima para baixo e o Faro AI fica em segundo,
+ * logo depois de farejar. No celular o dedo mora no meio da tela: o item
+ * central é o mais fácil de alcançar, e é onde o Faro AI deve estar.
+ */
+const ALL = [
+  TABS[0], // Farejar
+  TABS[2], // Pesquisados
+  TABS[1], // Faro AI — no centro
+  TABS[3], // Pistas
+  ACCOUNT,
+];
 
 function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -189,8 +202,42 @@ export function AppNav({ plan }: { plan?: Plan }) {
         </div>
       </aside>
 
-      {/* Phone: bottom tab bar */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-plum/10 bg-white/95 backdrop-blur md:hidden">
+      {/* Phone: bottom tab bar.
+          As duas faixas moram no mesmo container fixo: assim a altura total é
+          a soma real das duas, e o espaçador de baixo não depende de número
+          mágico nenhum. */}
+      <div className="fixed inset-x-0 bottom-0 z-40 bg-white/95 backdrop-blur md:hidden">
+        {/* O miolo do Faro AI, no celular, logo acima da barra — o mesmo lugar
+            onde a pessoa já está com o dedo. Na lateral do computador ele é
+            recuado sob o item; aqui não há recuo possível, e empilhar itens na
+            barra de baixo a deixaria ilegível. */}
+        {isActive(pathname, "/rastros") && (
+          <nav aria-label="Dentro do Faro AI" className="border-t border-plum/10 px-4 py-2">
+            <div className="mx-auto flex max-w-lg gap-2">
+              {DENTRO_DO_FARO.map((sub) => {
+                const aqui = sub.exato
+                  ? pathname === sub.href || /^\/rastros\/[^/]+$/.test(pathname)
+                  : pathname.startsWith(sub.href);
+                return (
+                  <Link
+                    key={sub.href}
+                    href={sub.href}
+                    aria-current={aqui ? "page" : undefined}
+                    className={cn(
+                      "flex min-h-[40px] flex-1 items-center justify-center gap-2 rounded-2xl text-[13px] transition",
+                      aqui ? "bg-plum font-bold text-white" : "bg-plum/5 font-medium text-plum/60",
+                    )}
+                  >
+                    <sub.icon className="h-4 w-4 opacity-80" />
+                    {sub.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </nav>
+        )}
+
+      <nav className="border-t border-plum/10">
         <ul className="mx-auto flex max-w-lg items-stretch">
           {ALL.map((t) => {
             const active = isActive(pathname, t.href);
@@ -234,11 +281,20 @@ export function AppNav({ plan }: { plan?: Plan }) {
           })}
         </ul>
       </nav>
+      </div>
     </>
   );
 }
 
 /** Bottom padding so the fixed phone tab bar never covers page content. */
+/**
+ * O respiro no fim da página, do tamanho da barra de baixo.
+ *
+ * Dentro do Faro AI há duas faixas empilhadas, então o respiro cresce junto —
+ * senão a última linha da página fica escondida atrás delas.
+ */
 export function NavSpacer() {
-  return <div className="h-20 md:h-0" aria-hidden />;
+  const pathname = usePathname() || "/";
+  const dentroDoFaro = isActive(pathname, "/rastros");
+  return <div className={dentroDoFaro ? "h-36 md:h-0" : "h-20 md:h-0"} aria-hidden />;
 }
