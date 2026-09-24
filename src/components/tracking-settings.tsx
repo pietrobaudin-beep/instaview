@@ -93,6 +93,7 @@ export function TrackingSettings({
   limites,
   storiesSalvos = [],
   cotaSalvos,
+  desdeAVisita = null,
 }: {
   username: string;
   displayName: string | null;
@@ -119,6 +120,8 @@ export function TrackingSettings({
   storiesSalvos?: string[];
   /** Quantos salvamentos o plano ainda permite neste mês. */
   cotaSalvos?: { usados: number; limite: number; restam: number };
+  /** O que aconteceu enquanto esta pessoa esteve fora. `null` na 1a visita. */
+  desdeAVisita?: { desde: string; novidades: { texto: string; quantos: number }[] } | null;
 }) {
   const router = useRouter();
   const [prefs, setPrefs] = React.useState(initial);
@@ -375,6 +378,25 @@ export function TrackingSettings({
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* O que aconteceu enquanto você esteve fora.
+          Cada linha é contagem de registro que está nesta mesma página — nada
+          aqui é opinião, e nada vem de modelo. */}
+      {desdeAVisita && (
+        <div className="mt-5 rounded-3xl border border-accent/30 bg-accent/5 p-5">
+          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-accent">
+            Desde a sua última visita, {quando(desdeAVisita.desde)}
+          </p>
+          <ul className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-base font-bold leading-snug">
+            {desdeAVisita.novidades.map((n, i) => (
+              <li key={n.texto} className="flex items-center gap-2">
+                {i > 0 && <span className="text-muted-foreground">·</span>}
+                {n.texto}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

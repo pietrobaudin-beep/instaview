@@ -12,6 +12,7 @@ import { COMMENTS_KIND, LIKES_KIND } from "@/lib/post-activity";
 import { consultsUsed, peekUsageKey } from "@/lib/usage";
 import { cotaDoMes, lerSalvos } from "@/lib/stories-salvos";
 import { describe } from "@/lib/pista-text";
+import { oQueMudou, visitar, type Novidade } from "@/lib/ultima-visita";
 import type { SavedStory } from "@/components/saved-stories";
 import type { EventData } from "@/lib/faro-watch";
 
@@ -32,6 +33,20 @@ export default async function TrackingPage({ params }: { params: { username: str
   const status = await refreshStatusFor(profile.id, user.plan);
 
   const PISTA_KINDS = [FOLLOWING_KIND, LIKES_KIND, COMMENTS_KIND];
+
+  /*
+   * "O que mudou desde a SUA última visita."
+   *
+   * O painel já sabia dizer o que mudou desde a última leitura do Faro AI —
+   * mas esse é o relógio do robô. Quem passou uma semana fora quer a semana,
+   * não as últimas 24 horas.
+   *
+   * A visita é marcada aqui mesmo, na abertura da página.
+   */
+  const visitaAnterior = await visitar(peekUsageKey(user), profile.username);
+  const novidades: Novidade[] = visitaAnterior
+    ? await oQueMudou(profile.id, visitaAnterior, PISTA_KINDS)
+    : [];
 
   // As pistas DESTE perfil, e só dele: a visão geral fica em /pistas.
   const [changes, storyEvents, semana, noFaro, consultados, storiesSalvos, cotaSalvos] =
@@ -125,6 +140,11 @@ export default async function TrackingPage({ params }: { params: { username: str
           interacoes: somar((r) => r.kind === LIKES_KIND || r.kind === COMMENTS_KIND),
         }}
         limites={{ consultados, noFaro }}
+        desdeAVisita={
+          visitaAnterior && novidades.length
+            ? { desde: visitaAnterior.toISOString(), novidades }
+            : null
+        }
         storiesSalvos={storiesSalvos}
         cotaSalvos={cotaSalvos}
       />
