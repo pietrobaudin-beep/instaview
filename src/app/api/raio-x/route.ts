@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { checarConsulta, respostaDeLimite } from "@/lib/consulta";
+import { prisma } from "@/lib/db";
+import { guardarStoriesJaLidos } from "@/lib/faro-watch";
 import { SECTIONS, getCachedSection, getSection, previewOf, type Section } from "@/lib/raio-x";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
 
@@ -59,6 +61,17 @@ export async function GET(req: Request) {
 
   const result = await getSection(username, section);
   if (result.status !== "ok") return NextResponse.json({ status: result.status, access, locked: !paid });
+
+  // Stories lidos aqui, de um perfil que está no Faro AI de quem olha, vão
+  // para o acervo do Faro AI na mesma hora. A leitura já foi paga.
+  if (user && section === "stories" && result.data.section === "stories") {
+    const noFaro = await prisma.trackedProfile
+      .findUnique({ where: { userId_username: { userId: user.id, username } }, select: { id: true } })
+      .catch(() => null);
+    if (noFaro) {
+      await guardarStoriesJaLidos(noFaro.id, result.data.items).catch(() => 0);
+    }
+  }
 
   return NextResponse.json({
     status: "ok",

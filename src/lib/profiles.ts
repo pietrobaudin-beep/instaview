@@ -56,7 +56,18 @@ export async function trackProfile(user: User, rawUsername: string): Promise<Tra
         create: {
           enabled: true,
           intervalMinutes: interval,
-          nextRunAt: new Date(Date.now() + interval * 60_000),
+          /*
+           * A primeira leitura é JÁ — na próxima volta do cron de hora em hora.
+           *
+           * Estava `agora + intervalo`: com o PRO lido de 24 em 24 horas, o
+           * perfil recém-colocado no Faro AI só era lido no dia seguinte. Em
+           * 24/09 isso escondeu 28 stories da @crespadai: a pessoa acabara de
+           * vê-los na análise, colocou o perfil no Faro AI, e o painel dizia
+           * "nenhum story guardado ainda". Story dura 24 horas — esperar um
+           * intervalo inteiro antes de começar é perder justamente os que
+           * trouxeram a pessoa até aqui.
+           */
+          nextRunAt: new Date(),
         },
       },
     },

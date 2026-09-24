@@ -15,8 +15,6 @@ import {
   Pause,
   PawPrint,
   Settings,
-  Sparkles,
-  TrendingUp,
   Trash2,
   UserMinus,
   UserPlus,
@@ -79,20 +77,6 @@ function dia(iso: string | null): string {
  * as **pistas** e, por último, os **ajustes**. Os limites do plano ficam no
  * topo, porque limite que só aparece quando estoura vira surpresa ruim.
  */
-/**
- * As ferramentas do Faro AI, na ordem em que fazem sentido abrir.
- *
- * Pistas primeiro porque é o que a pessoa veio ver. O chat logo em seguida,
- * porque é onde ela pergunta o que a lista não responde sozinha.
- */
-const FERRAMENTAS = [
-  { id: "pistas", label: "Pistas", icone: PawPrint, soPago: false },
-  { id: "chat", label: "Perguntar", icone: Sparkles, soPago: true },
-  { id: "stories", label: "Stories", icone: Camera, soPago: false },
-  { id: "historico", label: "Histórico", icone: TrendingUp, soPago: false },
-] as const;
-
-type Ferramenta = (typeof FERRAMENTAS)[number]["id"];
 
 export function TrackingSettings({
   username,
@@ -146,19 +130,6 @@ export function TrackingSettings({
   const [saving, setSaving] = React.useState(false);
   const [saved, setSaved] = React.useState(false);
   const [status, setStatus] = React.useState<Status | undefined>(refresh);
-  const [ferramenta, setFerramenta] = React.useState<Ferramenta>("pistas");
-  const faixaFerramentas = React.useRef<HTMLDivElement>(null);
-  const ferramentaAnterior = React.useRef(ferramenta);
-  React.useEffect(() => {
-    // Só quando MUDA. Na montagem a faixa está abaixo da dobra, e trazê-la
-    // para a vista arrastaria a página junto — o mesmo cuidado das abas da
-    // análise.
-    if (ferramentaAnterior.current === ferramenta) return;
-    ferramentaAnterior.current = ferramenta;
-    faixaFerramentas.current
-      ?.querySelector<HTMLElement>('[aria-selected="true"]')
-      ?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
-  }, [ferramenta]);
   const [ajustesAbertos, setAjustesAbertos] = React.useState(false);
 
   /*
@@ -527,46 +498,42 @@ export function TrackingSettings({
         </>
       )}
 
-      {/* 3. As ferramentas, em abas.
-          Antes isto era uma pilha: stories, depois a caixa de perguntar,
-          depois as pistas, depois os gráficos. Numa tela de celular, chegar
-          ao histórico era meia dúzia de rolagens — e o "Pergunte" ficava
-          escondido no meio, que é o oposto do que ele deveria ser.
+      {/* 3. De volta ao que era antes das abas (24/09): tudo à vista.
+          As abas escondiam os stories e o histórico atrás de um clique, e a
+          impressão era de que tinham sumido. O que as abas prometiam — um
+          lugar próprio para perguntar — já existe no Chat da barra lateral. */}
 
-          Cada aba é uma ferramenta inteira, e só a escolhida ocupa espaço. */}
-      <div className="mt-6">
-        <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-plum/50">
-          Ferramentas do Faro AI
-        </p>
+      {/* Stories primeiro: são o único conteúdo que some. */}
+      <div className="mt-5">
+        {stories.length > 0 ? (
+          <SavedStories
+            stories={stories}
+            plan={plan}
+            username={username}
+            avatarUrl={avatarUrl}
+            profileId={profileId}
+            salvosIniciais={storiesSalvos}
+            cotaInicial={cotaSalvos}
+          />
+        ) : (
+          <Panel title="Stories">
+            <p className="text-sm text-muted-foreground">
+              Nenhum story guardado ainda.{" "}
+              {janela === Number.POSITIVE_INFINITY
+                ? "Quando o Faro AI encontrar um, ele fica guardado desde a entrada no Faro AI."
+                : janela > 0
+                  ? `Quando o Faro AI encontrar um, ele fica guardado por ${janela} horas pelo seu plano.`
+                  : "Seu plano não guarda stories."}
+            </p>
+          </Panel>
+        )}
+      </div>
 
-        <div
-          ref={faixaFerramentas}
-          role="tablist"
-          aria-label="Ferramentas do Faro AI"
-          className="sem-barra -mx-5 flex items-center gap-2 overflow-x-auto px-5 pb-1 sm:mx-0 sm:flex-wrap sm:px-0"
-        >
-          {FERRAMENTAS.filter((f) => !f.soPago || plan !== "FREE").map((f) => (
-            <button
-              key={f.id}
-              type="button"
-              role="tab"
-              aria-selected={ferramenta === f.id}
-              onClick={() => setFerramenta(f.id)}
-              className={`flex min-h-[44px] shrink-0 items-center gap-2 rounded-2xl px-4 text-sm font-semibold transition ${
-                ferramenta === f.id
-                  ? "bg-pink text-ink"
-                  : "bg-muted text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <f.icone className="h-4 w-4" />
-              {f.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="mt-4">
-          {ferramenta === "pistas" &&
-            (pistas.length > 0 ? (
+      <div className="mt-5 grid items-start gap-5 lg:grid-cols-[1.4fr_1fr]">
+        <div className="min-w-0 space-y-5">
+          <section>
+            <h2 className="mb-3 text-lg font-bold tracking-tight">Pistas de @{username}</h2>
+            {pistas.length > 0 ? (
               <NotificationsFeed items={pistas} />
             ) : (
               <NoteBox className="items-center" icon={<SniffingDog className="h-12 text-ink" />}>
@@ -576,40 +543,17 @@ export function TrackingSettings({
                     : "O Faro AI te avisa quando encontrar algo novo!"}
                 </span>
               </NoteBox>
-            ))}
+            )}
+          </section>
 
-          {ferramenta === "chat" && <PergunteAoFaro username={username} />}
+          {plan !== "FREE" && <PergunteAoFaro username={username} />}
+        </div>
 
-          {ferramenta === "stories" &&
-            (stories.length > 0 ? (
-              <SavedStories
-                stories={stories}
-                plan={plan}
-                username={username}
-                avatarUrl={avatarUrl}
-                profileId={profileId}
-                salvosIniciais={storiesSalvos}
-                cotaInicial={cotaSalvos}
-              />
-            ) : (
-              <Panel title="Stories">
-                <p className="text-sm text-muted-foreground">
-                  Nenhum story guardado ainda.{" "}
-                  {janela === Number.POSITIVE_INFINITY
-                    ? "Quando o Faro AI encontrar um, ele fica guardado desde a entrada no Faro AI."
-                    : janela > 0
-                      ? `Quando o Faro AI encontrar um, ele fica guardado por ${janela} horas pelo seu plano.`
-                      : "Seu plano não guarda stories."}
-                </p>
-              </Panel>
-            ))}
-
-          {ferramenta === "historico" && (
-            <HistoryPanel username={username} loggedIn isPro={plan !== "FREE"} />
-          )}
+        <div className="min-w-0 space-y-5">
+          {/* O histórico deste perfil: só banco, nenhuma chamada paga. */}
+          <HistoryPanel username={username} loggedIn isPro={plan !== "FREE"} />
         </div>
       </div>
-
     </main>
   );
 }

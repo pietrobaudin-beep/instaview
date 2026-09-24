@@ -210,6 +210,10 @@ export function NotificationsFeed({
   const [mostrando, setMostrando] = React.useState(PAGINA);
 
   const items = perfil ? todosItens.filter((n) => n.subject === perfil) : todosItens;
+  // O filtro "Interações" só aparece se houver alguma — mesmo motivo de a
+  // caixa dela sumir quando vazia (ver `porCategoria` abaixo).
+  const temInteracoes = items.some((n) => kindOf(n.action) === "interaction");
+  const filtros = FILTERS.filter((f) => f.value !== "interacoes" || temInteracoes);
 
   // Trocar de aba recomeça a contagem: ninguém quer cair na página 4 de outra coisa.
   function trocar(f: Filter) {
@@ -249,20 +253,26 @@ export function NotificationsFeed({
           a item. No computador, as pílulas — roda com mouse é ruim. */}
       <div className="rounded-2xl border border-plum/10 bg-white px-3 py-1 sm:hidden">
         <WheelPicker
-          options={FILTERS}
+          options={filtros}
           value={filter}
           onChange={trocar}
           visible={3}
           aria-label="Quais pistas você quer ver"
         />
       </div>
-      <Chips options={FILTERS} value={filter} onChange={trocar} className="hidden sm:flex" />
+      <Chips options={filtros} value={filter} onChange={trocar} className="hidden sm:flex" />
 
       {filter === "todas" ? (
         /* "Todas" é o resumo: os três tipos de informação lado a lado, com as
            últimas de cada um. Quem quiser a lista inteira entra na aba. */
         <div className="mt-5 space-y-4">
-          {porCategoria.map((c) => {
+          {porCategoria
+            // Interações vazias somem: o Faro AI parou de colher curtidas e
+            // comentários em 24/09 (custava um terço do perfil). Uma caixa
+            // "Nada por aqui ainda" para sempre parecia defeito. Quem tem
+            // interações antigas continua vendo as dele.
+            .filter((c) => c.kind !== "interaction" || c.rows.length > 0)
+            .map((c) => {
             const headline = pistaHeadline(c.kind);
             return (
               <div

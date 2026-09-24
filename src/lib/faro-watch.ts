@@ -102,6 +102,38 @@ function summarize(kind: string, x: PostItem | StoryItem): EventData {
   };
 }
 
+/**
+ * Guarda stories que JÁ foram lidos por outro caminho — de graça.
+ *
+ * Quem abre a análise de um perfil que está no seu Faro AI dispara a leitura
+ * dos stories (a aba Raio-X). Essa leitura já foi paga; não guardar o que
+ * voltou dela era jogar fora o que a pessoa acabou de ver. Em 24/09 foram 28
+ * stories da @crespadai: visíveis na análise, ausentes no painel do Faro AI.
+ *
+ * Não chama provedor. Só grava o que chegou, com o mesmo formato e a mesma
+ * regra de "já vi, não repete" (`skipDuplicates`) da coleta.
+ */
+export async function guardarStoriesJaLidos(
+  profileId: string,
+  items: StoryItem[],
+): Promise<number> {
+  const validos = items.filter((x) => x.id);
+  if (!validos.length) return 0;
+  const criados = await prisma.profileEvent.createMany({
+    data: validos.map((x) => ({
+      profileId,
+      kind: "story",
+      refId: x.id,
+      baseline: false,
+      data: summarize("story", x) as unknown as Prisma.InputJsonValue,
+    })),
+    skipDuplicates: true,
+  });
+  // A miniatura agora, enquanto o endereço do CDN ainda vale.
+  for (const x of validos.slice(0, 20)) await keepImage(x.thumbnailUrl);
+  return criados.count;
+}
+
 export interface WatchReport {
   username: string;
   news: number;
