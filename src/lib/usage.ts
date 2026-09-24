@@ -97,9 +97,25 @@ export interface Allowance {
 }
 
 /** Começo do mês corrente — a janela do teto de quem assina. */
-function inicioDoMes(): Date {
+/**
+ * Quando os tetos dos planos diminuíram.
+ *
+ * Em 24/09 o PRO caiu de 10 consultas para 3 e o Detetive de 20 para 2, porque
+ * a requisição da HikerAPI custa vinte vezes o que se supunha. Sem esta data,
+ * a conta do mês seria julgada pelo teto NOVO: quem tinha gasto 4 consultas
+ * sob a regra dos 10 acordaria trancado, sem ter feito nada. Foram 6 das 12
+ * contas, inclusive a do dono.
+ *
+ * Contar a partir daqui não é bondade: é a diferença entre mudar uma regra e
+ * aplicá-la para trás. Vale para qualquer corte futuro — mexeu no teto, mexe
+ * nesta data junto.
+ */
+const TETOS_MENORES_DESDE = new Date("2026-09-24T00:00:00Z");
+
+function inicioDaContagem(): Date {
   const d = new Date();
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
+  const mes = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
+  return mes > TETOS_MENORES_DESDE ? mes : TETOS_MENORES_DESDE;
 }
 
 /**
@@ -134,7 +150,7 @@ export async function checkAllowance(
 
   const [doMes, jaFeito, primeiro] = await Promise.all([
     prisma.analysisUsage.count({
-      where: { key, createdAt: { gte: inicioDoMes() } },
+      where: { key, createdAt: { gte: inicioDaContagem() } },
     }),
     prisma.analysisUsage.findUnique({
       where: { key_username: { key, username } },
@@ -164,7 +180,7 @@ export async function checkAllowance(
  */
 export async function consultsUsed(key: string | null): Promise<number> {
   if (!key) return 0;
-  return prisma.analysisUsage.count({ where: { key, createdAt: { gte: inicioDoMes() } } });
+  return prisma.analysisUsage.count({ where: { key, createdAt: { gte: inicioDaContagem() } } });
 }
 
 /** Record that this identity spent its allowance on `username`. Idempotent. */
