@@ -24,6 +24,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { RefreshButton, completa, quando } from "@/components/refresh-card";
 import { NotificationsFeed, type Notification } from "@/components/notifications-feed";
 import { SavedStories, type SavedStory } from "@/components/saved-stories";
+import { PergunteAoFaro } from "@/components/pergunte-ao-faro";
 import { PlanLimits } from "@/components/plan-limits";
 import { planFor } from "@/lib/plans";
 import type { Plan } from "@prisma/client";
@@ -426,6 +427,14 @@ export function TrackingSettings({
           </Panel>
         )}
       </div>
+
+      {/* Perguntar vem depois dos stories e antes dos números: quem chega
+          com uma dúvida na cabeça encontra a caixa sem rolar a página. */}
+      {plan !== "FREE" && (
+        <div className="mt-5">
+          <PergunteAoFaro username={username} />
+        </div>
+      )}
 
       {/* 3. O que mudou na semana, em três números. */}
       {semana && (
