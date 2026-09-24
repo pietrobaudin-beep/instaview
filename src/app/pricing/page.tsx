@@ -15,6 +15,19 @@ export const dynamic = "force-dynamic";
 
 export const metadata = { title: "Farejo Pro · Farejo", description: "Desbloqueie o Farejo completo." };
 
+/**
+ * A escada dos planos, do menor para o maior.
+ *
+ * Não é o preço mensal que ordena: o Faro de Cão custa R$ 64/mês e entrega
+ * menos que o PRO de R$ 29,90. O que ordena é **o quanto cada um libera**.
+ *
+ * Serve para uma regra só, e importante: quem já paga **nunca vê um plano
+ * abaixo do seu**. Oferecer o grátis a quem assina, ou o anual pequeno a quem
+ * tem o PRO, é pedir para a pessoa desistir do que ela já escolheu.
+ */
+const ESCADA = ["FREE", "AGENCY", "WEEK", "PRO"] as const;
+const degrau = (p: string) => ESCADA.indexOf(p as (typeof ESCADA)[number]);
+
 export default async function PricingPage({
   searchParams,
 }: {
@@ -33,6 +46,17 @@ export default async function PricingPage({
   const pro = PLANS.PRO;
   // Came here from a profile page? Offer to unlock just that one.
   const fromProfile = next?.match(/^\/p\/([a-z0-9._]{1,30})$/i)?.[1] ?? null;
+
+  /*
+   * O que ainda faz sentido oferecer a quem está lendo.
+   *
+   * Quem assina não vê nada abaixo do que já paga — nem o grátis, nem o uso
+   * único, nem um plano anual menor. Só o que seria subir de degrau.
+   */
+  const meu = degrau(user?.plan ?? "FREE");
+  const mostrar = (plano: string) => degrau(plano) > meu;
+  // Uso único é para quem não assina: quem assina já vê o perfil inteiro.
+  const mostrarUsoUnico = meu <= degrau("FREE");
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
@@ -55,11 +79,26 @@ export default async function PricingPage({
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
               <Check className="h-6 w-6" />
             </span>
-            <h1 className="text-2xl font-extrabold">Você já tem o Farejo {user.plan}.</h1>
+            <h1 className="text-2xl font-extrabold">
+              Você tem o Farejo {PLANS[user.plan].name}.
+            </h1>
             <p className="max-w-sm text-sm text-muted-foreground">
-              Todos os recursos estão liberados na sua conta.
+              {PLANS[user.plan].para}
             </p>
-            <Link href={next || "/"} className="mt-2">
+
+            {/* O que a pessoa TEM, e não o que falta comprar. Quem já pagou
+                abre esta página para conferir o que tem direito — não para
+                ser vendido de novo. */}
+            <ul className="mx-auto mt-3 max-w-sm space-y-1.5 text-left text-sm">
+              {PLANS[user.plan].features.map((f) => (
+                <li key={f} className="flex items-start gap-2">
+                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                  {f}
+                </li>
+              ))}
+            </ul>
+
+            <Link href={next || "/"} className="mt-4">
               <Button variant="accent">Voltar para o app</Button>
             </Link>
           </div>
@@ -75,6 +114,7 @@ export default async function PricingPage({
       )}
 
       {/* "Uso único" — see one profile, no subscription. */}
+      {mostrarUsoUnico && (
       <div className="mt-8 rounded-3xl border border-border bg-card p-6 sm:flex sm:items-center sm:gap-8">
         <div className="flex-1">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Uso único</p>
@@ -98,9 +138,11 @@ export default async function PricingPage({
           )}
         </div>
       </div>
+      )}
 
       {/* Secondary options, kept small so the Pro offer stays the focus. */}
       <div className="mt-8 grid gap-4 sm:grid-cols-2">
+        {mostrar("FREE") && (
         <Panel title={`Farejo ${PLANS.FREE.name}`}>
           <ul className="space-y-1.5 text-sm text-muted-foreground">
             {PLANS.FREE.features.map((f) => (
@@ -116,7 +158,9 @@ export default async function PricingPage({
             </Button>
           </Link>
         </Panel>
+        )}
 
+        {mostrar("AGENCY") && (
         <Panel title={`Farejo ${PLANS.AGENCY.name}`}>
           <ul className="space-y-1.5 text-sm text-muted-foreground">
             {/* A lista inteira: cortar em 4 escondia justamente o que o plano
@@ -141,6 +185,7 @@ export default async function PricingPage({
             />
           </div>
         </Panel>
+        )}
       </div>
 
       {!user && (
