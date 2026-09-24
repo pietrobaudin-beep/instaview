@@ -1,8 +1,9 @@
 "use client";
+import * as React from "react";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, History, Search, User } from "lucide-react";
+import { Bell, ChevronUp, History, PawPrint, Search, Sparkles, User } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import type { Plan } from "@prisma/client";
 import { cn } from "@/lib/utils";
@@ -23,6 +24,18 @@ const TABS = [
   { href: "/rastros", label: "Faro AI", icon: FaroIcon },
   { href: "/pesquisados", label: "Pesquisados", icon: History },
   { href: "/pistas", label: "Pistas", icon: Bell },
+] as const;
+
+/**
+ * O que abre por dentro do Faro AI, quando ele está aberto.
+ *
+ * Não são seções novas na barra: são o miolo do Faro AI, e só aparecem quando
+ * a pessoa já está lá dentro. Uma barra com sete itens fixos vira um menu de
+ * restaurante — estes dois só existem quando fazem sentido.
+ */
+const DENTRO_DO_FARO = [
+  { href: "/rastros", label: "Rastros", icon: PawPrint, exato: true },
+  { href: "/rastros/chat", label: "Chat", icon: Sparkles, exato: false },
 ] as const;
 
 /**
@@ -81,8 +94,8 @@ export function AppNav({ plan }: { plan?: Plan }) {
           {TABS.map((t) => {
             const active = isActive(pathname, t.href);
             return (
+              <React.Fragment key={t.href}>
               <Link
-                key={t.href}
                 href={t.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
@@ -105,9 +118,45 @@ export function AppNav({ plan }: { plan?: Plan }) {
                   )}
                 />
                 {t.label}
+                {/* A setinha só no item que tem miolo, e só quando ele está
+                    aberto: apontar para cima em algo fechado seria mentira. */}
+                {t.href === "/rastros" && active && (
+                  <ChevronUp className="ml-auto h-4 w-4 opacity-60" />
+                )}
               </Link>
+
+              {/* O miolo do Faro AI, recuado logo abaixo DELE — e não no fim
+                  da barra. A linha à esquerda é o que diz "isto é por dentro
+                  daquilo" sem precisar de texto. */}
+              {t.href === "/rastros" && active && (
+                <div className="my-1 ml-6 flex flex-col gap-1 border-l border-plum/15 pl-3">
+                  {DENTRO_DO_FARO.map((sub) => {
+                    const aqui = sub.exato
+                      ? pathname === sub.href || /^\/rastros\/[^/]+$/.test(pathname)
+                      : pathname.startsWith(sub.href);
+                    return (
+                      <Link
+                        key={sub.href}
+                        href={sub.href}
+                        aria-current={aqui ? "page" : undefined}
+                        className={cn(
+                          "flex items-center gap-2.5 rounded-2xl px-3 py-2.5 text-[13px] transition",
+                          aqui
+                            ? "bg-plum/10 font-bold text-plum"
+                            : "font-medium text-plum/50 hover:bg-plum/5 hover:text-plum",
+                        )}
+                      >
+                        <sub.icon className="h-4 w-4 opacity-80" />
+                        {sub.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+              </React.Fragment>
             );
           })}
+
         </nav>
 
         {/* A conta fica no pé da barra, como em todo app. */}
