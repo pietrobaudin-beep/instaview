@@ -1,56 +1,35 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { getRecentMediaCached } from "@/lib/media-cache";
-import { rankInteractions, type Interaction } from "@/lib/interactions";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
-import { logger } from "@/lib/logger";
-import { accessFor } from "@/lib/access";
-import { checarConsulta, respostaDeLimite } from "@/lib/consulta";
-
-const log = logger.scope("api:interactions");
+import { acessoA } from "@/lib/access";
 
 export const dynamic = "force-dynamic";
 
-const cache = new Map<string, { at: number; items: Interaction[] }>();
-const TTL = 24 * 60 * 60 * 1000;
-
 /**
- * Top accounts a profile interacts with, from its recent posts.
- * Only fetched for PAID users — free visitors get `locked` with no provider
- * call, so they never cost credits.
+ * O ranking de interações — lido da análise salva, nunca do provedor.
+ *
+ * A leitura dos posts acontece uma vez, quando a análise é consumida
+ * (`analise.ts`). Aqui só se devolve o que foi guardado: reabrir não paga.
+ *
+ * Curioso com conta que usou a revelação neste perfil recebe só o destaque —
+ * o primeiro lugar —, e o resto continua trancado.
  */
 export async function GET(req: Request) {
   const username = normalizeUsername(new URL(req.url).searchParams.get("username") || "");
   if (!isValidUsername(username)) return NextResponse.json({ error: "invalid" }, { status: 400 });
 
   const user = await getCurrentUser();
-  if ((await accessFor(user, username)) === "free") {
-    return NextResponse.json({ locked: true, items: [] });
-  }
+  const acesso = await acessoA(user, username);
+  const salva = acesso.salva?.data;
 
-  // Gasta provedor: passa pelo teto do plano, como as outras. Antes não
-  // passava, e era um jeito de consultar perfis sem fim sem gastar cota.
-  const consulta = await checarConsulta(user, username);
-  if (!consulta.permitido) {
-    return NextResponse.json(respostaDeLimite(consulta), { status: 402 });
+  if (salva?.origem === "revelacao") {
+    return NextResponse.json({
+      locked: true,
+      revelado: salva.destaque ?? null,
+      semDados: salva.destaque == null,
+      items: [],
+    });
   }
-
-  const hit = cache.get(username);
-  if (hit && Date.now() - hit.at < TTL) {
-    return NextResponse.json({ locked: false, items: hit.items });
-  }
-
-  try {
-    const posts = await getRecentMediaCached(username);
-    // Filter famous accounts first, then take the top 5 — otherwise a
-    // celebrity-heavy top 5 would leave nothing behind.
-    const items = rankInteractions(posts, username, 60)
-      .filter((i) => !i.isVerified)
-      .slice(0, 5);
-    cache.set(username, { at: Date.now(), items });
-    return NextResponse.json({ locked: false, items });
-  } catch (e) {
-    log.warn("interactions failed", { username, error: (e as Error).message });
-    return NextResponse.json({ locked: false, items: [] });
-  }
+  if (acesso.access === "free" || !salva) return NextResponse.json({ locked: true, items: [] });
+  return NextResponse.json({ locked: false, items: salva.interacoes ?? [] });
 }

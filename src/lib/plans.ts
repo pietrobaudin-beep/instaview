@@ -1,104 +1,294 @@
 /**
- * Plan definitions + entitlements. Single source of truth for what each tier
- * can do. The Stripe layer maps price IDs -> Plan; enforcement reads from here.
+ * Os planos e o que cada um dá. A fonte única: a tela lê daqui, o servidor
+ * confere daqui, e a Stripe mapeia price id → plano também por aqui.
+ *
+ * ## A estrutura de 24/09
+ *
+ * Curioso (grátis, com ou sem conta) → Farejador (R$ 9,90, avulso) →
+ * Farejador + (R$ 19,90, semanal) → Faro de Cão (R$ 39,90/mês) → Faro de
+ * Detetive (R$ 59,90/mês). Admin não é plano: é permissão, em `direitos.ts`.
+ *
+ * Cada número abaixo é uma **franquia por ciclo**, contada no servidor em
+ * `franquia.ts`. "Todas as funcionalidades" quer dizer acesso às ferramentas
+ * dentro da franquia — nunca uso ilimitado.
+ *
+ * ## Os planos antigos
+ *
+ * WEEK, PRO e AGENCY ficam no enum porque há contas com eles. Mantêm os
+ * direitos que tinham (`legado: true`), não aparecem na vitrine nem no
+ * checkout, e saem na transição combinada com o dono.
  */
 import type { Plan } from "@prisma/client";
+
+/** Sem teto. Só para Admin e para os planos antigos, que já eram assim. */
+export const SEM_TETO = Number.POSITIVE_INFINITY;
 
 export interface PlanConfig {
   id: Plan;
   name: string;
   /** Uma linha dizendo para quem é. */
   para?: string;
-  /** Como é cobrado — a tela lê daqui em vez de supor "por mês". */
+  /** Como é cobrado. */
   billing?: "free" | "weekly" | "monthly" | "yearly";
-  priceMonthly: number; // BRL, display only — Stripe charges what its price id says
-  /** BRL for a year up front, when the plan offers it. Display only. */
+  /** Preço exibido, em reais, pelo período de `billing`. Quem cobra é a Stripe. */
+  priceMonthly: number;
   priceYearly?: number;
-  /** Quantos perfis podem entrar no Faro AI (acompanhamento diário). */
-  maxProfiles: number;
-  /** Quantos perfis diferentes o plano deixa consultar por completo. */
+  /** Plano antigo: mantém direitos, some da vitrine e do checkout. */
+  legado?: boolean;
+  /** Duração do ciclo das franquias. `null` = a vida da conta (Curioso). */
+  ciclo: "semana" | "mes" | null;
+
+  /** Análises completas novas por ciclo. Reabrir uma salva não conta. */
   maxConsults: number;
+  /** Perfis que podem ENTRAR no acompanhamento por ciclo (sem troca). */
+  maxProfiles: number;
+  /** De quantas em quantas horas o acompanhamento coleta. */
+  cadenciaHoras: number;
+  /** Coletas por ciclo, contando a primeira. */
+  coletasPorCiclo: number;
+  /** "Atualizar agora": intervalo mínimo desde a última coleta, ou null. */
+  atualizarAgoraHoras: number | null;
+
+  perguntas: number;
+  resumos: number;
+  /** Busca por assunto dentro dos stories já processados. */
+  buscaStories: boolean;
+  /** Alertas "Me avise quando…" ativos ao mesmo tempo. */
+  alertasEscritos: number;
+  /** Quantas vezes por ciclo um evento pode ser avaliado contra o alerta. */
+  avaliacoesAlerta: number;
+
+  /** Buscas de sugestão que chegam ao provedor (cache não conta). */
+  sugestoes: number;
+  /** Consultas de outras redes, sob demanda. */
+  redes: number;
   /**
-   * Por quantas horas os stories encontrados ficam guardados.
-   * `Infinity` = **enquanto o perfil estiver no Faro AI**, sem prazo.
-   *
-   * Voltou à tabela fechada em 20/09 (24h · 48h · 72h · sem prazo). Em 21/09
-   * eu tinha igualado todos os planos pagos em "sem prazo"; era erro meu — é
-   * justamente a guarda sem prazo que o Faro Detetive vende, e dá-la ao Cão e
-   * ao PRO apaga a diferença entre eles.
+   * Cartões de perfil (foto, nome, números) que chegam ao provedor por ciclo.
+   * É o que se paga para confirmar o perfil antes de gastar uma análise; o que
+   * vem do cache compartilhado não conta. Igual ao número de análises: o
+   * cartão lido para confirmar fica 24h no cache e a análise o reaproveita,
+   * então na prática não soma leitura ao orçamento do plano.
+   */
+  cartoes: number;
+
+  /**
+   * Por quantas horas, contadas da publicação, um story capturado fica
+   * visível. `SEM_TETO` = enquanto estiver guardado.
    */
   storiesHours: number;
-  /**
-   * Quantos stories novos podem ser **salvos com a estrela** por mês.
-   *
-   * O Faro AI guarda todos sozinho; salvar é separar os que importam, e é por
-   * isso que o teto sobe com o plano. Conta só o que entra: o que já foi
-   * salvo fica para sempre e não ocupa a cota do mês seguinte. Desmarcar
-   * dentro do mesmo mês devolve o crédito, senão um toque errado custaria
-   * caro.
-   */
+  /** Stories com estrela, e o espaço que as miniaturas deles podem ocupar. */
+  favoritos: number;
+  favoritosMB: number;
+
+  /** Mantidos por compatibilidade com telas antigas. */
   storiesSalvosMes: number;
-  /**
-   * Quantas vezes por dia o "Atualizar agora" pode ser usado num perfil.
-   *
-   * Cada uma é uma coleta paga no provedor. Era uma constante global de 3,
-   * igual para todos: o Detetive tinha o mesmo teto do Faro de Cão, embora
-   * pague sete vezes mais.
-   */
   refreshesPorDia: number;
-  /** Minimum minutes between collections (smaller = more frequent). */
   minIntervalMinutes: number;
-  /** How many days of history are queryable. Infinity = unlimited. */
   historyDays: number;
-  /** Alerts available on this plan. */
   alerts: boolean;
-  /** Multi-user org / team support. */
   team: boolean;
-  /** CSV / API export. */
   exportAndApi: boolean;
-  stripePriceEnv?: string; // env var name holding the Stripe price id
+
+  stripePriceEnv?: string;
   features: string[];
+  /** O que o plano NÃO faz, dito na oferta. */
+  avisos?: string[];
 }
+
+/** O Curioso e o Farejador (avulso) não acompanham, não perguntam, não resumem. */
+const NADA_DE_FARO = {
+  maxProfiles: 0,
+  cadenciaHoras: 24,
+  coletasPorCiclo: 0,
+  atualizarAgoraHoras: null,
+  perguntas: 0,
+  resumos: 0,
+  buscaStories: false,
+  alertasEscritos: 0,
+  avaliacoesAlerta: 0,
+  favoritos: 0,
+  favoritosMB: 0,
+  storiesSalvosMes: 0,
+  refreshesPorDia: 0,
+  alerts: false,
+  team: false,
+  exportAndApi: false,
+} as const;
 
 export const PLANS: Record<Plan, PlanConfig> = {
   FREE: {
     id: "FREE",
     name: "Curioso",
-    para: "Para quem quer matar uma curiosidade.",
+    para: "Para encontrar o perfil e ver o que dá para descobrir.",
     billing: "free",
     priceMonthly: 0,
-    // O Curioso não coloca ninguém no Faro AI: ele vê um farejo de demonstração,
-    // com tudo borrado, e escolhe UMA pista depois de criar conta.
-    maxProfiles: 0,
-    // É sempre O MESMO farejo. Criar conta não dá um perfil novo: dá o direito
-    // de revelar UMA informação daquele mesmo perfil.
-    maxConsults: 1,
+    ciclo: null,
+    ...NADA_DE_FARO,
+    // Não é análise: é a revelação do destaque, uma por conta, no mesmo perfil.
+    maxConsults: 0,
+    sugestoes: 1,
+    redes: 0,
+    cartoes: 1,
     storiesHours: 0,
-    // O Curioso não coloca ninguém no Faro AI, então não tem story guardado para salvar.
-    storiesSalvosMes: 0,
-    refreshesPorDia: 0,
-    minIntervalMinutes: 24 * 60, // once a day
-    historyDays: 7,
-    alerts: false,
-    team: false,
-    exportAndApi: false,
+    minIntervalMinutes: 24 * 60,
+    historyDays: 0,
     features: [
-      "1 farejo, com tudo borrado",
-      "Contagem de mulheres e homens",
-      "Com conta: 1 informação à sua escolha, no mesmo perfil",
-      "Sem acompanhamento e sem atualização",
+      "Busca de @ e sugestões de contas",
+      "Cartão do perfil, para confirmar que é a pessoa certa",
+      "Prévia da análise, com os resultados borrados",
+      "Com conta grátis: revele quem mais aparece nas interações do perfil",
+    ],
+    avisos: ["Sem stories, sem acompanhamento e sem o Faro AI"],
+  },
+
+  FAREJADOR_MAIS: {
+    id: "FAREJADOR_MAIS",
+    name: "Farejador +",
+    para: "Uma semana para farejar mais perfis.",
+    billing: "weekly",
+    priceMonthly: 19.9,
+    ciclo: "semana",
+    ...NADA_DE_FARO,
+    maxConsults: 2,
+    sugestoes: 2,
+    redes: 2,
+    cartoes: 2,
+    // 24 horas além da janela normal do Instagram.
+    storiesHours: 48,
+    minIntervalMinutes: 24 * 60,
+    historyDays: 7,
+    stripePriceEnv: "NEXT_PUBLIC_STRIPE_PRICE_FAREJADOR_MAIS",
+    features: [
+      "2 análises completas por semana",
+      "Resultados salvos: reabrir não faz nova coleta",
+      "Stories capturados pelo Farejo visíveis por até 48 horas da publicação — 24 horas a mais",
+      "Até 2 consultas de outras redes",
+    ],
+    avisos: [
+      "Mostra só os stories que o Farejo capturou; não recupera stories nunca coletados",
+      "Sem acompanhamento automático, alertas ou ferramentas de IA",
     ],
   },
+
+  CAO: {
+    id: "CAO",
+    name: "Faro de Cão",
+    para: "Acompanhe um perfil a cada três dias.",
+    billing: "monthly",
+    priceMonthly: 39.9,
+    ciclo: "mes",
+    maxConsults: 1,
+    maxProfiles: 1,
+    cadenciaHoras: 72,
+    coletasPorCiclo: 10,
+    atualizarAgoraHoras: null,
+    perguntas: 5,
+    resumos: 5,
+    buscaStories: false,
+    alertasEscritos: 0,
+    avaliacoesAlerta: 0,
+    sugestoes: 2,
+    redes: 1,
+    cartoes: 1,
+    storiesHours: 72,
+    favoritos: 5,
+    favoritosMB: 10,
+    storiesSalvosMes: 5,
+    refreshesPorDia: 0,
+    minIntervalMinutes: 72 * 60,
+    historyDays: 90,
+    alerts: true,
+    team: false,
+    exportAndApi: false,
+    stripePriceEnv: "NEXT_PUBLIC_STRIPE_PRICE_CAO",
+    features: [
+      "1 perfil acompanhado, com coleta a cada 3 dias (até 10 por mês)",
+      "1 análise completa nova por mês",
+      "Quem ele começou a seguir e quem deixou, entre uma coleta e outra",
+      "Stories capturados visíveis por 3 dias, e até 5 favoritos",
+      "5 perguntas e 5 resumos de stories com o Faro AI por mês",
+      "Painel, Rastros, Pistas, histórico e \"Desde a sua última visita\"",
+      "Alertas dentro do app",
+    ],
+    avisos: [
+      "Acompanha a cada três dias, não diariamente",
+      "Stories publicados e apagados entre duas coletas podem não ser capturados",
+      "O histórico mostra as mudanças detectadas nas coletas, não toda a atividade",
+    ],
+  },
+
+  DETETIVE: {
+    id: "DETETIVE",
+    name: "Faro de Detetive",
+    para: "Acompanhamento diário e todas as ferramentas do Faro AI.",
+    billing: "monthly",
+    priceMonthly: 59.9,
+    ciclo: "mes",
+    maxConsults: 3,
+    maxProfiles: 1,
+    cadenciaHoras: 24,
+    coletasPorCiclo: 30,
+    atualizarAgoraHoras: 24,
+    perguntas: 30,
+    resumos: 30,
+    buscaStories: true,
+    alertasEscritos: 1,
+    avaliacoesAlerta: 150,
+    sugestoes: 5,
+    redes: 3,
+    cartoes: 3,
+    storiesHours: 7 * 24,
+    favoritos: 20,
+    favoritosMB: 30,
+    storiesSalvosMes: 20,
+    refreshesPorDia: 1,
+    minIntervalMinutes: 24 * 60,
+    historyDays: 365,
+    alerts: true,
+    team: false,
+    exportAndApi: false,
+    stripePriceEnv: "NEXT_PUBLIC_STRIPE_PRICE_DETETIVE",
+    features: [
+      "1 perfil acompanhado todo dia (até 30 coletas por mês)",
+      "3 análises completas novas por mês",
+      "Stories capturados visíveis por 7 dias, e até 20 favoritos",
+      "30 perguntas e 30 resumos de stories com o Faro AI por mês",
+      "Busca por assunto nos stories já lidos",
+      "1 alerta \"Me avise quando…\", com até 150 avaliações por mês",
+      "\"Atualizar agora\": antecipa uma coleta, com 24 horas entre elas",
+      "Todo o painel, as pistas, o histórico e a gestão dos dados",
+    ],
+    avisos: [
+      "Todas as funcionalidades dentro das franquias do mês — não é uso ilimitado",
+      "Diário não é tempo real: stories que duram menos que o intervalo podem escapar",
+    ],
+  },
+
+  // ---- Planos antigos: direitos preservados até a transição. ----
+
   WEEK: {
     id: "WEEK",
-    name: "Faro de Cão",
-    para: "Para deixar o Faro AI de olho em uma pista.",
+    name: "Faro de Cão (antigo)",
     billing: "weekly",
-    priceMonthly: 14.9, // cobrado por semana
-    maxProfiles: 1,
+    priceMonthly: 14.9,
+    legado: true,
+    ciclo: "mes",
     maxConsults: 3,
-    storiesHours: 48, // dois dias — tabela de 20/09
-    // Dez por semana de assinatura já cobre o que costuma importar em uma pista só.
+    maxProfiles: 1,
+    cadenciaHoras: 24,
+    coletasPorCiclo: 31,
+    atualizarAgoraHoras: 1,
+    perguntas: SEM_TETO,
+    resumos: SEM_TETO,
+    buscaStories: true,
+    alertasEscritos: 1,
+    avaliacoesAlerta: SEM_TETO,
+    sugestoes: 30,
+    redes: 3,
+    cartoes: 30,
+    storiesHours: 48,
+    favoritos: 10,
+    favoritosMB: 30,
     storiesSalvosMes: 10,
     refreshesPorDia: 3,
     minIntervalMinutes: 24 * 60,
@@ -106,148 +296,108 @@ export const PLANS: Record<Plan, PlanConfig> = {
     alerts: true,
     team: false,
     exportAndApi: false,
-    stripePriceEnv: "NEXT_PUBLIC_STRIPE_PRICE_WEEK",
-    features: [
-      "1 perfil no Faro AI, vigiado todo dia",
-      "3 análises novas por mês",
-      "Quem ele começa a seguir, e quem deixa",
-      "Stories guardados por 48 horas, com busca por dentro",
-      "Pergunte ao Faro AI",
-      "Me avise quando… — o alerta que você escreve",
-      "Histórico desde a entrada no Faro AI",
-    ],
+    features: [],
   },
-
   PRO: {
     id: "PRO",
-    name: "Farejo PRO",
-    para: "Para deixar o Faro AI trabalhando por você.",
+    name: "Farejo PRO (antigo)",
     billing: "monthly",
     priceMonthly: 29.9,
-    priceYearly: 239.9,
-    // 2, e não 5. Cada perfil no Faro AI custa 3 leituras por dia do provedor
-    // — R$ 9,90/mês a US$ 0,02 a requisição. Com 5 perfis o PRO custava
-    // R$ 63 e recebia R$ 29,90: cada assinante saía do bolso do dono.
-    // 1 perfil no Faro AI (24/09). Cada perfil vigiado custa R$ 7,70/mês de
-    // provedor; com 1, o PRO sai de 24% para 50% de margem.
-    maxProfiles: 1,
-    /*
-     * 5, e não 3.
-     *
-     * Três saiu do cálculo de margem e travou em um dia de uso normal — o
-     * dono bateu o teto testando o próprio produto. Cada análise nova custa
-     * R$ 1,32; duas a mais são R$ 2,64 por assinante, e a margem cai de 33%
-     * para 24%. Um plano em que a pessoa esbarra no primeiro dia cancela mais
-     * do que custa.
-     *
-     * Reabrir um @ já analisado nunca contou, e continua não contando.
-     */
+    legado: true,
+    ciclo: "mes",
     maxConsults: 5,
-    // Sem prazo, como o arquivo do plano de cima costumava ser. Guardar story
-    // não custa provedor — é imagem que o Farejo já baixou. Cobrar por prazo
-    // aqui era criar escassez artificial no plano que deveria ser o melhor.
-    storiesHours: Number.POSITIVE_INFINITY,
-    // Cinco perfis no Faro AI; dez por perfil é a conta que o preço sustenta.
-    // A estrela também deixa de ter cota: ela só marca o que já está guardado.
-    storiesSalvosMes: Number.POSITIVE_INFINITY,
+    maxProfiles: 1,
+    cadenciaHoras: 24,
+    coletasPorCiclo: 31,
+    atualizarAgoraHoras: 1,
+    perguntas: SEM_TETO,
+    resumos: SEM_TETO,
+    buscaStories: true,
+    alertasEscritos: 1,
+    avaliacoesAlerta: SEM_TETO,
+    sugestoes: 30,
+    redes: 5,
+    cartoes: 30,
+    storiesHours: SEM_TETO,
+    favoritos: SEM_TETO,
+    favoritosMB: SEM_TETO,
+    storiesSalvosMes: SEM_TETO,
     refreshesPorDia: 5,
-    // Once a day, on purpose. A story lasts 24h, so a daily pass catches every
-    // one of them — reading every six hours finds nothing extra and costs four
-    // times as much (R$ 46/month of data for a R$ 29,90 plan). The UI shows the
-    // next scheduled "farejo", so the rhythm reads as intentional.
     minIntervalMinutes: 24 * 60,
     historyDays: 365,
     alerts: true,
     team: false,
     exportAndApi: false,
-    stripePriceEnv: "NEXT_PUBLIC_STRIPE_PRICE_PRO",
-    features: [
-      "1 perfil no Faro AI, vigiado todo dia",
-      "5 análises novas por mês",
-      "Quem ele começa a seguir, e quem deixa",
-      "Stories guardados SEM PRAZO, com busca por dentro",
-      "Resumir stories: o Faro AI lê o que está escrito neles",
-      "Pergunte ao Faro AI, sem limite",
-      "Me avise quando… — o alerta que você escreve",
-      "Histórico completo e área Meu Faro AI",
-    ],
+    features: [],
   },
   AGENCY: {
     id: "AGENCY",
-    name: "Faro Detetive",
-    para: "O Faro AI de olho em uma pista, pago uma vez no ano.",
-    // Cobrado UMA vez por ano: R$ 99,90. Preço definido pelo dono do produto.
-    //
-    /*
-     * R$ 179/ano desde 22/09 (era R$ 99,90), com 8 perfis no Faro AI e 20
-     * consultas por mês (eram 15 e 30).
-     *
-     * A R$ 99,90 o plano dava prejuízo em qualquer configuração: são R$ 7,96
-     * por mês líquidos, e 15 perfis lidos 4× ao dia custam R$ 17,56 de
-     * HikerAPI. Não havia corte que fechasse sem deixá-lo pior que o PRO.
-     *
-     * A R$ 179 sobram R$ 14,29/mês líquidos. Com 8 perfis lidos 4× ao dia o
-     * custo é R$ 9,36 — **margem de 34%**, e o plano continua bem acima do
-     * PRO (5 perfis, 1×/dia). Era esse descompasso que fazia o plano de topo
-     * custar menos que o do meio.
-     *
-     * ATENÇÃO: este número é só o que a tela mostra. Quem cobra é o Stripe,
-     * pelo price id em `stripePriceEnv` — sem criar o preço novo lá, o site
-     * anuncia R$ 179 e cobra R$ 99,90.
-     */
+    name: "Faro Detetive (antigo)",
     billing: "yearly",
     priceMonthly: 179 / 12,
     priceYearly: 179,
-    // R$ 179/ano são R$ 14,92/mês — METADE do PRO. Então oferece menos, não
-    // mais: 1 perfil cabe em R$ 9,90 de leitura e ainda sobra. Com 8 perfis
-    // custava R$ 79/mês contra R$ 14,92 recebidos.
-    maxProfiles: 1,
+    legado: true,
+    ciclo: "mes",
     maxConsults: 2,
-    // 72h, não "sem prazo": o arquivo sem fim passou a ser do PRO, que é o
-    // topo. Este custa metade por mês — não pode entregar mais.
+    maxProfiles: 1,
+    cadenciaHoras: 24,
+    coletasPorCiclo: 31,
+    atualizarAgoraHoras: 1,
+    perguntas: SEM_TETO,
+    resumos: SEM_TETO,
+    buscaStories: true,
+    alertasEscritos: 1,
+    avaliacoesAlerta: SEM_TETO,
+    sugestoes: 30,
+    redes: 2,
+    cartoes: 30,
     storiesHours: 72,
-    // É o plano de quem documenta; o teto existe só para o banco não crescer sem fim.
+    favoritos: 50,
+    favoritosMB: 30,
     storiesSalvosMes: 50,
     refreshesPorDia: 3,
-    // The paid-for extra: four passes a day instead of one. Costs ~4x per
-    // profile, which the Agency price covers and the Pro price does not.
-    minIntervalMinutes: 6 * 60,
-    historyDays: Number.POSITIVE_INFINITY,
+    minIntervalMinutes: 24 * 60,
+    historyDays: SEM_TETO,
     alerts: true,
     team: true,
     exportAndApi: true,
-    stripePriceEnv: "NEXT_PUBLIC_STRIPE_PRICE_AGENCY",
-    features: [
-      "1 perfil no Faro AI, pago uma vez no ano",
-      "2 análises novas por mês",
-      "Quem ele começa a seguir, e quem deixa",
-      "Stories guardados por 72 horas, com busca por dentro",
-      "Resumir stories: o Faro AI lê o que está escrito neles",
-      "Pergunte ao Faro AI",
-      "Me avise quando… — o alerta que você escreve",
-      "Histórico contínuo e área Meu Faro AI",
-    ],
+    features: [],
   },
 };
 
 /**
- * "Uso único": unlock the full analysis of ONE profile, paid once, no
- * subscription. Display price only — Stripe charges what its price id says.
+ * Farejador: uma análise completa de UM perfil, paga uma vez. Não é plano —
+ * é um `ProfileUnlock` com prazo.
  */
 export const SINGLE_UNLOCK = {
   name: "Farejador",
-  para: "Para descobrir tudo sobre 1 perfil, sem assinatura.",
+  para: "Uma pessoa, uma análise completa. Sem assinatura.",
   price: 9.9,
-  /** Stories do momento da consulta: as últimas 24 horas. */
+  /** O resultado fica aberto por 7 dias, com a data da coleta. */
+  diasDeAcesso: 7,
+  /** Stories: a janela normal, 24 horas da publicação. Não é a dos 7 dias. */
   storiesHours: 24,
+  sugestoes: 1,
+  redes: 1,
   stripePriceEnv: "NEXT_PUBLIC_STRIPE_PRICE_SINGLE",
   features: [
-    "Desbloqueio completo de 1 perfil",
-    "Conexões, interações e mudanças daquele momento",
-    "Stories públicos das últimas 24 horas",
-    "Sem assinatura e sem renovação",
+    "Análise completa de 1 perfil, sem borrão",
+    "Classificação estimada das contas seguidas, destaque e ranking de interações",
+    "Contas recorrentes, marcações e informações da conta",
+    "Novos seguindo, quando houver base para saber",
+    "Stories disponíveis no momento da coleta",
+    "Resultado aberto por 7 dias, com a data da coleta",
   ],
+  avisos: ["Sem acompanhamento, atualização, alertas ou ferramentas do Faro AI"],
 } as const;
+
+/** A ordem da vitrine, do grátis ao topo. Os antigos ficam de fora. */
+export const VITRINE: Plan[] = ["FREE", "FAREJADOR_MAIS", "CAO", "DETETIVE"];
+
+/** Planos que acompanham perfis (têm Faro AI). */
+export function temFaro(plan: Plan): boolean {
+  return PLANS[plan].maxProfiles > 0;
+}
 
 export function planFor(plan: Plan): PlanConfig {
   return PLANS[plan];

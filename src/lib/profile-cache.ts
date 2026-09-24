@@ -103,3 +103,19 @@ export async function peekProfileCached(username: string): Promise<ProfileData |
   const hit = await read(username);
   return hit && !hit.value.missing ? hit.value.profile : null;
 }
+
+/**
+ * O último cartão guardado, por mais velho que seja. Para mostrar alguma coisa
+ * a quem não tem mais franquia de cartão, sem pagar leitura — a tela diz a
+ * data em que ele foi lido.
+ */
+export async function peekProfileStale(
+  username: string,
+): Promise<{ profile: ProfileData; fetchedAt: Date } | null> {
+  const row = await prisma.sectionCache
+    .findUnique({ where: { username_section: { username, section: KEY() } } })
+    .catch(() => null);
+  const value = row?.data as unknown as Stored | undefined;
+  if (!row || !value || value.missing) return null;
+  return { profile: value.profile, fetchedAt: row.fetchedAt };
+}

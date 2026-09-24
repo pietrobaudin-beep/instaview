@@ -10,7 +10,7 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
     links: [
       { href: "/#buscar", label: "Farejar um @" },
       { href: "/#produto", label: "O que é o Farejo" },
-      { href: "/#pro", label: "Farejo PRO" },
+      { href: "/#pro", label: "Faro AI" },
       { href: "/#planos", label: "Planos" },
       { href: "/#perguntas", label: "Perguntas frequentes" },
     ],
@@ -24,7 +24,7 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
     links: [
       { href: "/login", label: "Entrar" },
       { href: "/signup", label: "Criar conta" },
-      { href: "/pricing", label: "Assinar o PRO" },
+      { href: "/pricing", label: "Planos" },
     ],
   },
   {

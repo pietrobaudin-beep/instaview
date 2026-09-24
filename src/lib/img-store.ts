@@ -68,7 +68,7 @@ export async function readStored(key: string): Promise<StoredImage | null> {
  * promessa de plano e fica enquanto o perfil estiver no Faro AI; o rosto é
  * conveniência de tela e um dia pode ser podado.
  */
-export type TipoDeCopia = "story" | "rosto";
+export type TipoDeCopia = "story" | "rosto" | "proxy";
 
 export async function writeStored(
   key: string,

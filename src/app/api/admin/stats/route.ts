@@ -162,5 +162,25 @@ export async function GET(req: Request) {
     },
     noMes: +(recorrente + avulsoMes).toFixed(2),
     usuarios: { total: totalUsuarios, novosMes, novosSemana, noFaro },
+    chamadas: await chamadasPagas(),
   });
+}
+
+/**
+ * As chamadas pagas dos últimos 30 dias, do registro de custo
+ * (`provider_calls`). Admin separado de clientes: o que o dono gasta
+ * testando não entra na conta de quanto cada cliente custa.
+ */
+async function chamadasPagas() {
+  const desde = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const linhas = await prisma.providerCall
+    .groupBy({ by: ["provider", "admin"], where: { createdAt: { gte: desde } }, _count: { _all: true } })
+    .catch(() => []);
+  const conta = (provider: string, admin: boolean) =>
+    linhas.find((l) => l.provider === provider && l.admin === admin)?._count._all ?? 0;
+  return ["hikerapi", "apify", "openai"].map((provider) => ({
+    provider,
+    clientes: conta(provider, false),
+    admin: conta(provider, true),
+  }));
 }

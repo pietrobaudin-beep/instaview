@@ -1,49 +1,29 @@
 /**
- * Os stories que a pessoa marcou para não perder de vista.
+ * Os stories que a pessoa marcou com a estrela — os favoritos.
  *
- * O Faro AI já guarda **todos** os stories que encontra, enquanto o perfil estiver
- * nele. Isto é outra coisa: dentro desse monte, quais importam. Depois de umas
- * semanas de acompanhamento são dezenas de miniaturas, e a que interessava
- * fica enterrada.
+ * O Faro AI guarda os stories que encontra por um prazo que depende do plano
+ * (3 dias no Cão, 7 no Detetive). Favoritar tira um story desse prazo: ele
+ * fica guardado enquanto o plano estiver ativo.
+ *
+ * ## Vagas e espaço (24/09)
+ *
+ * Favorito ocupa vaga e armazenamento: Cão 5 favoritos e 10 MB de
+ * miniaturas; Detetive 20 e 30 MB. Tirar a estrela libera os dois na hora.
+ * Não é mais "tantos por mês": um teto por mês deixava a coleção crescer sem
+ * fim, e cada miniatura guardada é espaço pago.
  *
  * Nada é copiado de novo ao marcar — a miniatura já está guardada. O que se
  * guarda aqui é só a lista de quais.
- *
- * ## A cota do mês
- *
- * Quantos podem ser salvos por mês vem do plano (`storiesSalvosMes`). Duas
- * regras que valem entender, porque definem o que a pessoa está comprando:
- *
- * - **Conta só o que entra no mês.** O que já foi salvo fica para sempre e não
- *   ocupa a cota seguinte: a coleção cresce mês a mês, e quem fica ganha.
- * - **Desmarcar no mesmo mês devolve o crédito.** Sem isso, um toque errado
- *   custaria um salvamento pago — e a estrela viraria um botão com medo.
- *
- * Tudo em `section_cache`, sem tabela nova. A lista por perfil usa o
- * `profileId` como chave (que já pertence a um dono); a cota é por **usuário**,
- * porque é o usuário quem assina.
  */
 import { prisma } from "@/lib/db";
-import type { Prisma } from "@prisma/client";
-import { planFor } from "@/lib/plans";
-import type { Plan } from "@prisma/client";
+import type { Prisma, User } from "@prisma/client";
+import { direitosDe } from "@/lib/direitos";
+import { imageKey } from "@/lib/img-store";
+import type { EventData } from "@/lib/faro-watch";
 
 const SECAO = "stories-salvos";
-const SECAO_COTA = "stories-salvos-cota";
-
-/** O mês corrente, como "2026-09" — é por ele que a cota vira. */
-function mesAtual(): string {
-  const agora = new Date();
-  return `${agora.getUTCFullYear()}-${String(agora.getUTCMonth() + 1).padStart(2, "0")}`;
-}
 
 interface Guardado {
-  ids: string[];
-}
-
-/** Os ids salvos **neste mês**, para saber o que devolve crédito. */
-interface Cota {
-  mes: string;
   ids: string[];
 }
 
@@ -55,88 +35,100 @@ export async function lerSalvos(profileId: string): Promise<string[]> {
   return Array.isArray(dados?.ids) ? dados.ids : [];
 }
 
-async function lerCota(userId: string): Promise<Cota> {
-  const row = await prisma.sectionCache
-    .findUnique({ where: { username_section: { username: `u:${userId}`, section: SECAO_COTA } } })
-    .catch(() => null);
-  const dados = row?.data as unknown as Cota | undefined;
-  // Mês diferente = cota zerada. Não há faxina a fazer: a linha é reescrita no
-  // primeiro salvamento do mês novo.
-  if (!dados || dados.mes !== mesAtual()) return { mes: mesAtual(), ids: [] };
-  return { mes: dados.mes, ids: Array.isArray(dados.ids) ? dados.ids : [] };
-}
-
-async function gravarCota(userId: string, cota: Cota): Promise<void> {
-  const data = cota as unknown as Prisma.InputJsonValue;
-  await prisma.sectionCache
-    .upsert({
-      where: { username_section: { username: `u:${userId}`, section: SECAO_COTA } },
-      create: { username: `u:${userId}`, section: SECAO_COTA, data },
-      update: { data, fetchedAt: new Date() },
-    })
-    .catch(() => null);
-}
-
 export interface EstadoDaCota {
   usados: number;
   limite: number;
   restam: number;
+  /** Megabytes de miniaturas ocupados pelos favoritos, e o teto. */
+  mb: number;
+  limiteMb: number;
 }
 
-/** Quanto desta cota mensal já foi gasto — para a tela dizer antes de clicar. */
-export async function cotaDoMes(userId: string, plan: Plan): Promise<EstadoDaCota> {
-  const limite = planFor(plan).storiesSalvosMes;
-  const cota = await lerCota(userId);
-  return { usados: cota.ids.length, limite, restam: Math.max(0, limite - cota.ids.length) };
+/** Os favoritos de todos os perfis da conta, e quanto ocupam. */
+async function favoritosDaConta(userId: string): Promise<{ ids: string[]; bytes: number }> {
+  const perfis = await prisma.trackedProfile.findMany({ where: { userId }, select: { id: true } });
+  const ids = (await Promise.all(perfis.map((p) => lerSalvos(p.id)))).flat();
+  return { ids, bytes: await bytesDe(ids) };
+}
+
+/** O tamanho das miniaturas guardadas destes stories. */
+async function bytesDe(storyIds: string[]): Promise<number> {
+  if (!storyIds.length) return 0;
+  const eventos = await prisma.profileEvent.findMany({
+    where: { id: { in: storyIds } },
+    select: { data: true },
+  });
+  const chaves = eventos
+    .map((e) => (e.data as unknown as EventData)?.thumbnailUrl)
+    .filter((u): u is string => !!u)
+    .map((u) => {
+      try {
+        return imageKey(new URL(u));
+      } catch {
+        return null;
+      }
+    })
+    .filter((k): k is string => !!k);
+  if (!chaves.length) return 0;
+  const linhas = await prisma.$queryRawUnsafe<{ n: bigint | number | null }[]>(
+    `SELECT COALESCE(SUM(length(data->>'b64')), 0) AS n FROM section_cache WHERE section = 'img' AND username = ANY($1::text[])`,
+    chaves,
+  );
+  // base64 ocupa 4/3 do arquivo.
+  return Math.round((Number(linhas[0]?.n ?? 0) * 3) / 4);
+}
+
+type Conta = Pick<User, "id" | "email" | "plan" | "planEndsAt">;
+
+function estado(user: Conta, usados: number, bytes: number): EstadoDaCota {
+  const { config } = direitosDe(user);
+  return {
+    usados,
+    limite: config.favoritos,
+    restam: Math.max(0, config.favoritos - usados),
+    mb: Math.round((bytes / 1_000_000) * 10) / 10,
+    limiteMb: config.favoritosMB,
+  };
+}
+
+/** Quanto das vagas de favorito já está ocupado — para a tela dizer antes de clicar. */
+export async function cotaDoMes(user: Conta): Promise<EstadoDaCota> {
+  const { ids, bytes } = await favoritosDaConta(user.id);
+  return estado(user, ids.length, bytes);
 }
 
 export type ResultadoSalvar =
   | { ok: true; ids: string[]; cota: EstadoDaCota }
-  | { ok: false; motivo: "sem_cota"; ids: string[]; cota: EstadoDaCota };
+  | { ok: false; motivo: "sem_cota" | "sem_espaco"; ids: string[]; cota: EstadoDaCota };
 
 /**
- * Marca ou desmarca um story. Devolve a lista nova e o estado da cota.
- *
- * Idempotente: marcar o que já estava marcado não gasta cota nem duplica, e
- * desmarcar o que não estava não quebra — a tela pode repetir o pedido sem
- * medo.
+ * Marca ou desmarca um story. Idempotente: repetir o pedido não gasta vaga
+ * nem duplica.
  */
 export async function alternarSalvo(
-  userId: string,
-  plan: Plan,
+  user: Conta,
   profileId: string,
   storyId: string,
   salvar: boolean,
 ): Promise<ResultadoSalvar> {
-  const limite = planFor(plan).storiesSalvosMes;
+  const { config } = direitosDe(user);
   const atuais = await lerSalvos(profileId);
-  const cota = await lerCota(userId);
   const tem = atuais.includes(storyId);
+  const conta = await favoritosDaConta(user.id);
 
-  const estado = (c: Cota): EstadoDaCota => ({
-    usados: c.ids.length,
-    limite,
-    restam: Math.max(0, limite - c.ids.length),
-  });
-
-  // Nada a fazer: já está como se pediu.
-  if (salvar === tem) return { ok: true, ids: atuais, cota: estado(cota) };
+  if (salvar === tem) return { ok: true, ids: atuais, cota: estado(user, conta.ids.length, conta.bytes) };
 
   if (salvar) {
-    // Um story salvo em mês anterior e desmarcado agora pode voltar sem
-    // gastar de novo? Não: ele saiu da coleção. Entrar é sempre entrar.
-    if (cota.ids.length >= limite) {
-      return { ok: false, motivo: "sem_cota", ids: atuais, cota: estado(cota) };
+    if (conta.ids.length >= config.favoritos) {
+      return { ok: false, motivo: "sem_cota", ids: atuais, cota: estado(user, conta.ids.length, conta.bytes) };
     }
-    cota.ids = [storyId, ...cota.ids];
-  } else {
-    // Devolve o crédito só se foi salvo NESTE mês; de meses passados não há
-    // crédito para devolver.
-    cota.ids = cota.ids.filter((id) => id !== storyId);
+    const deste = await bytesDe([storyId]);
+    if (conta.bytes + deste > config.favoritosMB * 1_000_000) {
+      return { ok: false, motivo: "sem_espaco", ids: atuais, cota: estado(user, conta.ids.length, conta.bytes) };
+    }
   }
 
   const ids = salvar ? [storyId, ...atuais] : atuais.filter((id) => id !== storyId);
-
   const data = { ids } as unknown as Prisma.InputJsonValue;
   await prisma.sectionCache
     .upsert({
@@ -146,7 +138,6 @@ export async function alternarSalvo(
     })
     .catch(() => null);
 
-  await gravarCota(userId, cota);
-
-  return { ok: true, ids, cota: estado(cota) };
+  const depois = await favoritosDaConta(user.id);
+  return { ok: true, ids, cota: estado(user, depois.ids.length, depois.bytes) };
 }

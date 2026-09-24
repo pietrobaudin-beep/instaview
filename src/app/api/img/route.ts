@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getCurrentUser } from "@/lib/auth";
 import { allowedImageHost, imageKey, readStored, writeStored } from "@/lib/img-store";
 import { logger } from "@/lib/logger";
 
@@ -50,7 +51,10 @@ export async function GET(req: Request) {
     if (res.ok) {
       const type = res.headers.get("content-type") || "image/jpeg";
       const bytes = Buffer.from(await res.arrayBuffer());
-      await writeStored(key, type, bytes);
+      // Cópia só para quem está logado, e com prazo (10 dias, `acervo.ts`).
+      // Antes qualquer visitante gravava uma cópia sem prazo de toda imagem
+      // que passasse por aqui — e nada apagava.
+      if (await getCurrentUser()) await writeStored(key, type, bytes, "proxy");
       return serve(bytes, type);
     }
     log.info("upstream recusou", { status: res.status, host: target.hostname });

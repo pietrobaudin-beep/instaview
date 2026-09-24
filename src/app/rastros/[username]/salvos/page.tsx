@@ -37,7 +37,7 @@ export default async function StoriesSalvosPage({
 
   const [ids, cota] = await Promise.all([
     lerSalvos(profile.id),
-    cotaDoMes(user.id, user.plan),
+    cotaDoMes(user),
   ]);
 
   // Busca só os salvos, pelos ids — sem trazer o acervo inteiro para filtrar

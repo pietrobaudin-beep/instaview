@@ -24,18 +24,13 @@
  *
  * Guardado em `section_cache`, uma linha por visitante/escopo/dia.
  */
-import { prisma } from "@/lib/db";
-import type { Prisma } from "@prisma/client";
+import { reservarBruto } from "@/lib/franquia";
 
 /** Quantas buscas NOVAS por dia (as que vêm do cache não contam). */
 export const TETO_BUSCA = 30;
 
 /** Quantos @ novos por dia podem acionar as redes pagas. */
 export const TETO_REDES_PAGAS = 5;
-
-function hoje(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 export interface Teto {
   ok: boolean;
@@ -47,6 +42,10 @@ export interface Teto {
  * Conta mais um uso e diz se pode. Chamar **só quando o gasto vai acontecer**
  * de verdade — resposta que veio do cache não consome nada.
  *
+ * Atômico desde 24/09: antes lia o número e gravava o seguinte, e dois pedidos
+ * ao mesmo tempo passavam os dois. Agora é o mesmo contador das franquias,
+ * com o teto dentro da instrução.
+ *
  * Sem chave (visitante que ainda não tem cookie) a resposta é liberar: o
  * primeiro uso de alguém não deve esbarrar em teto. A rota que chama emite a
  * identidade logo em seguida.
@@ -57,23 +56,10 @@ export async function consumirTeto(
   limite: number,
 ): Promise<Teto> {
   if (!chave) return { ok: true, usados: 0, limite };
-
-  const section = `teto:${escopo}:${hoje()}`;
-  const linha = await prisma.sectionCache
-    .findUnique({ where: { username_section: { username: chave, section } } })
-    .catch(() => null);
-
-  const usados = Number((linha?.data as { n?: number } | null)?.n ?? 0);
-  if (usados >= limite) return { ok: false, usados, limite };
-
-  const data = { n: usados + 1 } as unknown as Prisma.InputJsonValue;
-  await prisma.sectionCache
-    .upsert({
-      where: { username_section: { username: chave, section } },
-      create: { username: chave, section, data },
-      update: { data, fetchedAt: new Date() },
-    })
-    .catch(() => null);
-
-  return { ok: true, usados: usados + 1, limite };
+  const agora = new Date();
+  const dia = new Date(Date.UTC(agora.getUTCFullYear(), agora.getUTCMonth(), agora.getUTCDate()));
+  const r = await reservarBruto(chave, `teto:${escopo}`, dia, limite).catch(() => null);
+  // Se o banco falhar, fecha: um freio que abre sozinho não é freio.
+  if (!r) return { ok: false, usados: 0, limite };
+  return { ok: r.ok, usados: r.usados, limite };
 }

@@ -18,7 +18,7 @@
  */
 import { prisma } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { watchProfile } from "@/lib/faro-watch";
+import { coletarSeDevido } from "@/lib/faro-watch";
 
 const log = logger.scope("runner");
 
@@ -57,26 +57,22 @@ export async function runDueJobs(limit = 25): Promise<RunnerReport> {
 
   for (const job of dueJobs) {
     /*
-     * Uma passagem completa por dia; as extras leem só stories.
-     *
-     * É aqui que a cadência dos planos vira dinheiro. Quem é lido de 6 em 6
-     * horas (Faro Detetive) paga 4 requisições na passagem completa e 1 em
-     * cada uma das outras três — 7 no dia, em vez das 16 que sairiam lendo
-     * tudo quatro vezes. E não perde nada: o que muda de hora em hora é o
-     * story, e ele continua sendo lido nas quatro.
+     * A porta única decide: plano do dono, cadência (72h no Cão, 24h no
+     * Detetive) e franquia de coletas. Antes o runner lia o intervalo gravado
+     * no job quando o perfil entrou — e ele nunca mudava com o plano: quem
+     * caía para o grátis continuava sendo coletado.
      */
-    const ultima = job.profile.lastCollectedAt?.getTime() ?? 0;
-    const modo = Date.now() - ultima >= COMPLETA_A_CADA_MS ? "completo" : "stories";
-
     let ok = true;
     let novidades = 0;
+    let proxima = new Date(Date.now() + 24 * 60 * 60_000);
+    let pulado = false;
     try {
-      const r = await watchProfile(
-        { id: job.profileId, username: job.profile.username, userId: job.profile.userId },
-        modo,
-      );
-      novidades = r.news;
-      ok = r.skipped !== "error";
+      const c = await coletarSeDevido(job.profileId);
+      novidades = c.news ?? 0;
+      proxima = c.proxima;
+      // Pular por cadência, franquia ou plano não é falha: é a regra.
+      pulado = !c.ok && (c.pulo === "cedo" || c.pulo === "franquia" || c.pulo === "sem_plano");
+      ok = c.ok || pulado;
     } catch (e) {
       log.error("passagem falhou", { profileId: job.profileId, error: (e as Error).message });
       ok = false;
@@ -85,17 +81,14 @@ export async function runDueJobs(limit = 25): Promise<RunnerReport> {
     const consecutiveFailures = ok ? 0 : job.consecutiveFailures + 1;
     const shouldPause = consecutiveFailures >= MAX_CONSECUTIVE_FAILURES;
 
-    // Back off after a failure; otherwise schedule the next run normally.
-    const delayMinutes = ok
-      ? job.intervalMinutes
-      : Math.min(job.intervalMinutes, FAILURE_BACKOFF_MINUTES);
-    const nextRunAt = new Date(Date.now() + delayMinutes * 60_000);
+    // Back off after a failure; otherwise the gate said when to come back.
+    const nextRunAt = ok ? proxima : new Date(Date.now() + FAILURE_BACKOFF_MINUTES * 60_000);
 
     await prisma.monitoringJob.update({
       where: { id: job.id },
       data: {
         lastRunAt: now,
-        lastRunStatus: ok ? "success" : "failed",
+        lastRunStatus: pulado ? "skipped" : ok ? "success" : "failed",
         consecutiveFailures,
         runCount: { increment: 1 },
         nextRunAt,

@@ -21,6 +21,9 @@
  * - **Nunca vira fato.** O que sai daqui alimenta contagem e rótulo de tela,
  *   que o produto já apresenta como estimativa.
  */
+import { consumirTeto } from "@/lib/teto-diario";
+import { registrarChamada } from "@/lib/custo";
+import { TETO_IA_DIA } from "@/lib/ia";
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
@@ -98,6 +101,10 @@ const INSTRUCAO =
 
 async function perguntar(pessoas: PessoaParaLer[]): Promise<Map<string, Quem>> {
   const fora = new Map<string, Quem>();
+  // O mesmo teto diário da casa que vale para o resto da IA (antes esta era a
+  // única chamada que passava por fora dele).
+  const { ok } = await consumirTeto("ia", "ia:classificacao", TETO_IA_DIA);
+  if (!ok) return fora;
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -117,6 +124,7 @@ async function perguntar(pessoas: PessoaParaLer[]): Promise<Map<string, Quem>> {
     }),
     signal: AbortSignal.timeout(TETO_MS),
   });
+  await registrarChamada("openai", "classificacao", res.status);
 
   if (!res.ok) {
     log.warn("openai recusou", { status: res.status });

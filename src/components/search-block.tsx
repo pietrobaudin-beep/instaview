@@ -61,6 +61,10 @@ export function SearchBlock({
   // novo, a outra pede conferir o que foi digitado.
   const [falhou, setFalhou] = React.useState(false);
   const [expandido, setExpandido] = React.useState(false);
+  // O cache não tinha a palavra: a busca paga só sai se a pessoa pedir.
+  const [precisaBuscar, setPrecisaBuscar] = React.useState(false);
+  // A franquia de buscas do plano acabou.
+  const [semBusca, setSemBusca] = React.useState(false);
   // Só farejamos depois que a pessoa confirma QUEM é.
   const [escolhido, setEscolhido] = React.useState<string | null>(null);
   const [recent, setRecent] = React.useState<RecentSearch[]>([]);
@@ -83,6 +87,8 @@ export function SearchBlock({
   React.useEffect(() => {
     setEscolhido(null);
     setExpandido(false);
+    setPrecisaBuscar(false);
+    setSemBusca(false);
     if (termo.length < 3) {
       setHits([]);
       setBuscando(false);
@@ -95,13 +101,21 @@ export function SearchBlock({
     return () => clearTimeout(t);
   }, [termo]);
 
-  async function buscar(id: number) {
+  /**
+   * Enquanto se digita, só o cache responde — de graça. A busca que vai ao
+   * provedor (`pagar`) sai do botão "Buscar contas", e conta na franquia.
+   */
+  async function buscar(id: number, pagar = false) {
     try {
-      const res = await fetch(`/api/search-profiles?q=${encodeURIComponent(termo)}`);
+      const res = await fetch(
+        `/api/search-profiles?q=${encodeURIComponent(termo)}${pagar ? "&buscar=1" : ""}`,
+      );
       if (id !== reqId.current) return; // superseded by a newer keystroke
       if (!res.ok) throw new Error(String(res.status));
       const data = await res.json();
       setHits(Array.isArray(data.results) ? data.results : []);
+      setPrecisaBuscar(!!data.precisaBuscar);
+      setSemBusca(!!data.teto);
       setFalhou(false);
     } catch {
       if (id !== reqId.current) return;
@@ -129,6 +143,13 @@ export function SearchBlock({
       return;
     }
     if (!escolhida) {
+      // Sem lista para escolher, o @ exato vale: é o caminho que não depende
+      // de busca nenhuma.
+      if (hits.length === 0 && isValidUsername(termo)) {
+        setLoading(true);
+        go(termo);
+        return;
+      }
       setError("Escolha o perfil antes de farejar.");
       return;
     }
@@ -206,7 +227,7 @@ export function SearchBlock({
           </div>
           <button
             type="submit"
-            disabled={loading || !escolhida}
+            disabled={loading || (!escolhida && !(hits.length === 0 && isValidUsername(termo) && termo.length >= 3))}
             aria-label={buttonLabel}
             title={escolhida ? undefined : "Escolha o perfil primeiro"}
             className={`flex h-[52px] w-full shrink-0 items-center justify-center gap-2 rounded-2xl px-5 font-bold transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 sm:h-14 sm:w-auto ${buttonTone}`}
@@ -218,7 +239,7 @@ export function SearchBlock({
             )}
             {/* O @ escolhido já está marcado na lista logo abaixo; repeti-lo
                 no botão só fazia o rótulo crescer. */}
-            <span>{escolhida ? "Analisar" : buttonLabel}</span>
+            <span>{escolhida || (hits.length === 0 && isValidUsername(termo) && termo.length >= 3) ? "Abrir" : buttonLabel}</span>
           </button>
         </div>
         {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
@@ -298,9 +319,33 @@ export function SearchBlock({
         </div>
       )}
       {!buscando && !falhou && hits.length === 0 && isValidUsername(termo) && termo.length >= 3 && (
-        <p className="mt-3 text-sm text-muted-foreground">
-          Não encontramos esse perfil. Confira o @.
-        </p>
+        precisaBuscar ? (
+          <div className="mt-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm">
+            <p className="text-muted-foreground">
+              Sabe o @ exato? Toque em <b className="text-foreground">Abrir</b>. Se não, procure contas
+              parecidas com <b className="text-foreground">{termo}</b> — isso usa uma das buscas do seu
+              plano.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setBuscando(true);
+                buscar(++reqId.current, true);
+              }}
+              className="mt-2 flex min-h-[44px] items-center gap-2 rounded-2xl bg-muted px-4 font-bold transition hover:bg-pink"
+            >
+              <Search className="h-4 w-4" /> Buscar contas
+            </button>
+          </div>
+        ) : semBusca ? (
+          <p className="mt-3 text-sm text-muted-foreground">
+            As buscas de sugestão do seu plano acabaram. Digite o @ exato e toque em Abrir.
+          </p>
+        ) : (
+          <p className="mt-3 text-sm text-muted-foreground">
+            Não encontramos esse perfil. Confira o @.
+          </p>
+        )
       )}
 
       {showRecent && recent.length > 0 && (

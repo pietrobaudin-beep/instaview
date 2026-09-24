@@ -11,7 +11,8 @@ import { prisma } from "@/lib/db";
 import { PLANS } from "@/lib/plans";
 import { initials } from "@/lib/utils";
 import { PlanLimits } from "@/components/plan-limits";
-import { consultsUsed, peekUsageKey } from "@/lib/usage";
+import { direitosDe } from "@/lib/direitos";
+import { resumoDaFranquia } from "@/lib/franquia";
 
 export const dynamic = "force-dynamic";
 
@@ -21,10 +22,11 @@ export default async function PerfilPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login?next=/perfil");
 
-  const plan = PLANS[user.plan];
-  const isPaid = user.plan !== "FREE";
+  const d = direitosDe(user);
+  const plan = d.admin ? { name: "Admin" } : PLANS[d.plano];
+  const isPaid = d.admin || d.plano !== "FREE";
 
-  const consultados = await consultsUsed(peekUsageKey(user));
+  const resumo = await resumoDaFranquia(user);
   const [tracked, detected] = await Promise.all([
     prisma.trackedProfile.count({ where: { userId: user.id } }),
     prisma.followerChange.count({
@@ -34,7 +36,7 @@ export default async function PerfilPage() {
 
   return (
     <>
-      <AppNav plan={user.plan} />
+      <AppNav plan={d.admin ? "ADMIN" : d.plano} />
       <main className="mx-auto max-w-3xl px-6 py-8 md:pl-[15.5rem]">
         <h1 className="mb-6 text-3xl font-extrabold tracking-tight">Perfil</h1>
 
@@ -60,17 +62,26 @@ export default async function PerfilPage() {
         </Panel>
 
         {/* O que já foi usado do plano, antes de a pessoa esbarrar no limite. */}
-        <PlanLimits plan={user.plan} consultados={consultados} noFaro={tracked} className="mt-5" />
+        <PlanLimits resumo={resumo} className="mt-5" />
+
+        {/* Cancelamento marcado: a data em que o plano deixa de valer, dita às claras. */}
+        {user.planEndsAt && user.planEndsAt > new Date() && (
+          <NoteBox className="mt-4" icon={<ShieldCheck className="h-4 w-4" />}>
+            Seu plano vale até {user.planEndsAt.toLocaleDateString("pt-BR")}. Depois disso as coletas param,
+            os stories comuns saem do acervo e os favoritos ficam guardados por mais 30 dias.
+          </NoteBox>
+        )}
 
         {!isPaid && (
           <div className="mt-5">
-            <Panel title="Farejo PRO">
+            <Panel title="Planos">
               <p className="text-sm text-muted-foreground">
-                Seu faro, ligado 24h. Coloque perfis no Faro AI e receba alertas quando algo mudar.
+                Uma análise avulsa, uma semana de consultas, ou um perfil acompanhado a cada 3 dias ou todo
+                dia.
               </p>
               <Link href="/pricing" className="mt-4 block">
                 <Button variant="accent" className="w-full sm:w-auto">
-                  Conhecer o Farejo PRO <ArrowRight className="h-4 w-4" />
+                  Conhecer os planos <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
             </Panel>

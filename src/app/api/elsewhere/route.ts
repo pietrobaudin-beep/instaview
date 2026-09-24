@@ -4,7 +4,10 @@ import { isValidUsername, normalizeUsername } from "@/lib/utils";
 import { getCurrentUser } from "@/lib/auth";
 import { peekUsageKey, usageKey } from "@/lib/usage";
 import { votar, votosDoPerfil, type Voto } from "@/lib/elsewhere-votos";
-import { TETO_REDES_PAGAS, consumirTeto } from "@/lib/teto-diario";
+import { acessoA } from "@/lib/access";
+import { comQuem } from "@/lib/custo";
+import { direitosDe, inicioDoCiclo } from "@/lib/direitos";
+import { reservarBruto, tetoDe } from "@/lib/franquia";
 
 export const dynamic = "force-dynamic";
 
@@ -34,23 +37,48 @@ export async function GET(req: Request) {
   const pagas = url.searchParams.get("pagas") === "1";
 
   // `peek`, e não `usageKey`: um GET não deve criar identidade para quem ainda
-  // não tem nenhuma. Sem chave, vale só a regra global.
-  const chave = peekUsageKey(await getCurrentUser());
+  // não tem nenhuma. Serve aos votos.
+  const user = await getCurrentUser();
+  const chave = peekUsageKey(user);
 
   /*
-   * O teto só é cobrado quando o Apify vai MESMO rodar.
+   * As redes pagas (Apify) desde 24/09: **sob demanda, dentro da análise**.
    *
-   * Antes ele era consumido aqui em cima, antes de qualquer leitura: abrir
-   * cinco perfis já guardados queimava o dia inteiro, e o sexto — esse sim
-   * novo — voltava sem a foto do TikTok. Agora quem decide o momento é a
-   * busca, que só pede permissão depois de o cache não responder.
+   * Só para quem tem a análise revelada DESTE @, e cada @ novo gasta 1 da
+   * franquia de redes do plano (Farejador: 1 por compra). As duas redes do
+   * mesmo @ são uma consulta só — a reserva é feita uma vez e reaproveitada.
+   * O @ que já está no cache não gasta nada.
+   *
+   * Visitante sem conta não chega aqui: antes não tinha teto nenhum, porque
+   * sem cookie a chave era nula e o teto liberava.
    */
-  const permitir = async () => (await consumirTeto(chave, "redes-pagas", TETO_REDES_PAGAS)).ok;
+  let permitir: (() => Promise<boolean>) | false = false;
+  let negado = false;
+  if (pagas && user) {
+    const acesso = await acessoA(user, username);
+    if (acesso.access !== "free") {
+      const d = direitosDe(user);
+      let reservado: Promise<boolean> | null = null;
+      permitir = () => {
+        reservado ??= (async () => {
+          if (d.admin) return true;
+          const extra = acesso.access === "single" ? 1 : 0;
+          const limite = acesso.access === "single" ? 0 : tetoDe(d.config, "redes");
+          const ciclo = acesso.access === "single" ? new Date(0) : inicioDoCiclo(user);
+          const dono = acesso.access === "single" ? `${user.id}:avulso:${username}` : user.id;
+          const ok = (await reservarBruto(dono, "redes", ciclo, limite + extra)).ok;
+          if (!ok) negado = true;
+          return ok;
+        })();
+        return reservado;
+      };
+    }
+  }
 
   // As duas em paralelo, e os votos numa leitura só: esta rota é esperada
   // pela tela de carregamento, então cada ida ao banco aparece para quem olha.
   const [links, { escondidas, meus }] = await Promise.all([
-    handleElsewhere(username, pagas ? permitir : false),
+    comQuem({ userId: user?.id ?? null, motivo: "redes" }, () => handleElsewhere(username, permitir)),
     votosDoPerfil(username, chave),
   ]);
 
@@ -63,6 +91,8 @@ export async function GET(req: Request) {
     // para a tela poder escondê-lo também.
     escondidas,
     votos: meus,
+    // Pediu a busca paga e a franquia de outras redes não deixou.
+    semFranquia: negado,
   });
 }
 

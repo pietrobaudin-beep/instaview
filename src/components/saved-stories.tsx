@@ -51,6 +51,7 @@ export function SavedStories({
   profileId,
   salvosIniciais = [],
   cotaInicial = { usados: 0, limite: 0, restam: 0 },
+  ferramentas = { resumos: true, buscaStories: true, storiesHours: null },
 }: {
   stories: SavedStory[];
   plan: Plan;
@@ -60,8 +61,13 @@ export function SavedStories({
   profileId?: string;
   /** Os ids já marcados, vindos do servidor. */
   salvosIniciais?: string[];
-  /** Quantos salvamentos o plano ainda permite neste mês. */
-  cotaInicial?: { usados: number; limite: number; restam: number };
+  /** Vagas de favorito (e o espaço delas) que o plano ainda permite. */
+  cotaInicial?: { usados: number; limite: number; restam: number; mb?: number; limiteMb?: number };
+  /**
+   * O que o plano libera aqui. Vem do servidor: a janela dos stories já foi
+   * aplicada lá, então esta lista só mostra o que vale.
+   */
+  ferramentas?: { resumos: boolean; buscaStories: boolean; storiesHours: number | null };
 }) {
   const [aberto, setAberto] = React.useState(-1);
   const [salvos, setSalvos] = React.useState<string[]>(salvosIniciais);
@@ -72,7 +78,9 @@ export function SavedStories({
    * para o navegador.
    */
   const [cota, setCota] = React.useState(cotaInicial);
-  const [semCota, setSemCota] = React.useState(false);
+  const [semCota, setSemCota] = React.useState<null | "sem_cota" | "sem_espaco">(null);
+  /** Stories que ficaram sem ler porque os resumos do ciclo acabaram. */
+  const [semResumo, setSemResumo] = React.useState(0);
 
   /*
    * O que os stories disseram — assunto, texto na imagem e marcas.
@@ -113,7 +121,11 @@ export function SavedStories({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ username }),
       });
-      if (r.ok) guardar(await r.json());
+      const b = await r.json().catch(() => null);
+      if (r.ok && b) {
+        guardar(b);
+        setSemResumo(b.semFranquia ?? 0);
+      } else if (r.status === 402) setSemResumo(-1);
     } catch {
       /* fica como está */
     } finally {
@@ -131,7 +143,7 @@ export function SavedStories({
     if (!profileId) return;
     const estava = salvos.includes(storyId);
     setMarcando(storyId);
-    setSemCota(false);
+    setSemCota(null);
     setSalvos((atual) => (estava ? atual.filter((id) => id !== storyId) : [storyId, ...atual]));
     try {
       const r = await fetch("/api/stories-salvos", {
@@ -145,7 +157,7 @@ export function SavedStories({
       if (b?.cota) setCota(b.cota);
       // Recusado por falta de cota: a tela volta atrás e diz por quê.
       if (b?.ok === false) {
-        setSemCota(true);
+        setSemCota(b.motivo === "sem_espaco" ? "sem_espaco" : "sem_cota");
         setSalvos((atual) => atual.filter((id) => id !== storyId));
       }
     } catch {
@@ -157,19 +169,12 @@ export function SavedStories({
 
   if (!stories.length) return null;
 
-  const janela = planFor(plan).storiesHours;
+  const janela = ferramentas.storiesHours;
   const prazo =
-    janela === Number.POSITIVE_INFINITY
-      ? "Guardados desde a entrada no Faro AI, sem prazo."
-      : `Guardados por ${janela} horas pelo seu plano.`;
+    janela == null
+      ? "Guardados enquanto o perfil estiver no Faro AI."
+      : `Visíveis por ${janela % 24 === 0 ? `${janela / 24} dia${janela === 24 ? "" : "s"}` : `${janela} horas`} contados da publicação, pelo seu plano.`;
 
-  /*
-   * O prazo do plano vale para o que o Faro AI guardou sozinho. O que a pessoa
-   * marcou com a estrela **escapa dele**: é isso que a estrela compra, e é
-   * por isso que ela tem cota mensal.
-   *
-   * No Faro Detetive a janela já é infinita, então lá marcar é só organizar.
-   */
   const marcados = stories.filter((s) => salvos.includes(s.id));
   /*
    * O prazo corta — a estrela protege. Antes a lista mostrava só o que estava
@@ -178,7 +183,8 @@ export function SavedStories({
    * valendo (o story estava na página de salvos), mas o lugar onde a pessoa
    * clicou não dizia isso.
    */
-  const visiveis = stories.filter((s) => horas(s.detectedAt) <= janela || salvos.includes(s.id));
+  // A janela já foi aplicada no servidor (`acervo.ts`).
+  const visiveis = stories;
   if (!visiveis.length) return null;
 
   /*
@@ -220,7 +226,7 @@ export function SavedStories({
     <Panel
       title="Stories guardados"
       action={
-        iaLigada && quantosLidos < visiveis.length ? (
+        iaLigada && ferramentas.resumos && quantosLidos < visiveis.length ? (
           <button
             type="button"
             onClick={resumir}
@@ -235,7 +241,14 @@ export function SavedStories({
     >
       {/* A busca só aparece quando há o que buscar: sem leitura, ela olharia
           apenas as menções e prometeria mais do que entrega. */}
-      {quantosLidos > 0 && (
+      {semResumo !== 0 && (
+        <p className="mb-3 text-[11px] font-semibold text-destructive">
+          {semResumo < 0
+            ? "Os resumos de stories deste ciclo acabaram."
+            : `${semResumo} story${semResumo === 1 ? "" : "s"} ficaram sem ler: os resumos deste ciclo acabaram.`}
+        </p>
+      )}
+      {quantosLidos > 0 && ferramentas.buscaStories && (
         <div className="relative mb-3">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -345,15 +358,13 @@ export function SavedStories({
       <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
         {prazo} O Farejo copiou a miniatura quando ela ainda estava pública; o story em si sai do
         Instagram em 24 horas.
-        {profileId && cota.limite > 0 && janela !== Number.POSITIVE_INFINITY && (
+        {profileId && cota.limite > 0 && janela != null && (
           <>
             {" "}
-            Toque na <b className="font-semibold">estrela</b> para o story não expirar —{" "}
-            {cota.restam} de {cota.limite} ainda neste mês.
+            Toque na <b className="font-semibold">estrela</b> para o story ficar guardado enquanto o plano
+            estiver ativo — {cota.usados} de {Number.isFinite(cota.limite) ? cota.limite : "∞"} favoritos
+            {cota.limiteMb != null && Number.isFinite(cota.limiteMb) ? `, ${cota.mb ?? 0} de ${cota.limiteMb} MB` : ""}.
           </>
-        )}
-        {profileId && cota.limite > 0 && janela === Number.POSITIVE_INFINITY && (
-          <> Aqui nada expira; a estrela serve para separar os que importam.</>
         )}
       </p>
 
@@ -380,8 +391,9 @@ export function SavedStories({
 
       {semCota && (
         <p className="mt-2 text-[11px] font-semibold text-destructive">
-          Você já salvou {cota.limite} stories este mês. A cota volta no dia 1º — ou você libera
-          espaço tirando a estrela de algum.
+          {semCota === "sem_espaco"
+            ? "O espaço dos favoritos do seu plano está cheio. Tire a estrela de algum para liberar."
+            : `Você já tem ${cota.limite} favoritos, o máximo do seu plano. Tire a estrela de algum para liberar uma vaga.`}
         </p>
       )}
     </Panel>

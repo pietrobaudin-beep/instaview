@@ -16,6 +16,7 @@
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { consumirTeto } from "@/lib/teto-diario";
+import { registrarChamada } from "@/lib/custo";
 
 const log = logger.scope("ia");
 
@@ -46,8 +47,22 @@ export interface Opcoes {
   tarefa: string;
 }
 
+/**
+ * IA de mentira, só para teste local: responde texto marcado como simulado,
+ * sem chamar ninguém e sem custo. Nunca liga em produção.
+ */
+export function iaSimulada(): boolean {
+  return process.env.IA_SIMULADA === "1" && process.env.NODE_ENV !== "production" && !env.OPENAI_API_KEY;
+}
+
 export function iaLigada(): boolean {
-  return !!env.OPENAI_API_KEY;
+  return !!env.OPENAI_API_KEY || iaSimulada();
+}
+
+function respostaSimulada(tarefa: string): string {
+  if (tarefa === "story") return JSON.stringify({ assunto: "(simulado) paisagem com texto", texto: "SIMULADO", marcas: [] });
+  if (tarefa === "alerta") return JSON.stringify({ bate: false, porque: "(simulado) sem relação com o pedido" });
+  return "(Resposta simulada do teste local — a IA de verdade está desligada.)";
 }
 
 /**
@@ -61,6 +76,7 @@ export async function conversar(
   opcoes: Opcoes,
 ): Promise<string | null> {
   if (!iaLigada()) return null;
+  if (iaSimulada()) return respostaSimulada(opcoes.tarefa);
 
   const { ok } = await consumirTeto("ia", `ia:${opcoes.tarefa}`, TETO_IA_DIA);
   if (!ok) {
@@ -83,6 +99,8 @@ export async function conversar(
       }),
       signal: AbortSignal.timeout(opcoes.tetoMs ?? 8000),
     });
+
+    await registrarChamada("openai", opcoes.tarefa, res.status);
 
     if (!res.ok) {
       log.warn("openai recusou", { tarefa: opcoes.tarefa, status: res.status });

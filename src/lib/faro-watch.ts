@@ -20,6 +20,9 @@ import { logger } from "@/lib/logger";
 import { getSection, type Section } from "@/lib/raio-x";
 import { keepImage } from "@/lib/img-store";
 import { TEST_EMAIL_DOMAIN, usingMockData } from "@/lib/sandbox";
+import { comQuem } from "@/lib/custo";
+import { direitosDe, fimDoCiclo } from "@/lib/direitos";
+import { devolver, reservar } from "@/lib/franquia";
 import type { PostItem, StoryItem } from "@/lib/providers/types";
 
 const log = logger.scope("faro-watch");
@@ -68,9 +71,14 @@ const log = logger.scope("faro-watch");
  * **Marcações a cada 3 dias.** Não é conteúdo que expira: saber um dia depois
  * não muda nada para quem lê, e economiza dois terços da linha.
  */
+/*
+ * **Marcações saíram da coleta em 24/09.** A intenção era ler a cada 3 dias,
+ * mas o cache de 24h da seção cortava a janela e, na prática, elas eram lidas
+ * todo dia. Na estrutura nova elas ficam na análise pontual. A coleta é
+ * enxuta: cartão, uma página de seguindo e stories — 3 leituras.
+ */
 const WATCH: { section: Section; kind: string; fresco: number }[] = [
   { section: "stories", kind: "story", fresco: 60 * 60 * 1000 },
-  { section: "tagged", kind: "tagged", fresco: 3 * 24 * 60 * 60 * 1000 },
 ];
 
 /** What the news card needs, frozen at detection time. */
@@ -162,9 +170,12 @@ export type ModoDaPassagem = "completo" | "stories";
 export async function watchProfile(
   profile: { id: string; username: string; userId: string },
   modo: ModoDaPassagem = "completo",
+  opcoes: { avaliar?: (n: number) => Promise<number> } = {},
 ): Promise<WatchReport> {
   const { id: profileId, username } = profile;
   let news = 0;
+  let houveNovos = false;
+  const inicioDaPassagem = new Date();
 
   const secoes = modo === "stories" ? WATCH.filter((w) => w.section === "stories") : WATCH;
 
@@ -193,6 +204,7 @@ export async function watchProfile(
       skipDuplicates: true,
     });
     if (!baseline) news += created.count;
+    if (!baseline && created.count > 0) houveNovos = true;
 
     // Story expira em 24h no Instagram. Como o perfil está no Faro AI, a
     // miniatura é guardada AGORA — é ela que vai sustentar a tela depois,
@@ -202,6 +214,20 @@ export async function watchProfile(
         await keepImage((x as StoryItem).thumbnailUrl);
       }
     }
+  }
+
+  // "Me avise quando…": os stories novos desta passagem, contra o pedido.
+  // Cada avaliação conta na franquia (`opcoes.avaliar` reserva e diz quantas
+  // cabem); o que não coube fica sem avaliar, e a tela mostra o consumo.
+  if (houveNovos && opcoes.avaliar) {
+    // Só os que ESTA passagem criou: os antigos já tiveram a vez deles.
+    const eventos = await prisma.profileEvent.findMany({
+      where: { profileId, kind: "story", baseline: false, detectedAt: { gte: inicioDaPassagem } },
+      select: { id: true, kind: true, data: true },
+    });
+    await avaliarNovidades(profileId, eventos, opcoes.avaliar).catch((e) =>
+      log.warn("alerta escrito falhou", { username, erro: (e as Error).message }),
+    );
   }
 
   // Follows: the same tracker the analysis page uses, one page of "following".
@@ -236,47 +262,136 @@ export async function watchProfile(
   return { username, news };
 }
 
+export type Pulo = "sem_plano" | "cedo" | "franquia" | "privado" | "erro" | "manual_nao";
+
+export interface Coleta {
+  ok: boolean;
+  pulo?: Pulo;
+  news?: number;
+  /** Quando faz sentido tentar de novo. */
+  proxima: Date;
+}
+
+const HORA = 60 * 60 * 1000;
+
 /**
- * Every PRO profile in the Faro AI, least recently read first. `limit` keeps one
- * run inside the serverless time budget; profiles left over go first next day.
+ * A porta única de uma coleta do acompanhamento. O cron de hora em hora, a
+ * rotina diária e o "Atualizar agora" passam todos por aqui — antes eram três
+ * caminhos, e nenhum olhava o plano de quem é dono do perfil.
+ *
+ * 1. **Plano**: o dono precisa ter acompanhamento (Cão, Detetive, antigo ou
+ *    Admin). Plano vencido para de coletar — sem apagar nada.
+ * 2. **Cadência**: 72h no Cão, 24h no Detetive, medida da última coleta. O
+ *    "Atualizar agora" (só onde o plano permite) antecipa, mas respeita o
+ *    intervalo mínimo — e não acrescenta coleta: sai da mesma franquia.
+ * 3. **Franquia**: a coleta é reservada antes de qualquer leitura. Esgotada,
+ *    o perfil espera o ciclo novo. Falha sem entrega devolve a reserva.
+ */
+export async function coletarSeDevido(
+  profileId: string,
+  opcoes: { manual?: boolean } = {},
+): Promise<Coleta> {
+  const agora = new Date();
+  const perfil = await prisma.trackedProfile.findUnique({
+    where: { id: profileId },
+    select: {
+      id: true,
+      username: true,
+      userId: true,
+      lastCollectedAt: true,
+      user: { select: { id: true, email: true, plan: true, planEndsAt: true, planStartedAt: true } },
+    },
+  });
+  if (!perfil) return { ok: false, pulo: "erro", proxima: new Date(agora.getTime() + 24 * HORA) };
+
+  const dono = perfil.user;
+  const { config, admin } = direitosDe(dono);
+  if (!admin && config.maxProfiles <= 0) {
+    return { ok: false, pulo: "sem_plano", proxima: new Date(agora.getTime() + 24 * HORA) };
+  }
+
+  const ultima = perfil.lastCollectedAt?.getTime() ?? 0;
+  const passou = agora.getTime() - ultima;
+  if (opcoes.manual) {
+    if (config.atualizarAgoraHoras == null) {
+      // Nunca coletado: a primeira coleta é a próxima volta do cron.
+      const proxima = ultima ? new Date(ultima + config.cadenciaHoras * HORA) : agora;
+      return { ok: false, pulo: "manual_nao", proxima };
+    }
+    if (passou < config.atualizarAgoraHoras * HORA) {
+      return { ok: false, pulo: "cedo", proxima: new Date(ultima + config.atualizarAgoraHoras * HORA) };
+    }
+  } else if (passou < config.cadenciaHoras * HORA - HORA) {
+    // Uma hora de folga: o cron roda de hora em hora, e sem folga a coleta de
+    // "a cada 24h" escorregaria uma hora por dia.
+    return { ok: false, pulo: "cedo", proxima: new Date(ultima + config.cadenciaHoras * HORA - HORA) };
+  }
+
+  const reserva = admin ? null : await reservar(dono, "coleta");
+  if (reserva && !reserva.ok) {
+    return { ok: false, pulo: "franquia", proxima: fimDoCiclo(dono, agora) ?? new Date(agora.getTime() + 24 * HORA) };
+  }
+
+  // Avaliações do "Me avise quando…": reservadas uma a uma, contra a franquia.
+  const avaliar =
+    admin || config.alertasEscritos > 0
+      ? async (n: number) => {
+          if (admin) return n;
+          let cabem = 0;
+          for (let i = 0; i < n; i++) {
+            if (!(await reservar(dono, "alerta")).ok) break;
+            cabem++;
+          }
+          return cabem;
+        }
+      : undefined;
+
+  let r: WatchReport;
+  try {
+    r = await comQuem({ userId: dono.id, admin, motivo: opcoes.manual ? "coleta:manual" : "coleta" }, () =>
+      watchProfile({ id: perfil.id, username: perfil.username, userId: dono.id }, "completo", { avaliar }),
+    );
+  } catch (e) {
+    log.error("coleta falhou", { profileId, erro: (e as Error).message });
+    r = { username: perfil.username, news: 0, skipped: "error" };
+  }
+
+  if (r.skipped) {
+    if (reserva) await devolver(reserva);
+    return {
+      ok: false,
+      pulo: r.skipped === "private" ? "privado" : "erro",
+      proxima: new Date(agora.getTime() + (r.skipped === "private" ? 24 : 1) * HORA),
+    };
+  }
+  return { ok: true, news: r.news, proxima: new Date(agora.getTime() + config.cadenciaHoras * HORA) };
+}
+
+/**
+ * A rede de segurança diária: passa por todo perfil ativo e deixa a porta
+ * única decidir. Quem não está no ponto (cadência, franquia, plano) é pulado
+ * sem custo.
  */
 export async function runFaroDaily(limit = 20): Promise<{ checked: number; news: number; reports: WatchReport[] }> {
   const profiles = await prisma.trackedProfile.findMany({
     where: {
       status: "ACTIVE",
-      user: {
-        plan: { not: "FREE" },
-        // Fake data (localhost) only ever touches the test accounts.
-        ...(usingMockData() ? { email: { endsWith: TEST_EMAIL_DOMAIN } } : {}),
-      },
-      /*
-       * Quem o runner já leu por completo nas últimas 20h fica de fora.
-       *
-       * Sem isto os dois caminhos pagariam pela mesma informação: o runner
-       * faz a passagem completa na cadência do plano, e esta rotina diária
-       * viria logo atrás refazer. Ela continua existindo como rede de
-       * segurança — pega quem ficou sem job ou atrasado.
-       */
-      OR: [
-        { lastCollectedAt: null },
-        { lastCollectedAt: { lt: new Date(Date.now() - 20 * 60 * 60 * 1000) } },
-      ],
+      // Fake data (localhost) only ever touches the test accounts.
+      ...(usingMockData() ? { user: { email: { endsWith: TEST_EMAIL_DOMAIN } } } : {}),
     },
     orderBy: [{ lastCollectedAt: { sort: "asc", nulls: "first" } }],
     take: limit,
-    select: { id: true, username: true, userId: true },
+    select: { id: true, username: true },
   });
 
   const reports: WatchReport[] = [];
   // A few at a time: quick enough, gentle on the provider's rate limit.
   for (let i = 0; i < profiles.length; i += 3) {
     const batch = await Promise.all(
-      profiles.slice(i, i + 3).map((p) =>
-        watchProfile(p).catch((e) => {
-          log.error("watch failed", { username: p.username, error: (e as Error).message });
-          return { username: p.username, news: 0, skipped: "error" };
-        }),
-      ),
+      profiles.slice(i, i + 3).map(async (p) => {
+        const c = await coletarSeDevido(p.id).catch(() => null);
+        return { username: p.username, news: c?.news ?? 0, skipped: c?.ok ? undefined : c?.pulo ?? "erro" };
+      }),
     );
     reports.push(...batch);
   }

@@ -22,6 +22,7 @@ import { prisma } from "@/lib/db";
 import { conversarJson, iaLigada } from "@/lib/ia";
 import { logger } from "@/lib/logger";
 import type { EventData } from "@/lib/faro-watch";
+import { leiturasGuardadas } from "@/lib/stories-ia";
 import type { Prisma } from "@prisma/client";
 
 const log = logger.scope("alerta-escrito");
@@ -77,6 +78,8 @@ const INSTRUCAO =
 export async function avaliarNovidades(
   profileId: string,
   eventos: { id: string; kind: string; data: unknown }[],
+  /** Reserva n avaliações na franquia e diz quantas couberam. */
+  permitir: (n: number) => Promise<number> = async (n) => n,
 ): Promise<{ eventId: string; veredito: Veredito }[]> {
   const pedido = await lerPedido(profileId);
   if (!pedido || !iaLigada() || !eventos.length) return [];
@@ -93,11 +96,20 @@ export async function avaliarNovidades(
 
   // No máximo 10 por passagem: alerta é para o que chega, não para varrer o
   // passado, e a coleta roda dentro do tempo de uma função.
-  for (const evento of eventos.filter((e) => !vistos.has(e.id)).slice(0, 10)) {
+  const pendentes = eventos.filter((e) => !vistos.has(e.id)).slice(0, 10);
+  // A franquia decide quantos destes cabem. Os de fora ficam sem avaliar —
+  // e a tela mostra o consumo, em vez de o alerta calar sem aviso.
+  const cabem = await permitir(pendentes.length);
+  // O que a IA já leu de cada story (quando alguém pediu o resumo) entra na
+  // descrição; sem isso, de um story só se sabe quem ele marca.
+  const leituras = await leiturasGuardadas(pendentes.map((e) => e.id));
+  for (const evento of pendentes.slice(0, cabem)) {
     const d = evento.data as EventData;
+    const l = leituras.get(evento.id);
     const descricao = [
       `tipo: ${evento.kind}`,
       d?.caption ? `legenda: "${d.caption}"` : null,
+      l ? `o que aparece: ${l.assunto}${l.texto ? ` — texto: "${l.texto}"` : ""}` : null,
       d?.people?.length ? `marca as contas: ${d.people.join(", ")}` : null,
     ]
       .filter(Boolean)

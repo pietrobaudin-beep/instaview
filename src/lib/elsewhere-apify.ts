@@ -14,6 +14,7 @@
  * Sem `APIFY_TOKEN` a função devolve "não sei" e a tela simplesmente não
  * mostra essas redes.
  */
+import { registrarChamada } from "@/lib/custo";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
@@ -220,6 +221,7 @@ export async function viaApify(rede: RedePaga, handle: string): Promise<Achado> 
         signal: AbortSignal.timeout(TIMEOUT_MS),
       },
     );
+    await registrarChamada("apify", cfg.ator, res.status);
     if (!res.ok) {
       // O motivo vai junto: "400" sozinho não distingue entrada errada de
       // limite de memória da conta, e foi o segundo que derrubou o Twitter

@@ -7,7 +7,9 @@ import { cacheSectionKey } from "@/lib/sandbox";
 import { logger } from "@/lib/logger";
 import { getCurrentUser } from "@/lib/auth";
 import { usageKey } from "@/lib/usage";
-import { TETO_BUSCA, consumirTeto } from "@/lib/teto-diario";
+import { comQuem } from "@/lib/custo";
+import { direitosDe, inicioDoCiclo } from "@/lib/direitos";
+import { devolver, reservarBruto, tetoDe, type Reserva } from "@/lib/franquia";
 
 const log = logger.scope("api:search");
 
@@ -33,7 +35,8 @@ const TTL = 24 * 60 * 60 * 1000;
 const MIN_CHARS = 3;
 
 export async function GET(req: Request) {
-  const q = (new URL(req.url).searchParams.get("q") || "")
+  const url = new URL(req.url);
+  const q = (url.searchParams.get("q") || "")
     .trim()
     .toLowerCase()
     .replace(/^@+/, "");
@@ -54,16 +57,37 @@ export async function GET(req: Request) {
     return NextResponse.json({ results: stored.data as unknown as SearchHit[], cached: true });
   }
 
-  // Só aqui o gasto vai acontecer de verdade — o que veio do cache, acima,
-  // não consome teto.
-  const teto = await consumirTeto(usageKey(await getCurrentUser()), "busca", TETO_BUSCA);
-  if (!teto.ok) {
-    log.info("teto de busca atingido", { q });
-    return NextResponse.json({ results: [], teto: true });
+  /*
+   * Só aqui o gasto vai acontecer de verdade — o que veio do cache, acima,
+   * não consome nada.
+   *
+   * Desde 24/09 a busca paga só acontece quando a pessoa PEDE (`buscar=1`,
+   * o botão "Buscar contas"): antes cada pausa na digitação era uma leitura,
+   * e o teto de 30 por dia podia custar R$ 99/mês numa conta só. Agora o
+   * limite é a franquia de sugestões do plano — 1 na experiência grátis.
+   */
+  if (url.searchParams.get("buscar") !== "1") {
+    return NextResponse.json({ results: [], precisaBuscar: true });
+  }
+  const user = await getCurrentUser();
+  const d = direitosDe(user);
+  let reserva: Reserva | null = null;
+  if (!d.admin) {
+    // Cada Farejador comprado traz uma busca a mais.
+    const extras = user ? await prisma.profileUnlock.count({ where: { userId: user.id } }) : 0;
+    const dono = user ? user.id : usageKey(null);
+    const ciclo = user ? inicioDoCiclo(user) : new Date(0);
+    reserva = await reservarBruto(dono, "sugestao", ciclo, tetoDe(d.config, "sugestao") + extras);
+    if (!reserva.ok) {
+      log.info("franquia de busca esgotada", { q });
+      return NextResponse.json({ results: [], teto: true, usados: reserva.usados, limite: reserva.limite });
+    }
   }
 
   try {
-    const results = await provider.searchUsers(q);
+    const results = await comQuem({ userId: user?.id ?? null, admin: d.admin, motivo: "busca" }, () =>
+      provider.searchUsers!(q),
+    );
     await prisma.sectionCache
       .upsert({
         where: { username_section: { username: key, section } },
@@ -73,6 +97,7 @@ export async function GET(req: Request) {
       .catch(() => null);
     return NextResponse.json({ results });
   } catch (e) {
+    if (reserva) await devolver(reserva);
     const code = e instanceof ProviderError ? e.code : "UNKNOWN";
     log.warn("search failed", { q, code });
     // A busca é um conforto enquanto se digita: falhando, a tela ainda tem o

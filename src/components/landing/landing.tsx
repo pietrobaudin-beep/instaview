@@ -90,10 +90,10 @@ const WHAT = [
 
 /** O que a assinatura entrega, dito como a pessoa entenderia. */
 const PRO_PROMISES = [
-  "Um farejo por dia em cada perfil da sua lista",
-  "Quem entrou e quem saiu da lista de seguidos, sem censura",
-  "Histórico do que mudou, desde o dia em que você colocou no Faro AI",
-  "Aviso quando o Faro AI encontrar algo novo",
+  "Faro de Cão: uma coleta a cada 3 dias; Faro de Detetive: uma por dia",
+  "Quem entrou e quem saiu da lista de seguidos, entre uma coleta e outra",
+  "Stories capturados guardados pelo prazo do plano, e os favoritos que você marcar",
+  "Perguntas e resumos com o Faro AI, dentro da franquia do mês",
 ];
 
 const PRO_FEATURES = [
@@ -112,7 +112,7 @@ const STEPS = [
   {
     n: "03",
     title: "Acompanhe",
-    body: "Com o PRO, coloque perfis no seu Faro AI.",
+    body: "Com o Faro de Cão ou de Detetive, coloque um perfil no Faro AI.",
     Mock: StepAlert,
   },
 ];
@@ -135,8 +135,8 @@ const COMPARE: { row: string; farejo: string; manual: string; manualOk?: boolean
   { row: "Só pessoas (sem marcas e verificados)", farejo: "Automático", manual: "Separar um por um" },
   { row: "Mulheres e homens", farejo: "Contagem pronta", manual: "Contar na mão" },
   { row: "Quem mais interage", farejo: "Ranking pronto", manual: "Abrir post por post" },
-  { row: "Histórico de mudanças", farejo: "Com o PRO", manual: "Só se você anotar" },
-  { row: "Aviso quando algo muda", farejo: "Com o PRO", manual: "Não existe" },
+  { row: "Histórico de mudanças", farejo: "Com o Faro AI", manual: "Só se você anotar" },
+  { row: "Aviso quando algo muda", farejo: "Com o Faro AI", manual: "Não existe" },
   { row: "A pessoa fica sabendo", farejo: "Não", manual: "Não", manualOk: true },
 ];
 
@@ -159,11 +159,11 @@ const FAQ = [
   },
   {
     q: "O Farejo é grátis?",
-    a: "Você pode analisar 1 perfil de graça, com os nomes em prévia. Para ver um perfil completo sem assinatura, existe o uso único. O PRO revela tudo e acompanha os perfis que você colocar no Faro AI.",
+    a: "Buscar e ver a prévia é grátis. Com uma conta grátis você revela quem mais aparece nas interações de um perfil, uma vez. Para a análise completa de um perfil sem assinatura existe o Farejador; para acompanhar um perfil ao longo do tempo, o Faro de Cão e o Faro de Detetive.",
   },
   {
     q: "A contagem de mulheres e homens é exata?",
-    a: "É uma estimativa feita pelo primeiro nome de cada conta, então pode ter erros. Serve para dar uma ideia geral.",
+    a: "Não. É uma estimativa feita pelo nome de cada conta (e, quando o nome não resolve, por IA), então pode errar. Serve para dar uma ideia geral.",
   },
   {
     q: "Por que marcas e contas verificadas não aparecem?",
@@ -171,7 +171,7 @@ const FAQ = [
   },
   {
     q: "Posso ver quem alguém começou a seguir?",
-    a: "Sim. A análise mostra quem o perfil segue hoje, e com o PRO cada nova leitura é comparada com a anterior: o que mudou vira uma pista.",
+    a: "A análise mostra uma amostra de quem o perfil segue hoje, na ordem que o Instagram entrega. Com o Faro AI, cada coleta é comparada com a anterior: o que mudou vira uma pista.",
   },
 ];
 
@@ -201,23 +201,21 @@ function TrustChecks({ className = "" }: { className?: string }) {
 
 // What the free plan really delivers: one analysis, with names blurred.
 const FREE_INCLUDES = [
-  "Busca por @",
-  "Distribuição dos perfis seguidos",
-  "Prévia das principais conexões",
-  "Prévia das interações disponíveis",
+  "Busca por @ e cartão do perfil",
+  "Prévia da análise, borrada",
+  "Com conta grátis: quem mais aparece nas interações, uma vez",
 ];
 
 const PRO_INCLUDES = [
-  "Tudo do Free, sem censura",
-  "Colocar perfis no Faro AI",
-  "Histórico",
-  "Alertas",
-  "Mudanças nas conexões",
-  "Recursos para conta conectada",
+  "1 perfil acompanhado: a cada 3 dias (Cão) ou todo dia (Detetive)",
+  "Análises completas novas todo mês",
+  "Pistas, histórico e \"Desde a sua última visita\"",
+  "Perguntas e resumos de stories com o Faro AI",
+  "Detetive: busca nos stories e o alerta \"Me avise quando…\"",
 ];
 
 export function Landing({ demo }: { demo: boolean }) {
-  const pro = PLANS.PRO;
+  const pro = PLANS.CAO;
 
   return (
     <main className="relative overflow-x-clip">
@@ -236,7 +234,7 @@ export function Landing({ demo }: { demo: boolean }) {
               href="#pro"
               className="hidden font-medium text-muted-foreground hover:text-foreground md:inline"
             >
-              PRO
+              Faro AI
             </a>
             <a
               href="#planos"
@@ -446,15 +444,14 @@ export function Landing({ demo }: { demo: boolean }) {
             <div className="min-w-0">
               {/* No celular já existe o Faro AI espiando o cartão: um só basta. */}
               <SniffingDog className="mb-6 hidden h-12 text-pink sm:mb-8 sm:block" />
-              <Eyebrow dark>Farejo PRO</Eyebrow>
+              <Eyebrow dark>Faro AI</Eyebrow>
               <h2 className="mt-4 text-balance text-[1.9rem] font-bold leading-[1.08] tracking-tight sm:text-5xl">
                 Você não precisa voltar todo dia. O Faro AI volta.
               </h2>
               <p className="mt-4 max-w-md text-[15px] leading-relaxed text-cream/75 sm:text-lg">
-                {pro.maxProfiles === 1
-                  ? "Coloque a pessoa que importa no Faro AI. Todo dia ele relê o perfil e mostra"
-                  : `Coloque até ${pro.maxProfiles} perfis no Faro AI. Todo dia ele relê cada um e mostra`}{" "}
-                <b className="font-semibold text-cream">só o que mudou</b> desde a última vez.
+                Coloque a pessoa que importa no Faro AI. Ele relê o perfil — a cada 3 dias no Faro de
+                Cão, todo dia no Faro de Detetive — e mostra{" "}
+                <b className="font-semibold text-cream">só o que mudou</b> entre uma coleta e outra.
               </p>
 
               {/* O que a assinatura entrega, em frases — não em rótulos soltos. */}
@@ -475,6 +472,7 @@ export function Landing({ demo }: { demo: boolean }) {
                   saber quanto é. */}
               <hr className="mt-8 border-cream/12" />
               <p className="mt-6 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                <span className="text-cream/60">a partir de</span>
                 <span className="text-3xl font-bold tracking-tight">{brl(pro.priceMonthly)}</span>
                 <span className="text-cream/60">por mês</span>
                 <span className="text-cream/40">·</span>
@@ -487,7 +485,7 @@ export function Landing({ demo }: { demo: boolean }) {
                   href="/pricing"
                   className="inline-flex items-center justify-center gap-2 rounded-full bg-pink px-6 py-3 font-bold text-ink transition hover:opacity-90"
                 >
-                  Assinar o PRO <ArrowRight className="h-4 w-4" />
+                  Ver os planos <ArrowRight className="h-4 w-4" />
                 </Link>
                 <a
                   href="#planos"
@@ -615,7 +613,7 @@ export function Landing({ demo }: { demo: boolean }) {
           {/* No celular: um cartão de cada vez, arrastando para o lado. */}
           <SwipeDeck className="mt-12" label="Planos do Farejo">
             <Reveal className="relative flex h-full flex-col rounded-3xl border border-border bg-card p-8">
-              <h3 className="text-2xl font-bold">Farejo Free</h3>
+              <h3 className="text-2xl font-bold">Curioso</h3>
               <p className="mt-1 text-muted-foreground">Para matar aquela curiosidade.</p>
               <p className="mt-6 text-4xl font-bold">R$ 0</p>
               <ul className="mt-6 flex-1 space-y-3">
@@ -636,13 +634,13 @@ export function Landing({ demo }: { demo: boolean }) {
 
             {/* Uso único: a compra de quem só quer resolver uma curiosidade. */}
             <Reveal delay={100} className="relative flex h-full flex-col rounded-3xl border-2 border-pink bg-card p-8">
-              <h3 className="text-2xl font-bold">Uso único</h3>
-              <p className="mt-1 text-muted-foreground">Para uma curiosidade pontual.</p>
+              <h3 className="text-2xl font-bold">{SINGLE_UNLOCK.name}</h3>
+              <p className="mt-1 text-muted-foreground">Uma pessoa, uma análise completa.</p>
               <p className="mt-6 text-4xl font-bold">
                 {brl(SINGLE_UNLOCK.price)}
                 <span className="text-lg font-medium text-muted-foreground"> uma vez</span>
               </p>
-              <p className="mt-1 text-sm text-muted-foreground">sem assinatura, sem renovação</p>
+              <p className="mt-1 text-sm text-muted-foreground">sem assinatura · aberto por 7 dias</p>
               <ul className="mt-6 flex-1 space-y-3">
                 {SINGLE_UNLOCK.features.map((f) => (
                   <li key={f} className="flex items-center gap-3">
@@ -661,7 +659,7 @@ export function Landing({ demo }: { demo: boolean }) {
 
             <Reveal delay={200} className="vinho-surface flex h-full flex-col rounded-3xl p-8">
               <div className="flex items-center justify-between">
-                <h3 className="text-2xl font-bold">Farejo PRO</h3>
+                <h3 className="text-2xl font-bold">Faro AI</h3>
                 <span className="rounded-full bg-yellow px-2.5 py-1 text-[11px] font-bold text-ink">
                   Recomendado
                 </span>
@@ -672,8 +670,8 @@ export function Landing({ demo }: { demo: boolean }) {
                 <span className="text-lg font-medium text-cream/60">/mês</span>
               </p>
               <p className="mt-1 text-sm text-cream/60">
-                ou {brl(PLANS.AGENCY.priceYearly ?? 0)} por ano no{" "}
-                <b className="font-semibold text-cream/80">{PLANS.AGENCY.name}</b>
+                no {pro.name}, ou {brl(PLANS.DETETIVE.priceMonthly)}/mês no{" "}
+                <b className="font-semibold text-cream/80">{PLANS.DETETIVE.name}</b>
               </p>
               <ul className="mt-6 flex-1 space-y-3">
                 {PRO_INCLUDES.map((f) => (
@@ -687,16 +685,14 @@ export function Landing({ demo }: { demo: boolean }) {
                 href="/pricing"
                 className="mt-8 rounded-full bg-pink px-6 py-3 text-center font-bold text-ink transition hover:opacity-90"
               >
-                Quero o PRO
+                Ver os planos
               </Link>
             </Reveal>
           </SwipeDeck>
           <p className="mt-8 text-center text-sm text-muted-foreground">
-            O uso único libera <b className="text-foreground">um perfil</b>; o PRO acompanha{" "}
-            <b className="text-foreground">
-              {pro.maxProfiles === 1 ? "um perfil todo dia" : `até ${pro.maxProfiles}`}
-            </b>{" "}
-            ao longo do tempo.
+            O Farejador libera <b className="text-foreground">um perfil</b>; o Faro AI acompanha{" "}
+            <b className="text-foreground">um perfil</b> ao longo do tempo. Todas as funcionalidades valem
+            dentro das franquias de cada plano.
           </p>
           <TrustLine className="mt-2 text-center" />
         </div>

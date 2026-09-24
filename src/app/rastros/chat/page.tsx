@@ -4,6 +4,7 @@ import { AppNav, NavSpacer } from "@/components/app-nav";
 import { ChatDoFaro } from "@/components/chat-do-faro";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { direitosDe } from "@/lib/direitos";
 import { Panel } from "@/components/ui/brand";
 import { Button } from "@/components/ui/button";
 import { Mascot } from "@/components/ui/mascot";
@@ -26,6 +27,8 @@ export default async function ChatPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login?next=/rastros/chat");
 
+  const d = direitosDe(user);
+  const semChat = !d.admin && d.config.perguntas <= 0;
   const perfis = await prisma.trackedProfile.findMany({
     where: { userId: user.id, status: { not: "ERROR" } },
     orderBy: { updatedAt: "desc" },
@@ -34,7 +37,7 @@ export default async function ChatPage() {
 
   return (
     <>
-      <AppNav plan={user.plan} />
+      <AppNav plan={d.admin ? "ADMIN" : d.plano} />
       <main className="mx-auto max-w-3xl px-5 py-8 md:pl-[15.5rem]">
         <h1 className="text-3xl font-extrabold tracking-tight">Chat do Faro AI</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -42,17 +45,17 @@ export default async function ChatPage() {
           não sabe.
         </p>
 
-        {user.plan === "FREE" ? (
+        {semChat ? (
           <Panel className="mt-6">
             <div className="flex flex-col items-center gap-3 py-8 text-center">
               <Mascot pose="duvida" className="h-20 text-vinho" bob />
-              <h2 className="text-xl font-bold">O chat é do Farejo PRO.</h2>
+              <h2 className="text-xl font-bold">O chat é do Faro de Cão e do Faro de Detetive.</h2>
               <p className="max-w-sm text-sm text-muted-foreground">
                 Ele responde sobre os perfis que o Faro AI acompanha todo dia — e para isso é
                 preciso ter perfis no Faro AI.
               </p>
               <Link href="/pricing" className="mt-1">
-                <Button variant="accent">Conhecer o Farejo PRO</Button>
+                <Button variant="accent">Conhecer os planos</Button>
               </Link>
             </div>
           </Panel>

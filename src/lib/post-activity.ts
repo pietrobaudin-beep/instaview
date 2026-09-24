@@ -16,8 +16,9 @@ import type { FollowerEntry } from "@/lib/providers/types";
 
 const log = logger.scope("post-activity");
 
-export const LIKES_KIND = "likes";
-export const COMMENTS_KIND = "comments";
+// Os nomes moram em `pista-kinds`, que a tela importa sem arrastar o servidor.
+export { LIKES_KIND, COMMENTS_KIND } from "@/lib/pista-kinds";
+import { LIKES_KIND, COMMENTS_KIND } from "@/lib/pista-kinds";
 /** Newest posts to watch. Each one costs ~2 requests per check — keep it low. */
 export const WATCHED_POSTS = 1;
 

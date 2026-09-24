@@ -26,7 +26,12 @@ const EXEMPLOS = [
 export function PergunteAoFaro({ username }: { username: string }) {
   const [pergunta, setPergunta] = React.useState("");
   const [pensando, setPensando] = React.useState(false);
-  const [resposta, setResposta] = React.useState<{ texto: string; linhas: number } | null>(null);
+  const [resposta, setResposta] = React.useState<{
+    texto: string;
+    linhas: number;
+    cortado?: boolean;
+    franquia?: { usados: number; limite: number } | null;
+  } | null>(null);
   const [erro, setErro] = React.useState<string | null>(null);
 
   async function enviar(texto: string) {
@@ -45,14 +50,16 @@ export function PergunteAoFaro({ username }: { username: string }) {
       if (!r.ok) {
         setErro(
           b?.error === "plano"
-            ? "Perguntar ao Faro AI é do plano PRO."
-            : b?.error === "desligada"
+            ? "Perguntar ao Faro AI é do Faro de Cão e do Faro de Detetive."
+            : b?.error === "franquia"
+              ? `As perguntas deste ciclo acabaram (${b.usados} de ${b.limite}). Elas renovam no próximo ciclo.`
+              : b?.error === "desligada"
               ? "O Faro AI está sem a chave da IA agora."
               : "Não consegui responder agora.",
         );
         return;
       }
-      setResposta({ texto: b.resposta, linhas: b.linhasDeDossie });
+      setResposta({ texto: b.resposta, linhas: b.linhasDeDossie, cortado: !!b.cortado, franquia: b.franquia ?? null });
     } catch {
       setErro("Não consegui responder agora.");
     } finally {
@@ -92,10 +99,9 @@ export function PergunteAoFaro({ username }: { username: string }) {
             <button
               key={e}
               type="button"
-              onClick={() => {
-                setPergunta(e);
-                enviar(e);
-              }}
+              // Só preenche: cada pergunta enviada gasta 1 da franquia do
+              // ciclo, e um toque num exemplo não pode gastar sozinho.
+              onClick={() => setPergunta(e)}
               className="rounded-2xl border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted/50 hover:text-foreground"
             >
               {e}
@@ -112,6 +118,9 @@ export function PergunteAoFaro({ username }: { username: string }) {
           <p className="mt-3 text-[11px] text-muted-foreground">
             Lido de <b className="font-semibold">{resposta.linhas} registros</b> dos últimos 30
             dias, que estão nesta página.
+            {resposta.cortado && " Só os registros mais recentes couberam — os mais antigos ficaram de fora."}
+            {resposta.franquia &&
+              ` · ${resposta.franquia.usados} de ${resposta.franquia.limite} perguntas deste ciclo.`}
           </p>
         </div>
       )}

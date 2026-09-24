@@ -1,5 +1,5 @@
 import type { Notification } from "@/components/notifications-feed";
-import { COMMENTS_KIND, LIKES_KIND } from "@/lib/post-activity";
+import { COMMENTS_KIND, LIKES_KIND } from "@/lib/pista-kinds";
 
 /**
  * Que tipo de pista é esta. Fica num lugar só porque as duas telas usam: a

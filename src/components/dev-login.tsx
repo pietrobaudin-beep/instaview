@@ -26,7 +26,7 @@ export function DevLogin() {
       <p className="text-xs font-bold uppercase tracking-wider">Só no localhost · contas de teste</p>
       <div className="mt-3 grid grid-cols-2 gap-2">
         {[
-          { email: "pro@farejo.test", label: "Entrar como PRO" },
+          { email: "pro@farejo.test", label: "Entrar como assinante" },
           { email: "free@farejo.test", label: "Entrar como grátis" },
         ].map((a) => (
           <button

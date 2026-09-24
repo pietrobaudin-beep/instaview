@@ -9,11 +9,14 @@ import { normalizeUsername } from "@/lib/utils";
 import { NotificationsFeed, type Notification } from "@/components/notifications-feed";
 import { FOLLOWING_KIND } from "@/lib/following-tracker";
 import { COMMENTS_KIND, LIKES_KIND } from "@/lib/post-activity";
-import { consultsUsed, peekUsageKey } from "@/lib/usage";
+import { peekUsageKey } from "@/lib/usage";
+import { resumoDaFranquia } from "@/lib/franquia";
+import { direitosDe } from "@/lib/direitos";
 import { cotaDoMes, lerSalvos } from "@/lib/stories-salvos";
 import { describe } from "@/lib/pista-text";
 import { oQueMudou, visitar, type Novidade } from "@/lib/ultima-visita";
 import type { SavedStory } from "@/components/saved-stories";
+import { visivel } from "@/lib/acervo";
 import type { EventData } from "@/lib/faro-watch";
 
 export const dynamic = "force-dynamic";
@@ -30,7 +33,8 @@ export default async function TrackingPage({ params }: { params: { username: str
   });
   if (!profile) notFound();
 
-  const status = await refreshStatusFor(profile.id, user.plan);
+  const status = await refreshStatusFor(profile.id, user);
+  const d = direitosDe(user);
 
   const PISTA_KINDS = [FOLLOWING_KIND, LIKES_KIND, COMMENTS_KIND];
 
@@ -49,7 +53,7 @@ export default async function TrackingPage({ params }: { params: { username: str
     : [];
 
   // As pistas DESTE perfil, e só dele: a visão geral fica em /pistas.
-  const [changes, storyEvents, semana, noFaro, consultados, storiesSalvos, cotaSalvos] =
+  const [changes, storyEvents, semana, noFaro, resumoPlano, storiesSalvos, cotaSalvos] =
     await Promise.all([
     prisma.followerChange.findMany({
       where: { profileId: profile.id, kind: { in: PISTA_KINDS }, isVerified: false },
@@ -83,15 +87,18 @@ export default async function TrackingPage({ params }: { params: { username: str
       _count: { _all: true },
     }),
     prisma.trackedProfile.count({ where: { userId: user.id } }),
-    consultsUsed(peekUsageKey(user)),
+    resumoDaFranquia(user),
     lerSalvos(profile.id),
-    cotaDoMes(user.id, user.plan),
+    cotaDoMes(user),
   ]);
 
   const somar = (fn: (r: (typeof semana)[number]) => boolean) =>
     semana.filter(fn).reduce((n, r) => n + r._count._all, 0);
 
-  const stories: SavedStory[] = storyEvents.map((e) => {
+  // A janela do plano, decidida aqui no servidor: o que passou do prazo não
+  // chega à tela (e a limpeza diária apaga).
+  const favoritos = new Set(storiesSalvos);
+  const stories: SavedStory[] = storyEvents.filter((e) => visivel(user, e, favoritos)).map((e) => {
     const d = e.data as unknown as EventData;
     return {
       id: e.id,
@@ -114,15 +121,18 @@ export default async function TrackingPage({ params }: { params: { username: str
 
   return (
     <>
-      <AppNav plan={user.plan} />
+      <AppNav plan={d.admin ? "ADMIN" : d.plano} />
       <TrackingSettings
         profileId={profile.id}
         refresh={{
           usadas: status.usadas,
-          limite: status.limite,
+          limite: Number.isFinite(status.limite) ? status.limite : null,
           podeAtualizar: status.podeAtualizar,
           ultima: status.ultima?.toISOString() ?? null,
           proxima: status.proxima?.toISOString() ?? null,
+          antecipa: status.antecipa,
+          liberaEm: status.liberaEm?.toISOString() ?? null,
+          cadenciaHoras: status.cadenciaHoras,
         }}
         username={profile.username}
         displayName={profile.displayName}
@@ -131,7 +141,7 @@ export default async function TrackingPage({ params }: { params: { username: str
         active={profile.status === "ACTIVE"}
         pistas={pistas}
         stories={stories}
-        plan={user.plan}
+        plan={d.plano}
         desde={profile.monitoringStartedAt.toISOString()}
         ultimaMudanca={changes[0]?.detectedAt.toISOString() ?? null}
         semana={{
@@ -139,14 +149,26 @@ export default async function TrackingPage({ params }: { params: { username: str
           unfollows: somar((r) => r.kind === FOLLOWING_KIND && r.type === "UNFOLLOW"),
           interacoes: somar((r) => r.kind === LIKES_KIND || r.kind === COMMENTS_KIND),
         }}
-        limites={{ consultados, noFaro }}
+        limites={resumoPlano}
         desdeAVisita={
           visitaAnterior && novidades.length
             ? { desde: visitaAnterior.toISOString(), novidades }
             : null
         }
         storiesSalvos={storiesSalvos}
-        cotaSalvos={cotaSalvos}
+        cotaSalvos={{
+          ...cotaSalvos,
+          limite: Number.isFinite(cotaSalvos.limite) ? cotaSalvos.limite : 9999,
+          restam: Number.isFinite(cotaSalvos.restam) ? cotaSalvos.restam : 9999,
+          limiteMb: Number.isFinite(cotaSalvos.limiteMb) ? cotaSalvos.limiteMb : undefined,
+        }}
+        ferramentas={{
+          perguntas: d.admin || d.config.perguntas > 0,
+          resumos: d.admin || d.config.resumos > 0,
+          buscaStories: d.admin || d.config.buscaStories,
+          alerta: d.admin || d.config.alertasEscritos > 0,
+          storiesHours: Number.isFinite(d.config.storiesHours) ? d.config.storiesHours : null,
+        }}
       />
       <NavSpacer />
     </>

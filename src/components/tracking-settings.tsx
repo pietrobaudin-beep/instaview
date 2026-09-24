@@ -26,7 +26,7 @@ import { NotificationsFeed, type Notification } from "@/components/notifications
 import { SavedStories, type SavedStory } from "@/components/saved-stories";
 import { PergunteAoFaro } from "@/components/pergunte-ao-faro";
 import { PlanLimits } from "@/components/plan-limits";
-import { planFor } from "@/lib/plans";
+import type { ResumoFranquia } from "@/lib/franquia";
 import type { Plan } from "@prisma/client";
 import { AppHeader, SettingRow, Toggle } from "@/components/ui/app-chrome";
 import { NoteBox, Panel, StatusPill } from "@/components/ui/brand";
@@ -56,10 +56,13 @@ const ROWS = [
 
 interface Status {
   usadas: number;
-  limite: number;
+  limite: number | null;
   podeAtualizar: boolean;
   ultima: string | null;
   proxima: string | null;
+  antecipa?: boolean;
+  liberaEm?: string | null;
+  cadenciaHoras?: number;
 }
 
 /** Data curta: "12 de set." */
@@ -96,6 +99,7 @@ export function TrackingSettings({
   storiesSalvos = [],
   cotaSalvos,
   desdeAVisita = null,
+  ferramentas = { perguntas: false, resumos: false, buscaStories: false, alerta: false, storiesHours: 0 },
 }: {
   username: string;
   displayName: string | null;
@@ -114,14 +118,25 @@ export function TrackingSettings({
   ultimaMudanca?: string | null;
   /** O movimento dos últimos 7 dias. */
   semana?: { follows: number; unfollows: number; interacoes: number };
-  /** Para a faixa de limites do plano. */
-  limites?: { consultados: number; noFaro: number };
+  /** A faixa de limites do plano, já calculada no servidor. */
+  limites?: ResumoFranquia;
   /** Estado das atualizações do dia, para o botão "Atualizar agora". */
   refresh?: Status;
   /** Ids dos stories que a pessoa marcou com a estrela. */
   storiesSalvos?: string[];
   /** Quantos salvamentos o plano ainda permite neste mês. */
-  cotaSalvos?: { usados: number; limite: number; restam: number };
+  cotaSalvos?: { usados: number; limite: number; restam: number; mb?: number; limiteMb?: number };
+  /**
+   * As ferramentas do plano, decididas no servidor. `storiesHours: null` =
+   * sem prazo.
+   */
+  ferramentas?: {
+    perguntas: boolean;
+    resumos: boolean;
+    buscaStories: boolean;
+    alerta: boolean;
+    storiesHours: number | null;
+  };
   /** O que aconteceu enquanto esta pessoa esteve fora. `null` na 1a visita. */
   desdeAVisita?: { desde: string; novidades: { texto: string; quantos: number }[] } | null;
 }) {
@@ -203,7 +218,7 @@ export function TrackingSettings({
     }
   }
 
-  const janela = planFor(plan).storiesHours;
+  const janela = ferramentas.storiesHours;
   const totalSemana = semana ? semana.follows + semana.unfollows + semana.interacoes : 0;
 
   return (
@@ -257,14 +272,7 @@ export function TrackingSettings({
         </div>
       </div>
 
-      {limites && (
-        <PlanLimits
-          plan={plan}
-          consultados={limites.consultados}
-          noFaro={limites.noFaro}
-          className="mb-5"
-        />
-      )}
+      {limites && <PlanLimits resumo={limites} className="mb-5" />}
 
       {/* 1. Quem é, desde quando, e o botão que muda o "última verificação". */}
       <Panel>
@@ -337,8 +345,8 @@ export function TrackingSettings({
             className="mt-3 flex items-center gap-1.5 text-[11px] text-muted-foreground"
             title={completa(status.proxima)}
           >
-            <Clock className="h-3 w-3" /> Próximo farejo automático{" "}
-            {quando(status.proxima).replace("há", "em")}.
+            <Clock className="h-3 w-3" /> Próximo farejo automático:{" "}
+            {new Date(status.proxima).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}.
           </p>
         )}
       </Panel>
@@ -401,7 +409,7 @@ export function TrackingSettings({
 
               {/* O alerta em texto livre. Fica junto das chaves fixas porque
                   responde a mesma pergunta: o que você quer que eu olhe aqui. */}
-              {profileId && plan !== "FREE" && (
+              {profileId && ferramentas.alerta && (
                 <div className="border-t border-border py-4">
                   <label htmlFor="alerta-escrito" className="text-sm font-bold">
                     Me avise quando…
@@ -514,15 +522,16 @@ export function TrackingSettings({
             profileId={profileId}
             salvosIniciais={storiesSalvos}
             cotaInicial={cotaSalvos}
+            ferramentas={ferramentas}
           />
         ) : (
           <Panel title="Stories">
             <p className="text-sm text-muted-foreground">
               Nenhum story guardado ainda.{" "}
-              {janela === Number.POSITIVE_INFINITY
-                ? "Quando o Faro AI encontrar um, ele fica guardado desde a entrada no Faro AI."
+              {janela == null
+                ? "Quando o Faro AI encontrar um, ele fica guardado enquanto o perfil estiver no Faro AI."
                 : janela > 0
-                  ? `Quando o Faro AI encontrar um, ele fica guardado por ${janela} horas pelo seu plano.`
+                  ? `Quando o Faro AI capturar um, ele fica visível por ${janela >= 48 ? `${janela / 24} dias` : `${janela} horas`} contados da publicação. Stories publicados e apagados entre duas coletas podem não ser capturados.`
                   : "Seu plano não guarda stories."}
             </p>
           </Panel>
@@ -546,12 +555,12 @@ export function TrackingSettings({
             )}
           </section>
 
-          {plan !== "FREE" && <PergunteAoFaro username={username} />}
+          {ferramentas.perguntas && <PergunteAoFaro username={username} />}
         </div>
 
         <div className="min-w-0 space-y-5">
           {/* O histórico deste perfil: só banco, nenhuma chamada paga. */}
-          <HistoryPanel username={username} loggedIn isPro={plan !== "FREE"} />
+          <HistoryPanel username={username} loggedIn isPro />
         </div>
       </div>
     </main>

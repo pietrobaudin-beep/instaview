@@ -51,13 +51,14 @@ export function FaroUpsell({
 
         <div className="relative">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-yellow px-3 py-1 text-xs font-bold text-ink">
-            <PawPrint className="h-3.5 w-3.5" /> Farejo PRO
+            <PawPrint className="h-3.5 w-3.5" /> Faro AI
           </span>
           <h2 id="faro-upsell-title" className="mt-5 text-3xl font-bold leading-tight">
             Quer que o Farejo acompanhe por você?
           </h2>
           <p className="mt-3 text-cream/75">
-            Coloque perfis no Faro AI e receba alertas quando houver mudanças detectáveis.
+            O Faro de Cão acompanha um perfil a cada 3 dias; o Faro de Detetive, todo dia. Você vê as
+            mudanças detectadas entre uma coleta e outra.
           </p>
 
           <SniffingDog className="mx-auto my-6 h-20 text-pink" animated />
@@ -66,7 +67,7 @@ export function FaroUpsell({
             href={`/pricing?next=${encodeURIComponent(next)}`}
             className="flex w-full items-center justify-center gap-2 rounded-2xl bg-pink px-6 py-4 font-bold text-ink transition hover:opacity-90"
           >
-            Desbloquear Farejo PRO <ArrowRight className="h-5 w-5" />
+            Conhecer os planos <ArrowRight className="h-5 w-5" />
           </Link>
           <button
             type="button"

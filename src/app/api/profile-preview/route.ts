@@ -1,15 +1,48 @@
 import { NextResponse } from "next/server";
-import { getProfileCached } from "@/lib/profile-cache";
-import { ProviderError } from "@/lib/providers/types";
+import { getProfileCached, peekProfileCached, peekProfileStale } from "@/lib/profile-cache";
+import { ProviderError, type ProfileData } from "@/lib/providers/types";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
 import { logger } from "@/lib/logger";
 import { getCurrentUser } from "@/lib/auth";
-import { checarConsulta, respostaDeLimite } from "@/lib/consulta";
+import { acessoA } from "@/lib/access";
+import { comQuem } from "@/lib/custo";
+import { direitosDe, inicioDoCiclo } from "@/lib/direitos";
+import { devolver, reservarBruto, tetoDe, type Reserva } from "@/lib/franquia";
+import { usageKey } from "@/lib/usage";
 
 const log = logger.scope("api:preview");
 
 export const dynamic = "force-dynamic";
 
+function cartao(p: ProfileData, lidoEm: Date, velho = false) {
+  return {
+    username: p.username,
+    displayName: p.displayName,
+    avatarUrl: p.avatarUrl,
+    bio: p.bio,
+    externalUrl: p.externalUrl ?? null,
+    isVerified: p.isVerified,
+    isPrivate: p.isPrivate,
+    followersCount: p.followersCount,
+    followingCount: p.followingCount,
+    postsCount: p.postsCount,
+    analyzedAt: lidoEm.toISOString(),
+    /** Veio de uma leitura antiga, sem gastar leitura nova. */
+    antigo: velho,
+  };
+}
+
+/**
+ * O cartão do perfil — foto, nome, números. É o que confirma "é esta pessoa"
+ * antes de qualquer análise.
+ *
+ * Ordem de onde ele vem, da mais barata à mais cara:
+ * 1. a análise salva desta conta (reabrir nunca relê);
+ * 2. o cache compartilhado ainda fresco (de graça, vale para todos);
+ * 3. o provedor — e só então conta na franquia de cartões: 1 na experiência
+ *    grátis, alguns por ciclo nos planos. Esgotada, mostra o último cartão
+ *    guardado, com a data, se houver.
+ */
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const username = normalizeUsername(url.searchParams.get("username") || "");
@@ -17,32 +50,45 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "invalid" }, { status: 400 });
   }
 
-  // O teto do plano vale para TODO mundo, não só para quem não paga — ver
-  // `@/lib/consulta`. Conferido antes de qualquer chamada ao provedor, para
-  // um perfil além da conta nunca custar crédito.
   const user = await getCurrentUser();
-  const consulta = await checarConsulta(user, username);
-  if (!consulta.permitido) {
-    return NextResponse.json(respostaDeLimite(consulta), { status: 402 });
+  const acesso = await acessoA(user, username);
+  if (acesso.salva?.data.perfil) {
+    return NextResponse.json(cartao(acesso.salva.data.perfil, acesso.salva.collectedAt));
+  }
+
+  const fresco = await peekProfileCached(username);
+  if (fresco) {
+    const { fetchedAt } = await getProfileCached(username); // do cache, sem provedor
+    return NextResponse.json(cartao(fresco, fetchedAt));
+  }
+
+  // Vai ao provedor: conta na franquia. Quem já tem acesso revelado a este @
+  // (Farejador, Faro AI, Admin) não gasta cartão — a coleta dele já está paga.
+  const d = direitosDe(user);
+  let reserva: Reserva | null = null;
+  if (acesso.access === "free" && !d.admin) {
+    const dono = user ? user.id : usageKey(null);
+    const ciclo = user ? inicioDoCiclo(user) : new Date(0);
+    reserva = await reservarBruto(dono, "perfil_basico", ciclo, tetoDe(d.config, "perfil_basico"));
+    if (!reserva.ok) {
+      const velho = await peekProfileStale(username);
+      if (velho) return NextResponse.json(cartao(velho.profile, velho.fetchedAt, true));
+      return NextResponse.json(
+        { limited: true, motivo: "cartoes", used: reserva.usados, limit: reserva.limite },
+        { status: 402 },
+      );
+    }
   }
 
   try {
-    // Shared 24h cache — repeat views of the same @ cost the provider nothing.
-    const { profile: p, fetchedAt } = await getProfileCached(username);
-    return NextResponse.json({
-      username: p.username,
-      displayName: p.displayName,
-      avatarUrl: p.avatarUrl,
-      bio: p.bio,
-      externalUrl: p.externalUrl ?? null,
-      isVerified: p.isVerified,
-      isPrivate: p.isPrivate,
-      followersCount: p.followersCount,
-      followingCount: p.followingCount,
-      postsCount: p.postsCount,
-      analyzedAt: fetchedAt.toISOString(),
-    });
+    const { profile: p, fetchedAt } = await comQuem(
+      { userId: user?.id ?? null, admin: d.admin, motivo: "cartao" },
+      () => getProfileCached(username),
+    );
+    return NextResponse.json(cartao(p, fetchedAt));
   } catch (e) {
+    // Sem entrega, a franquia volta. O custo da chamada fica no registro.
+    if (reserva) await devolver(reserva);
     const code = e instanceof ProviderError ? e.code : "UNKNOWN";
     if (code !== "NOT_FOUND") log.warn("preview failed", { username, code });
     if (code === "NOT_FOUND") return NextResponse.json({ error: "not_found" }, { status: 404 });

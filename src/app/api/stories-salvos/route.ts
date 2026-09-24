@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
  * dela, bastando adivinhar o id.
  *
  * Marcar tem consequência de verdade: o story marcado **não expira** com o
- * prazo do plano. Por isso a cota mensal é conferida no servidor, e não só
+ * prazo do plano. Por isso as vagas e o espaço são conferidos no servidor, e não só
  * escondida na tela.
  */
 export async function POST(req: Request) {
@@ -44,14 +44,8 @@ export async function POST(req: Request) {
   });
   if (!evento) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
-  const r = await alternarSalvo(
-    user.id,
-    user.plan,
-    profileId,
-    storyId,
-    body?.salvar !== false,
-  );
+  const r = await alternarSalvo(user, profileId, storyId, body?.salvar !== false);
   // A cota volta junto para a tela dizer quantos restam sem importar o módulo
   // do servidor (que carrega o Prisma).
-  return NextResponse.json({ ok: r.ok, ids: r.ids, cota: r.cota });
+  return NextResponse.json({ ok: r.ok, motivo: r.ok ? null : r.motivo, ids: r.ids, cota: r.cota });
 }

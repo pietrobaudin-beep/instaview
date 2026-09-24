@@ -1,57 +1,61 @@
 /**
- * Quantas atualizações um perfil já teve hoje.
+ * O estado do "Atualizar agora" e das coletas de um perfil — o que a tela
+ * mostra antes de a pessoa clicar.
  *
- * Cada atualização é uma coleta paga no provedor, então o teto existe por dois
- * motivos: custo e honestidade — atualizar de minuto em minuto não revela mais
- * nada, porque o Instagram não muda tão rápido.
- *
- * Conta as coletas do dia (manuais e automáticas juntas): é o número que a
- * pessoa vê e o que de fato pesa na conta.
+ * Desde 24/09 não é mais "tantas por dia": é a franquia de coletas do ciclo
+ * (10 no Cão, 30 no Detetive) e, para quem pode antecipar (Detetive), um
+ * intervalo mínimo desde a última. Antecipar não acrescenta coleta: sai da
+ * mesma franquia.
  */
+import type { User } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { FOLLOWING_KIND } from "@/lib/following-tracker";
-import { planFor } from "@/lib/plans";
-import type { Plan } from "@prisma/client";
+import { direitosDe } from "@/lib/direitos";
+import { saldo } from "@/lib/franquia";
 
 export interface RefreshStatus {
+  /** Coletas usadas no ciclo. */
   usadas: number;
   limite: number;
   podeAtualizar: boolean;
   /** Última coleta concluída. */
   ultima: Date | null;
-  /** Quando a rotina automática passa de novo, quando há Faro AI ativo. */
+  /** Quando a próxima coleta acontece sozinha. */
   proxima: Date | null;
+  /** O plano deixa antecipar? (Cão não deixa: a cadência é a promessa.) */
+  antecipa: boolean;
+  /** A partir de quando o botão volta a valer. */
+  liberaEm: Date | null;
+  cadenciaHoras: number;
 }
 
-function inicioDoDia(): Date {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
+const HORA = 60 * 60 * 1000;
 
-/**
- * `plan` decide o teto. Era uma constante global de 3 para todo mundo — o
- * Detetive, que paga sete vezes mais, tinha o mesmo limite do Faro de Cão.
- */
-export async function refreshStatusFor(profileId: string, plan: Plan): Promise<RefreshStatus> {
-  const limite = planFor(plan).refreshesPorDia;
-  const [usadas, ultimaLinha, job] = await Promise.all([
-    prisma.followerSnapshot.count({
-      where: { profileId, kind: FOLLOWING_KIND, startedAt: { gte: inicioDoDia() } },
-    }),
-    prisma.followerSnapshot.findFirst({
-      where: { profileId, kind: FOLLOWING_KIND, completedAt: { not: null } },
-      orderBy: { completedAt: "desc" },
-      select: { completedAt: true },
-    }),
-    prisma.monitoringJob.findUnique({ where: { profileId }, select: { nextRunAt: true, enabled: true } }),
+export async function refreshStatusFor(
+  profileId: string,
+  user: Pick<User, "id" | "email" | "plan" | "planEndsAt" | "planStartedAt">,
+): Promise<RefreshStatus> {
+  const { config, admin } = direitosDe(user);
+  const [s, perfil] = await Promise.all([
+    saldo(user as User, "coleta"),
+    prisma.trackedProfile.findUnique({ where: { id: profileId }, select: { lastCollectedAt: true } }),
   ]);
+  const ultima = perfil?.lastCollectedAt ?? null;
+  const antecipa = config.atualizarAgoraHoras != null;
+  const liberaEm = antecipa && ultima ? new Date(ultima.getTime() + config.atualizarAgoraHoras! * HORA) : null;
+  const temColeta = admin || s.restam > 0;
 
   return {
-    usadas,
-    limite,
-    podeAtualizar: usadas < limite,
-    ultima: ultimaLinha?.completedAt ?? null,
-    proxima: job?.enabled ? job.nextRunAt : null,
+    usadas: s.usados,
+    limite: s.limite,
+    podeAtualizar: antecipa && temColeta && (!liberaEm || liberaEm <= new Date()),
+    ultima,
+    proxima: temColeta
+      ? ultima
+        ? new Date(ultima.getTime() + config.cadenciaHoras * HORA)
+        : new Date()
+      : null,
+    antecipa,
+    liberaEm,
+    cadenciaHoras: config.cadenciaHoras,
   };
 }

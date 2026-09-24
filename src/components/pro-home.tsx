@@ -75,7 +75,7 @@ function Card({
 export function ProHome({
   data,
   hour,
-  planName = "Farejo PRO",
+  planName = "Faro AI",
   search,
 }: {
   data: ProHomeData;

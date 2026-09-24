@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cronAllowed } from "@/lib/cron-auth";
 import { runFaroDaily } from "@/lib/faro-watch";
+import { limparAcervo } from "@/lib/acervo";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // seconds (Vercel)
@@ -11,7 +12,10 @@ export const maxDuration = 60; // seconds (Vercel)
  */
 async function handle(req: Request) {
   if (!cronAllowed(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  return NextResponse.json({ ok: true, ...(await runFaroDaily()) });
+  const coleta = await runFaroDaily();
+  // A limpeza do acervo roda junto, uma vez por dia (ver `acervo.ts`).
+  const limpeza = await limparAcervo().catch(() => null);
+  return NextResponse.json({ ok: true, ...coleta, limpeza });
 }
 
 export const GET = handle;

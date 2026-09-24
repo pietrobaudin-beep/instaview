@@ -24,6 +24,18 @@ import type { EventData } from "@/lib/faro-watch";
 /** Quanto do passado entra no dossiê. Mais que isto vira custo sem resposta melhor. */
 const DIAS = 30;
 const MAX_PISTAS = 120;
+const MAX_EVENTOS = 60;
+/**
+ * Teto de tamanho do que vai ao modelo (~5 mil tokens). A franquia limita
+ * quantas perguntas; isto limita quanto cada uma custa.
+ */
+const MAX_CARACTERES = 18_000;
+
+export interface Dossie {
+  texto: string;
+  /** Registros ficaram de fora — a resposta e a tela precisam dizer isso. */
+  cortado: boolean;
+}
 
 const dia = (d: Date) => d.toISOString().slice(0, 10);
 
@@ -33,7 +45,7 @@ const dia = (d: Date) => d.toISOString().slice(0, 10);
  * É o que vai para o modelo — e é também o que a tela pode mostrar a quem
  * perguntar "de onde veio isso?".
  */
-export async function montarDossie(profileId: string, username: string): Promise<string> {
+export async function montarDossie(profileId: string, username: string): Promise<Dossie> {
   const desde = new Date(Date.now() - DIAS * 864e5);
 
   const [pistas, eventos, snaps] = await Promise.all([
@@ -46,7 +58,7 @@ export async function montarDossie(profileId: string, username: string): Promise
     prisma.profileEvent.findMany({
       where: { profileId, detectedAt: { gte: desde }, baseline: false },
       orderBy: { detectedAt: "desc" },
-      take: 60,
+      take: MAX_EVENTOS,
       select: { id: true, kind: true, data: true, detectedAt: true },
     }),
     prisma.followerSnapshot.findMany({
@@ -108,7 +120,23 @@ export async function montarDossie(profileId: string, username: string): Promise
     );
   }
 
-  return linhas.join("\n\n");
+  /*
+   * Cortar sem dizer seria apresentar uma resposta como se tivesse olhado
+   * tudo. Quando algo fica de fora, o próprio dossiê avisa — e a instrução
+   * manda o modelo repetir o aviso se a pergunta depender disso.
+   */
+  let cortado = pistas.length >= MAX_PISTAS || eventos.length >= MAX_EVENTOS;
+  let texto = linhas.join("\n\n");
+  if (texto.length > MAX_CARACTERES) {
+    texto = texto.slice(0, MAX_CARACTERES);
+    cortado = true;
+  }
+  if (cortado) {
+    texto +=
+      "\n\nAVISO: este dossiê não contém todos os registros dos últimos 30 dias — só os mais recentes. " +
+      "Se a pergunta depender de registros mais antigos, diga que eles não foram considerados.";
+  }
+  return { texto, cortado };
 }
 
 const INSTRUCAO = `Você é o Faro AI, do Farejo. Responde sobre UM perfil do Instagram, usando SÓ o dossiê abaixo.
@@ -121,11 +149,11 @@ Regras, sem exceção:
 - Português do Brasil, direto, no máximo 4 frases curtas. Sem saudação.`;
 
 /** Responde a pergunta. `null` quando a IA está desligada ou não deu. */
-export async function perguntar(dossie: string, pergunta: string): Promise<string | null> {
+export async function perguntar(dossie: Dossie, pergunta: string): Promise<string | null> {
   return conversar(
     [
       { role: "system", content: INSTRUCAO },
-      { role: "user", content: `DOSSIÊ:\n${dossie}\n\nPERGUNTA: ${pergunta.slice(0, 300)}` },
+      { role: "user", content: `DOSSIÊ:\n${dossie.texto}\n\nPERGUNTA: ${pergunta.slice(0, 300)}` },
     ],
     { tarefa: "pergunta", modelo: "gpt-5.4-mini-2026-03-17", tetoMs: 25000, maxTokens: 400 },
   );

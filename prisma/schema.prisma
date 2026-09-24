@@ -21,25 +21,39 @@ enum Plan {
   WEEK
   PRO
   AGENCY
+  // A estrutura de 24/09. Os três de cima continuam no enum porque há contas
+  // com eles; o código os trata como planos antigos, com direitos próprios,
+  // até a transição combinada. Acrescentar valor não mexe em linha nenhuma.
+  FAREJADOR_MAIS // Farejador + — semanal
+  CAO // Faro de Cão — mensal, coleta a cada 72h
+  DETETIVE // Faro de Detetive — mensal, coleta diária
 }
 
 model User {
-  id                   String   @id @default(cuid())
+  id                   String    @id @default(cuid())
   // Sign-in is by one-time code, sent to the email OR the WhatsApp number, so
   // either can be missing — but every account has at least one of them.
-  email                String?  @unique
+  email                String?   @unique
   // E.164, e.g. "+5511999999999".
-  phone                String?  @unique
+  phone                String?   @unique
   // Optional: people pick a name after signing up, or never.
   name                 String?
   // Legacy password logins (before one-time codes). No longer used to sign in.
   passwordHash         String?
-  plan                 Plan     @default(FREE)
+  plan                 Plan      @default(FREE)
   // Stripe billing (scaffold — see lib/plans.ts)
-  stripeCustomerId     String?  @unique
-  stripeSubscriptionId String?  @unique
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  stripeCustomerId     String?   @unique
+  stripeSubscriptionId String?   @unique
+  // Âncora do ciclo das franquias: o ciclo vira no mesmo dia/hora, todo mês
+  // (ou toda semana, no Farejador +). Nulo nas contas anteriores a 24/09.
+  planStartedAt        DateTime?
+  // Até quando o plano vale. Nulo = sem fim marcado (assinatura em dia).
+  // Passada a data, a conta é tratada como Curioso — sem apagar nada.
+  planEndsAt           DateTime?
+  // Curioso com conta: o @ em que a revelação grátis foi usada. Uma por conta.
+  revelacaoUsername    String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   trackedProfiles TrackedProfile[]
   memberships     Membership[]
@@ -259,12 +273,67 @@ model ProfileUnlock {
   // The Stripe Checkout session that paid for it; null for demo-mode unlocks.
   stripeSessionId String? @unique
 
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
+  // Farejador: o resultado fica aberto por 7 dias. Nulo nos desbloqueios
+  // anteriores a 24/09, que não tinham prazo e continuam sem.
+  expiresAt DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, username])
   @@map("profile_unlocks")
+}
+
+// ---------------------------------------------------------------------------
+// Franquias e custo
+// ---------------------------------------------------------------------------
+
+// Quanto de cada franquia uma conta já usou no ciclo. Uma linha por
+// (conta, tipo, início do ciclo): o ciclo novo começa numa linha nova, então
+// nada acumula nem precisa ser zerado. O incremento é feito no banco, numa
+// instrução só, com o teto na própria condição — duas abas ao mesmo tempo não
+// passam do limite.
+model UsageCounter {
+  userId     String
+  kind       String // analise | perfil | coleta | pergunta | resumo | alerta | sugestao | redes
+  cycleStart DateTime
+  used       Int      @default(0)
+  updatedAt  DateTime @updatedAt
+
+  @@id([userId, kind, cycleStart])
+  @@map("usage_counters")
+}
+
+// Cada chamada paga que saiu do Farejo, para a conta de custo. Registra
+// inclusive as que falharam: o provedor pode cobrar, e fingir que não custou
+// esconderia o gasto. Não guarda resposta nem dado de pessoa.
+model ProviderCall {
+  id        String   @id @default(cuid())
+  provider  String // hikerapi | apify | openai
+  endpoint  String
+  status    Int?
+  userId    String?
+  admin     Boolean  @default(false)
+  motivo    String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([userId, createdAt])
+  @@map("provider_calls")
+}
+
+// A análise como foi entregue. Reabrir lê daqui — nunca vai ao provedor de
+// novo, mesmo que o cache compartilhado tenha vencido. `collectedAt` é a
+// data que a tela mostra.
+model SavedAnalysis {
+  userId      String
+  username    String
+  data        Json
+  collectedAt DateTime  @default(now())
+  expiresAt   DateTime?
+
+  @@id([userId, username])
+  @@map("saved_analyses")
 }
 
 // ---------------------------------------------------------------------------

@@ -66,11 +66,16 @@ function FaroIcon({ className }: { className?: string }) {
 const ACCOUNT = { href: "/perfil", label: "Conta", icon: User } as const;
 
 /** O nome curto do plano, como a pessoa o conhece. */
-const PLAN_LABEL: Record<Plan, string> = {
+const PLAN_LABEL: Record<Plan | "ADMIN", string> = {
   FREE: "CURIOSO",
+  FAREJADOR_MAIS: "FAREJADOR +",
+  CAO: "FARO DE CÃO",
+  DETETIVE: "DETETIVE",
+  // Planos antigos, até a transição.
   WEEK: "FARO DE CÃO",
   PRO: "FAREJO PRO",
   AGENCY: "DETETIVE",
+  ADMIN: "ADMIN",
 };
 /**
  * A ordem da barra de baixo, no celular — diferente da lateral de propósito.
@@ -91,7 +96,7 @@ function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
 }
 
-export function AppNav({ plan }: { plan?: Plan }) {
+export function AppNav({ plan }: { plan?: Plan | "ADMIN" }) {
   const pathname = usePathname() || "/";
 
   return (

@@ -22,6 +22,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { cacheSectionKey } from "@/lib/sandbox";
 import { logger } from "@/lib/logger";
+import { registrarChamada } from "@/lib/custo";
 import {
   AboutInfo,
   FollowerEntry,
@@ -174,8 +175,13 @@ export class HikerApiProvider implements InstagramDataProvider {
         signal: AbortSignal.timeout(25_000),
       });
     } catch (e) {
+      // Sem resposta, mas a requisição pode ter chegado e sido cobrada.
+      await registrarChamada("hikerapi", path, null);
       throw new ProviderError(`Network error calling HikerAPI: ${(e as Error).message}`, "UNAVAILABLE", true);
     }
+    // Toda resposta entra na conta de custo, inclusive erro: a HikerAPI cobra
+    // por requisição, e fingir que a falha foi de graça esconderia o gasto.
+    await registrarChamada("hikerapi", path, res.status);
 
     if (res.status === 401) throw new ProviderError("HikerAPI rejected the API key", "AUTH");
 

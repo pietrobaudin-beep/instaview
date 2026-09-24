@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
-type PlanId = "FREE" | "WEEK" | "PRO" | "AGENCY";
+type PlanId = "FREE" | "FAREJADOR_MAIS" | "CAO" | "DETETIVE" | "WEEK" | "PRO" | "AGENCY";
 
 export interface Row {
   id: string;
@@ -109,14 +109,20 @@ export interface Stats {
   avulso: { preco: number; total: number; mes: number; receitaMes: number; receitaTotal: number };
   noMes: number;
   usuarios: { total: number; novosMes: number; novosSemana: number; noFaro: number };
+  /** Chamadas pagas nos últimos 30 dias, do registro de custo. */
+  chamadas?: { provider: string; clientes: number; admin: number }[];
 }
 
 /** Os planos como você fechou: nome, preço e como é cobrado. */
 const PLANOS: { id: PlanId; nome: string; preco: string }[] = [
   { id: "FREE", nome: "Curioso", preco: "grátis" },
-  { id: "WEEK", nome: "Faro de Cão", preco: "R$ 14,90/sem" },
-  { id: "PRO", nome: "Farejo PRO", preco: "R$ 29,90/mês" },
-  { id: "AGENCY", nome: "Faro Detetive", preco: "R$ 99,90/ano" },
+  { id: "FAREJADOR_MAIS", nome: "Farejador +", preco: "R$ 19,90/sem" },
+  { id: "CAO", nome: "Faro de Cão", preco: "R$ 39,90/mês" },
+  { id: "DETETIVE", nome: "Faro de Detetive", preco: "R$ 59,90/mês" },
+  // Estrutura anterior, até a transição.
+  { id: "WEEK", nome: "Faro de Cão (antigo)", preco: "R$ 14,90/sem" },
+  { id: "PRO", nome: "Farejo PRO (antigo)", preco: "R$ 29,90/mês" },
+  { id: "AGENCY", nome: "Faro Detetive (antigo)", preco: "R$ 179/ano" },
 ];
 
 const real = (n: number) =>
@@ -125,9 +131,12 @@ const real = (n: number) =>
 /** Uma cor por plano, usada no anel, nas barras e na tabela. */
 const COR: Record<PlanId, string> = {
   FREE: "#D9D2CC",
-  WEEK: "#FFE257",
-  PRO: "#F6A8D2",
-  AGENCY: "#B7A6FF",
+  FAREJADOR_MAIS: "#FFE257",
+  CAO: "#F6A8D2",
+  DETETIVE: "#B7A6FF",
+  WEEK: "#EDE3A0",
+  PRO: "#EBC6D9",
+  AGENCY: "#D5CCF2",
 };
 
 /** O seletor de período, na ordem em que se pensa no tempo. */
@@ -546,6 +555,19 @@ export function AdminPanel({
                 <Numero titulo="Novas em 7 dias" valor={String(stats.usuarios.novosSemana)} />
                 <Numero titulo="Perfis no Faro AI" valor={String(stats.usuarios.noFaro)} />
               </div>
+
+              {/* O que saiu em chamadas pagas — clientes e Admin separados. */}
+              {stats.chamadas && (
+                <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                  {stats.chamadas.map((c) => (
+                    <Numero
+                      key={c.provider}
+                      titulo={`${c.provider} · 30 dias`}
+                      valor={`${c.clientes} clientes · ${c.admin} admin`}
+                    />
+                  ))}
+                </div>
+              )}
 
               <div className="mt-6 grid gap-3 lg:grid-cols-[1fr_1.3fr]">
                 <Card>

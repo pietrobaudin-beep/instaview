@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { EMPTY_ACTIVITY, getPostActivity, syncPostActivity } from "@/lib/post-activity";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
 import { logger } from "@/lib/logger";
+import { direitosDe } from "@/lib/direitos";
 
 const log = logger.scope("api:post-activity");
 
@@ -23,7 +24,10 @@ export async function GET(req: Request) {
   if (!isValidUsername(username)) return NextResponse.json({ error: "invalid" }, { status: 400 });
 
   const user = await getCurrentUser();
-  if (!user || user.plan === "FREE") {
+  // Curtidas e comentários custam ~3 leituras por passagem e não entram na
+  // estrutura de 24/09. Ficam para os planos antigos, que já tinham, e Admin.
+  const d = direitosDe(user);
+  if (!user || !(d.admin || d.config.legado)) {
     return NextResponse.json({ locked: true, activity: EMPTY_ACTIVITY });
   }
 

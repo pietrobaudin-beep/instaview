@@ -39,7 +39,7 @@ export const GUIDES: Guide[] = [
         heading: "Com o Farejo",
         paragraphs: [
           "Você digita o @ e o Farejo lê a lista pública de seguidos, separa pessoas de marcas e contas verificadas e mostra quantas são mulheres e quantos são homens (uma estimativa pelo primeiro nome).",
-          "Com o PRO, você coloca o perfil no Faro AI. A partir daí, cada nova leitura é comparada com a anterior, e o que mudou vira uma pista: quem entrou, quem saiu e quando o Farejo percebeu.",
+          "Com o Faro de Cão ou o Faro de Detetive, você coloca o perfil no Faro AI. A partir daí, cada nova coleta é comparada com a anterior, e o que mudou vira uma pista: quem entrou, quem saiu e quando o Farejo percebeu.",
         ],
       },
       {

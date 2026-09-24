@@ -5,7 +5,10 @@ import { getAdminUser } from "@/lib/admin";
 import { logger } from "@/lib/logger";
 
 const log = logger.scope("api:admin");
-const bodySchema = z.object({ plan: z.enum(["FREE", "WEEK", "PRO", "AGENCY"]) });
+// Os antigos continuam aceitos para quem já tem; os novos são a estrutura de 24/09.
+const bodySchema = z.object({
+  plan: z.enum(["FREE", "FAREJADOR_MAIS", "CAO", "DETETIVE", "WEEK", "PRO", "AGENCY"]),
+});
 
 /** Change a user's plan. Admin only. */
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
@@ -18,7 +21,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   try {
     const user = await prisma.user.update({
       where: { id: params.id },
-      data: { plan: parsed.data.plan },
+      // Trocar de plano começa um ciclo novo de franquias, a partir de agora.
+      data: { plan: parsed.data.plan, planStartedAt: new Date(), planEndsAt: null },
     });
     log.info("plan changed by admin", { adminEmail: admin.email, target: user.email, plan: user.plan });
     return NextResponse.json({ id: user.id, email: user.email, plan: user.plan });

@@ -11,7 +11,10 @@ import { planFor } from "@/lib/plans";
 import { PlanLimits } from "@/components/plan-limits";
 import { ResumoDoFaro, type PerfilResumo } from "@/components/resumo-do-faro";
 import type { EventData } from "@/lib/faro-watch";
-import { consultsUsed, peekUsageKey } from "@/lib/usage";
+import { visivel } from "@/lib/acervo";
+import { lerSalvos } from "@/lib/stories-salvos";
+import { resumoDaFranquia } from "@/lib/franquia";
+import { direitosDe } from "@/lib/direitos";
 import { COMMENTS_KIND, LIKES_KIND } from "@/lib/post-activity";
 import { pistas } from "@/lib/voice";
 import { Mascot } from "@/components/ui/mascot";
@@ -31,10 +34,16 @@ export default async function RastrosPage() {
 
   // The Faro AI is the Pro feature. Free accounts may still have rows created by
   // the old "track on view" behaviour; they are not shown as pinned profiles.
-  if (user.plan === "FREE") {
+  const d = direitosDe(user);
+  const semFaro = !d.admin && d.config.maxProfiles <= 0;
+  const selo = d.admin ? "ADMIN" : d.plano;
+  // Sem acompanhamento no plano (Curioso, Farejador +, plano vencido): o Faro
+  // AI é dos planos que acompanham. Perfis que já estavam lá não somem — só
+  // param de ser coletados.
+  if (semFaro) {
     return (
       <>
-        <AppNav plan={user.plan} />
+        <AppNav plan={selo} />
         <main className="mx-auto max-w-3xl px-6 py-8 md:pl-[15.5rem]">
           <h1 className="mb-6 text-3xl font-bold tracking-tight">Faro AI</h1>
           <Panel>
@@ -42,11 +51,12 @@ export default async function RastrosPage() {
               <Mascot pose="feliz" className="h-24 text-vinho" bob />
               <p className="text-lg font-bold">Quer que o Farejo acompanhe por você?</p>
               <p className="max-w-sm text-sm text-muted-foreground">
-                Coloque perfis no Faro AI e receba alertas quando houver mudanças detectáveis.
+                O Faro de Cão acompanha um perfil a cada 3 dias; o Faro de Detetive, todo dia. Você recebe
+                as mudanças detectadas entre uma coleta e outra.
               </p>
               <Link href="/pricing?next=/rastros" className="mt-2">
                 <Button variant="accent">
-                  <PawPrint className="h-4 w-4" /> Desbloquear Farejo PRO
+                  <PawPrint className="h-4 w-4" /> Conhecer os planos
                 </Button>
               </Link>
             </div>
@@ -75,7 +85,7 @@ export default async function RastrosPage() {
         _count: { _all: true },
       })
     : [];
-  const consultados = await consultsUsed(peekUsageKey(user));
+  const resumoPlano = await resumoDaFranquia(user);
   const weekBy = new Map(week.map((c) => [c.profileId, c._count._all]));
   const totalWeek = week.reduce((n, c) => n + c._count._all, 0);
 
@@ -83,10 +93,6 @@ export default async function RastrosPage() {
   // provedor. São poucos perfis por conta (o PRO tem 1), então uma leva de
   // consultas por perfil é barata.
   const desde = new Date(Date.now() - WEEK);
-  const janelaStories = planFor(user.plan).storiesHours;
-  const storiesDesde = Number.isFinite(janelaStories)
-    ? new Date(Date.now() - janelaStories * 3_600_000)
-    : undefined;
   const resumos: PerfilResumo[] = await Promise.all(
     profiles.map(async (p) => {
       const seguindo = (type: "FOLLOW" | "UNFOLLOW") => ({
@@ -96,24 +102,24 @@ export default async function RastrosPage() {
         isVerified: false,
         detectedAt: { gte: desde },
       });
-      const midia = (kind: string) => ({
-        profileId: p.id,
-        kind,
-        ...(kind === "story" && storiesDesde ? { detectedAt: { gte: storiesDesde } } : {}),
-      });
-      const [seguiu, nSeguiu, deixou, nDeixou, stories, nStories, marcacoes, nMarcacoes] =
+      const midia = (kind: string) => ({ profileId: p.id, kind });
+      const [seguiu, nSeguiu, deixou, nDeixou, todosStories, favoritos, marcacoes, nMarcacoes] =
         await Promise.all([
           prisma.followerChange.findMany({ where: seguindo("FOLLOW"), orderBy: { detectedAt: "desc" }, take: 12 }),
           prisma.followerChange.count({ where: seguindo("FOLLOW") }),
           prisma.followerChange.findMany({ where: seguindo("UNFOLLOW"), orderBy: { detectedAt: "desc" }, take: 12 }),
           prisma.followerChange.count({ where: seguindo("UNFOLLOW") }),
-          prisma.profileEvent.findMany({ where: midia("story"), orderBy: { detectedAt: "desc" }, take: 12 }),
-          prisma.profileEvent.count({ where: midia("story") }),
+          // Todos, para a janela do plano ser aplicada aqui — contar no banco
+          // incluiria os vencidos.
+          prisma.profileEvent.findMany({ where: midia("story"), orderBy: { detectedAt: "desc" }, take: 300 }),
+          lerSalvos(p.id),
           prisma.profileEvent.findMany({ where: midia("tagged"), orderBy: { detectedAt: "desc" }, take: 12 }),
           prisma.profileEvent.count({ where: midia("tagged") }),
         ]);
+      const fav = new Set(favoritos);
+      const stories = todosStories.filter((e) => visivel(user, e, fav));
       const pessoa = (c: (typeof seguiu)[number]) => ({ username: c.followerUsername, avatarUrl: c.avatarUrl });
-      const item = (e: (typeof stories)[number]) => ({
+      const item = (e: (typeof todosStories)[number]) => ({
         id: e.id,
         thumbnailUrl: (e.data as unknown as EventData | null)?.thumbnailUrl ?? null,
       });
@@ -125,7 +131,7 @@ export default async function RastrosPage() {
         pistasSemana: weekBy.get(p.id) ?? 0,
         seguiu: { total: nSeguiu, pessoas: seguiu.map(pessoa) },
         deixou: { total: nDeixou, pessoas: deixou.map(pessoa) },
-        stories: { total: nStories, itens: stories.map(item) },
+        stories: { total: stories.length, itens: stories.slice(0, 12).map(item) },
         marcacoes: { total: nMarcacoes, itens: marcacoes.map(item) },
       };
     }),
@@ -133,22 +139,17 @@ export default async function RastrosPage() {
 
   return (
     <>
-      <AppNav plan={user.plan} />
+      <AppNav plan={selo} />
       <main className="mx-auto max-w-6xl px-6 py-8 md:pl-[15.5rem]">
         <div className="mb-2 flex flex-wrap items-center gap-3">
           <h1 className="text-3xl font-bold tracking-tight">Faro AI</h1>
           {/* Says how much room is left, so the limit never arrives as a surprise. */}
-          <StatusPill tone={profiles.length >= planFor(user.plan).maxProfiles ? "yellow" : "green"}>
-            <span className="text-[8px]">●</span> {profiles.length} de{" "}
-            {planFor(user.plan).maxProfiles} no Faro AI
+          <StatusPill tone={profiles.length >= d.config.maxProfiles ? "yellow" : "green"}>
+            <span className="text-[8px]">●</span> {profiles.length}
+            {Number.isFinite(d.config.maxProfiles) ? ` de ${d.config.maxProfiles}` : ""} no Faro AI
           </StatusPill>
         </div>
-        <PlanLimits
-          plan={user.plan}
-          consultados={consultados}
-          noFaro={profiles.length}
-          className="mb-6 mt-4"
-        />
+        <PlanLimits resumo={resumoPlano} className="mb-6 mt-4" />
         {profiles.length > 0 && (
           <p className="mb-6 text-sm text-muted-foreground">
             {totalWeek > 0 ? (

@@ -81,6 +81,7 @@ export function OtherNetworks({
   isPrivate,
   destaque = false,
   inicial = null,
+  podeBuscarPagas = false,
 }: {
   username: string;
   isPrivate?: boolean;
@@ -94,6 +95,11 @@ export function OtherNetworks({
    * que volte depois da cena de carregamento ter desistido de esperar.
    */
   inicial?: RedesIniciais | null;
+  /**
+   * TikTok e YouTube (Apify) são sob demanda: só para quem tem a análise
+   * revelada deste @, pelo botão, e contam na franquia de outras redes.
+   */
+  podeBuscarPagas?: boolean;
 }) {
   type Elsewhere = {
     network: string;
@@ -114,7 +120,7 @@ export function OtherNetworks({
 
   const [links, setLinks] = React.useState<Elsewhere[]>((inicial?.links as Elsewhere[]) ?? []);
   const [procurando, setProcurando] = React.useState(false);
-  const [procurouPagas, setProcurouPagas] = React.useState(inicial?.pagas !== undefined);
+  const [procurouPagas, setProcurouPagas] = React.useState(false);
   const [falhou, setFalhou] = React.useState(false);
 
   /** O que esta pessoa já respondeu, por rede. */
@@ -147,7 +153,6 @@ export function OtherNetworks({
     setLinks((inicial.links as Elsewhere[]) ?? []);
     setEscondidas(inicial.escondidas ?? []);
     setVotos(inicial.votos ?? {});
-    if (inicial.pagas !== undefined) setProcurouPagas(true);
   }, [inicial]);
 
   /**
@@ -160,39 +165,25 @@ export function OtherNetworks({
    * Cada @ custa cerca de US$ 0,003 na primeira vez e fica 7 dias no cache: a
    * segunda pessoa que abrir o mesmo perfil não paga.
    */
-  React.useEffect(() => {
-    if (!inicial) return;
-    // Quem buscou já pediu a etapa paga — pedir de novo seria pagar duas vezes
-    // pelo mesmo @. É o caso normal hoje: a tela de perfil busca as duas
-    // etapas de uma vez, e a cena de carregamento espera as duas.
-    if (inicial.pagas !== undefined) return;
-    let vivo = true;
+  const [semFranquia, setSemFranquia] = React.useState(false);
+  async function buscarPagas() {
     setProcurando(true);
-
-    (async () => {
-      try {
-        const r = await fetch(`/api/elsewhere?username=${encodeURIComponent(username)}&pagas=1`);
-        if (!r.ok) throw new Error(String(r.status));
-        const b = await r.json();
-        if (!vivo) return;
-        setLinks(b.links ?? []);
-        setEscondidas(b.escondidas ?? []);
-        setVotos(b.votos ?? {});
-        setProcurouPagas(true);
-      } catch {
-        if (vivo) setFalhou(true);
-      } finally {
-        if (vivo) setProcurando(false);
-      }
-    })();
-
-    return () => {
-      vivo = false;
-    };
-    // Só o @ reinicia a etapa paga; `inicial` mudando de null para pronto é o
-    // gatilho, e relê-lo a cada mudança pediria duas vezes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [username, Boolean(inicial)]);
+    setFalhou(false);
+    try {
+      const r = await fetch(`/api/elsewhere?username=${encodeURIComponent(username)}&pagas=1`);
+      if (!r.ok) throw new Error(String(r.status));
+      const b = await r.json();
+      setLinks(b.links ?? []);
+      setEscondidas(b.escondidas ?? []);
+      setVotos(b.votos ?? {});
+      setSemFranquia(!!b.semFranquia);
+      setProcurouPagas(!b.semFranquia);
+    } catch {
+      setFalhou(true);
+    } finally {
+      setProcurando(false);
+    }
+  }
 
   /**
    * Registra o voto e some na hora com o que foi marcado como errado.
@@ -237,7 +228,7 @@ export function OtherNetworks({
    * ruído. No privado ele fica de pé mesmo vazio, porque é a única saída da
    * tela — sumir enquanto procura pareceria que nada está acontecendo.
    */
-  if (!isPrivate && visiveis.length === 0 && !mostrarVsco) return null;
+  if (!isPrivate && visiveis.length === 0 && !mostrarVsco && !podeBuscarPagas) return null;
 
   return (
     <div className={destaque ? "mt-6 w-full text-left" : "mt-4"}>
@@ -296,9 +287,25 @@ export function OtherNetworks({
         )}
       </div>
 
+      {podeBuscarPagas && !procurouPagas && !procurando && (
+        <button
+          type="button"
+          onClick={buscarPagas}
+          className="mt-3 inline-flex min-h-[44px] items-center gap-2 rounded-2xl bg-muted px-4 text-sm font-bold transition hover:bg-pink"
+        >
+          Procurar no TikTok e no YouTube
+          <span className="font-normal text-muted-foreground">· usa 1 consulta de outras redes</span>
+        </button>
+      )}
+      {semFranquia && (
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          As consultas de outras redes do seu plano acabaram neste ciclo.
+        </p>
+      )}
+
       {/* Enquanto a segunda etapa corre, a tela diz que ainda está procurando
           — sem isso, a lista parece pronta e depois muda sozinha. */}
-      {destaque && procurando && (
+      {procurando && (
         <p className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">
           <Loader2 className="h-3 w-3 animate-spin" />
           Procurando em mais redes…

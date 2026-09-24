@@ -80,17 +80,38 @@ export async function POST(req: Request) {
         const plan = event.type === "customer.subscription.deleted" || !live ? "FREE" : planForPriceId(priceId);
         const userId: string | undefined = sub.metadata?.userId;
 
+        /*
+         * O ciclo das franquias acompanha o da cobrança: a âncora é a do
+         * Stripe, então "renova em" na tela é o mesmo dia da fatura.
+         *
+         * Cancelar no fim do período marca `planEndsAt`: a pessoa usa o que
+         * pagou até lá, e depois a conta volta a ser Curioso sem apagar nada.
+         */
+        const ancora = sub.billing_cycle_anchor ? new Date(sub.billing_cycle_anchor * 1000) : undefined;
+        const fim =
+          event.type === "customer.subscription.deleted"
+            ? new Date()
+            : sub.cancel_at_period_end && sub.current_period_end
+              ? new Date(sub.current_period_end * 1000)
+              : null;
+
         if (userId && event.type !== "customer.subscription.deleted") {
           // The subscription knows its user (set at checkout), so this works
           // even when it arrives before checkout.session.completed.
           await prisma.user.updateMany({
             where: { id: userId },
-            data: { plan, stripeSubscriptionId: sub.id, stripeCustomerId: sub.customer ?? undefined },
+            data: {
+              plan,
+              planStartedAt: ancora,
+              planEndsAt: fim,
+              stripeSubscriptionId: sub.id,
+              stripeCustomerId: sub.customer ?? undefined,
+            },
           });
         } else {
           // Deletions only touch the user who still holds THIS subscription, so
           // ending an old one never downgrades someone on a newer one.
-          await prisma.user.updateMany({ where: { stripeSubscriptionId: sub.id }, data: { plan } });
+          await prisma.user.updateMany({ where: { stripeSubscriptionId: sub.id }, data: { plan, planEndsAt: fim } });
         }
         break;
       }

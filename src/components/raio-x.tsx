@@ -566,7 +566,7 @@ export function RaioX({ username, section, upgrade }: { username: string; sectio
           <p className="text-sm text-muted-foreground">{INTRO[section]}</p>
           {locked && (
             <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-yellow px-2.5 py-1 text-[11px] font-bold text-ink">
-              <Lock className="h-3 w-3" /> {res.kind === "locked" ? "no PRO" : "prévia"}
+              <Lock className="h-3 w-3" /> {res.kind === "locked" ? "na análise completa" : "prévia"}
             </span>
           )}
         </div>

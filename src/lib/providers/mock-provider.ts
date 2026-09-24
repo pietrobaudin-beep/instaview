@@ -12,19 +12,7 @@
  *   - getFollowers returns the HEAD of the list (most-recent-first), matching
  *     how the real "read the top of the list" technique works.
  */
-import {
-  AboutInfo,
-  FollowerEntry,
-  HighlightItem,
-  PostItem,
-  StoryItem,
-  GetFollowersOptions,
-  GetFollowersResult,
-  InstagramDataProvider,
-  ProfileData,
-  ProviderError,
-  SearchHit,
-} from "./types";
+import { AboutInfo, FollowerEntry, HighlightItem, PostItem, StoryItem, GetFollowersOptions, GetFollowersResult, InstagramDataProvider, ProfileData, ProviderError, SearchHit, MediaPost } from "./types";
 
 /**
  * Two @s with special meaning, so the three endings of the search screen can be
@@ -202,6 +190,18 @@ export class MockProvider implements InstagramDataProvider {
 
   async getPosts(username: string): Promise<PostItem[]> {
     return Array.from({ length: 9 }, (_, i) => this.post(username, i, i % 4 === 1 ? "carousel" : "photo"));
+  }
+
+  /**
+   * Os posts recentes, no formato do ranking de interações. Fictício e
+   * determinístico, como o resto: as marcações dos posts de `getPosts` viram
+   * os sinais. Um perfil terminado em "_quieto" não tem nenhum — é o caso
+   * "sem dado suficiente" do teste.
+   */
+  async getRecentMedia(username: string): Promise<MediaPost[]> {
+    if (username.endsWith("_quieto")) return [];
+    const posts = await this.getPosts(username);
+    return posts.map((p) => ({ id: p.id, caption: p.caption, tagged: p.tagged }));
   }
 
   async getPinned(username: string): Promise<PostItem[]> {

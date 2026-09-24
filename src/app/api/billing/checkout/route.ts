@@ -4,13 +4,12 @@ import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { isValidUsername, normalizeUsername, safeNext, withParam } from "@/lib/utils";
 import { grantUnlock } from "@/lib/access";
-import { SINGLE_UNLOCK } from "@/lib/plans";
+import { PLANS, SINGLE_UNLOCK } from "@/lib/plans";
 import { createCheckoutSession, isBillingConfigured, isDemoBillingAllowed } from "@/lib/billing/stripe";
 import type { Plan } from "@prisma/client";
 
 const bodySchema = z.object({
-  plan: z.enum(["PRO", "AGENCY", "SINGLE"]),
-  interval: z.enum(["monthly", "yearly"]).default("monthly"),
+  plan: z.enum(["CAO", "DETETIVE", "FAREJADOR_MAIS", "SINGLE"]),
   /** For "SINGLE": the one profile being unlocked. */
   username: z.string().max(60).nullish(),
   next: z.string().max(300).nullish(),
@@ -62,15 +61,19 @@ export async function POST(req: Request) {
 
   const plan = parsed.data.plan as Plan;
 
-  // Yearly falls back to the monthly price id when no annual price is set up,
-  // so a missing env never blocks the purchase — it just bills monthly.
-  const yearly = parsed.data.interval === "yearly";
-  const priceId =
-    plan === "PRO"
-      ? (yearly ? process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY : undefined) ??
-        process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO
-      : (yearly ? process.env.NEXT_PUBLIC_STRIPE_PRICE_AGENCY_YEARLY : undefined) ??
-        process.env.NEXT_PUBLIC_STRIPE_PRICE_AGENCY;
+  /*
+   * Farejador + (semanal) fica fechado até a decisão pendente: assinatura que
+   * renova a cada 7 dias, ou passe de 7 dias sem renovação. Cobrar recorrência
+   * sem essa definição dita antes do pagamento não é uma opção.
+   */
+  if (plan === "FAREJADOR_MAIS") {
+    return NextResponse.json(
+      { error: "O Farejador + chega em breve.", code: "semanal_pendente" },
+      { status: 409 },
+    );
+  }
+
+  const priceId = process.env[PLANS[plan].stripePriceEnv ?? ""];
 
   // Use the real site origin (NEXT_PUBLIC_APP_URL may be unset on Vercel).
   const origin = new URL(req.url).origin;
@@ -90,6 +93,10 @@ export async function POST(req: Request) {
 
   // Demo mode: unlock immediately.
   if (!isDemoBillingAllowed()) return NextResponse.json({ error: NOT_YET }, { status: 503 });
-  await prisma.user.update({ where: { id: user.id }, data: { plan } });
+  // O ciclo das franquias começa agora.
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { plan, planStartedAt: new Date(), planEndsAt: null },
+  });
   return NextResponse.json({ unlocked: true });
 }

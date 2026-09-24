@@ -7,7 +7,7 @@ import { SearchBlock } from "@/components/search-block";
 import { SearchHero } from "@/components/search-hero";
 import { Panel, StatusPill } from "@/components/ui/brand";
 import { getCurrentUser } from "@/lib/auth";
-import { FREE_ANALYSIS_LIMIT, FREE_LIMIT_ENFORCED, checkAllowance, peekUsageKey } from "@/lib/usage";
+import { direitosDe } from "@/lib/direitos";
 import { brazilHour, getProHome } from "@/lib/pro-home";
 import { env } from "@/lib/env";
 import { planFor } from "@/lib/plans";
@@ -25,23 +25,19 @@ function DemoBadge({ tone }: { tone: "yellow" | "dark" }) {
 
 export default async function Home() {
   const user = await getCurrentUser();
-  const paid = !!user && user.plan !== "FREE";
+  const d = direitosDe(user);
+  const paid = !!user && (d.admin || d.plano !== "FREE");
 
   // Pro with profiles in the Faro AI: the daily home, not a search box.
   const proHome = paid && user ? await getProHome(user.id) : null;
 
-  // Free plan includes one profile; show what is left of it.
-  let used = 0;
-  if (!paid) {
-    const key = peekUsageKey(user);
-    if (key) used = (await checkAllowance(key, "")).used;
-  }
-  const left = Math.max(0, FREE_ANALYSIS_LIMIT - used);
+  // O Curioso com conta tem a revelação grátis; a home diz se ela está livre.
+  const revelacao = user && !paid ? user.revelacaoUsername : null;
 
   if (user) {
     return (
       <>
-        <AppNav plan={user.plan} />
+        <AppNav plan={d.admin ? "ADMIN" : d.plano} />
         {/* O Faro AI passeando no topo — e, no celular, passando na frente da
             marca. Só na home PRO: na tela de busca ele já aparece ao lado do
             título, e dois cachorros animados na mesma dobra brigavam entre si
@@ -61,7 +57,7 @@ export default async function Home() {
               <ProHome
                 data={proHome}
                 hour={brazilHour()}
-                planName={planFor(user.plan).name}
+                planName={d.admin ? "Admin" : planFor(d.plano).name}
                 search={
                   <Panel title="Farejar outro @">
                     <SearchBlock />
@@ -72,23 +68,23 @@ export default async function Home() {
           ) : (
             <div className="max-w-2xl">
               <SearchHero />
-              {!paid && !FREE_LIMIT_ENFORCED && (
+              {!paid && (
                 <p className="mt-5 text-sm text-muted-foreground">
-                  Localhost: sem limite de análises. No site, o plano grátis continua com 1 perfil.
-                </p>
-              )}
-              {!paid && FREE_LIMIT_ENFORCED && (
-                <p className="mt-5 text-sm text-muted-foreground">
-                  {left > 0 ? (
+                  {revelacao ? (
                     <>
-                      Plano grátis: <b className="text-foreground">{left}</b> análise disponível.
+                      Sua revelação grátis foi usada em{" "}
+                      <Link href={`/p/${encodeURIComponent(revelacao)}`} className="font-semibold text-accent hover:underline">
+                        @{revelacao}
+                      </Link>
+                      .{" "}
+                      <Link href="/pricing" className="font-semibold text-accent hover:underline">
+                        Conhecer os planos
+                      </Link>
                     </>
                   ) : (
                     <>
-                      Você já usou sua análise gratuita.{" "}
-                      <Link href="/pricing" className="font-semibold text-accent hover:underline">
-                        Conhecer o Farejo PRO
-                      </Link>
+                      Conta grátis: escolha um perfil e revele <b className="text-foreground">quem mais aparece</b>{" "}
+                      nas interações dele — uma vez por conta.
                     </>
                   )}
                 </p>

@@ -11,15 +11,6 @@ export async function POST(req: Request) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
-  // Putting a profile "no Faro AI" (ongoing tracking) is the Pro feature: the free
-  // plan is a one-off snapshot, Pro is someone watching for you.
-  if (user.plan === "FREE") {
-    return NextResponse.json(
-      { error: "Colocar no Faro AI é um recurso do Farejo PRO.", code: "pro_required" },
-      { status: 402 },
-    );
-  }
-
   const parsed = bodySchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "username is required" }, { status: 400 });
 
@@ -28,7 +19,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ id: profile.id, username: profile.username });
   } catch (e) {
     if (e instanceof ValidationError) return NextResponse.json({ error: e.message }, { status: 400 });
-    if (e instanceof PlanLimitError) return NextResponse.json({ error: e.message }, { status: 402 });
+    // Sem Faro no plano é hora de oferecer; com Faro e sem vaga é recado, não venda.
+    if (e instanceof PlanLimitError) {
+      return NextResponse.json(
+        { error: e.message, ...(e.code === "sem_faro" ? { code: "pro_required" } : {}) },
+        { status: 402 },
+      );
+    }
     log.error("track failed", { error: e });
     return NextResponse.json({ error: "Failed to start tracking. Please try again." }, { status: 500 });
   }

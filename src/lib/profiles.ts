@@ -4,16 +4,20 @@
  * and API routes share one implementation.
  */
 import { prisma } from "@/lib/db";
-import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
-import { PLANS, clampInterval, planFor } from "@/lib/plans";
+import { direitosDe, inicioDoCiclo } from "@/lib/direitos";
+import { reservar, reservarBruto, usadosBruto } from "@/lib/franquia";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
 import type { TrackedProfile, User } from "@prisma/client";
 
 const log = logger.scope("profiles");
 
 export class PlanLimitError extends Error {
-  constructor(message: string) {
+  constructor(
+    message: string,
+    /** `sem_faro` = o plano não acompanha (hora de oferecer); o resto é recado. */
+    readonly code?: "sem_faro",
+  ) {
     super(message);
     this.name = "PlanLimitError";
   }
@@ -36,16 +40,42 @@ export async function trackProfile(user: User, rawUsername: string): Promise<Tra
   });
   if (existing) return existing;
 
-  const plan = planFor(user.plan);
+  const { config: plan, admin } = direitosDe(user);
+  if (!admin && plan.maxProfiles <= 0) {
+    throw new PlanLimitError(`O ${plan.name} não acompanha perfis. O acompanhamento é do Faro de Cão e do Faro de Detetive.`, "sem_faro");
+  }
+
+  // Quantos estão no Faro AI agora.
   const count = await prisma.trackedProfile.count({ where: { userId: user.id } });
   if (count >= plan.maxProfiles) {
     throw new PlanLimitError(
-      `Seu Faro AI está cheio. O ${plan.name} acompanha até ${plan.maxProfiles} ` +
-        `perfis; troque um deles ou passe para um plano com mais vagas.`,
+      `Seu Faro AI está cheio. O ${plan.name} acompanha ${plan.maxProfiles} ` +
+        `perfil${plan.maxProfiles === 1 ? "" : "s"} por vez.`,
     );
   }
 
-  const interval = clampInterval(user.plan, env.DEFAULT_COLLECTION_INTERVAL_MINUTES);
+  /*
+   * E quantos ENTRARAM neste ciclo. Sem isto, tirar e pôr outro perfil
+   * trocaria de pessoa quantas vezes quisesse no mês — cada troca com uma
+   * primeira coleta paga. Remover não devolve a vaga do ciclo.
+   *
+   * Os planos antigos seguem a regra de antes (só o limite simultâneo).
+   */
+  if (!admin && !plan.legado) {
+    // Voltar com o MESMO @ no mesmo ciclo não é troca: não gasta vaga nova.
+    const ciclo = inicioDoCiclo(user);
+    const jaEntrou = (await usadosBruto(user.id, `perfil:${username}`, ciclo)) > 0;
+    const vaga = jaEntrou ? { ok: true } : await reservar(user, "perfil");
+    if (vaga.ok && !jaEntrou) await reservarBruto(user.id, `perfil:${username}`, ciclo, 1);
+    if (!vaga.ok) {
+      throw new PlanLimitError(
+        `O ${plan.name} acompanha ${plan.maxProfiles} perfil por ciclo, sem troca. ` +
+          `Você poderá escolher outro quando o ciclo renovar.`,
+      );
+    }
+  }
+
+  const interval = plan.cadenciaHoras * 60;
 
   const profile = await prisma.trackedProfile.create({
     data: {

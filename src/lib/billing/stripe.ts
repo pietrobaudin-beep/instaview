@@ -37,6 +37,12 @@ export function isDemoBillingAllowed(): boolean {
 export function planForPriceId(priceId: string | null | undefined): Plan {
   if (!priceId) return "FREE";
   const env = process.env;
+  // A estrutura de 24/09.
+  if (priceId === env.NEXT_PUBLIC_STRIPE_PRICE_CAO) return "CAO";
+  if (priceId === env.NEXT_PUBLIC_STRIPE_PRICE_DETETIVE) return "DETETIVE";
+  if (priceId === env.NEXT_PUBLIC_STRIPE_PRICE_FAREJADOR_MAIS) return "FAREJADOR_MAIS";
+  // Os antigos continuam reconhecidos, para uma assinatura existente não cair
+  // para o grátis num evento de renovação. Não são mais vendidos.
   if (priceId === env.NEXT_PUBLIC_STRIPE_PRICE_PRO || priceId === env.NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY) {
     return "PRO";
   }

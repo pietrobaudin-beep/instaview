@@ -263,11 +263,197 @@ function GenderBadge({ gender }: { gender?: "f" | "m" | "u" }) {
   return null;
 }
 
+type Pronto = {
+  locked: boolean;
+  precisaConfirmar?: boolean;
+  analises?: { usados: number; limite: number; restam: number } | null;
+  falhou?: string | null;
+} | null;
+
+/**
+ * O que a Visão geral oferece quando a análise não está revelada — uma coisa
+ * de cada vez, a certa para quem está olhando:
+ *
+ * - quem assina e ainda tem análise: **perguntar** antes de gastar;
+ * - quem assina e acabou: dizer que acabou, sem vender o que já tem;
+ * - Curioso sem conta: o convite para criar conta e revelar;
+ * - Curioso com conta: a revelação grátis do destaque, e o Farejador.
+ *
+ * Por trás, a silhueta da análise — formas, não dados: nada foi coletado
+ * para ser borrado, e nada é inventado para encher a tela.
+ */
+function Oferta({
+  username,
+  loggedIn,
+  planoPro,
+  ready,
+  confirmando,
+  onConfirmar,
+  revelacao,
+  revelado,
+  semDados,
+  onRevelar,
+}: {
+  username: string;
+  loggedIn: boolean;
+  planoPro: boolean;
+  ready: Pronto;
+  confirmando: boolean;
+  onConfirmar: () => void;
+  revelacao:
+    | { kind: "idle" }
+    | { kind: "busy" }
+    | { kind: "usada"; em: string | null }
+    | { kind: "sem_dados" }
+    | { kind: "privado" };
+  revelado: Person | null;
+  semDados: boolean;
+  onRevelar: () => void;
+}) {
+  const falhou: Record<string, string> = {
+    privado: "O perfil é privado: a análise não mostra o que o Instagram fecha. Nada foi descontado.",
+    nao_encontrado: "Não existe conta com esse @. Nada foi descontado.",
+    indisponivel: "Não deu para ler o perfil agora. Nada foi descontado — tente de novo daqui a pouco.",
+  };
+
+  let corpo: React.ReactNode;
+  if (ready?.falhou) {
+    corpo = <p className="text-sm">{falhou[ready.falhou] ?? falhou.indisponivel}</p>;
+  } else if (planoPro && ready?.precisaConfirmar && ready.analises) {
+    corpo = (
+      <>
+        <h2 className="text-lg font-bold">Analisar @{username}?</h2>
+        <p className="max-w-sm text-sm text-muted-foreground">
+          Usa <b>1</b> das análises do seu plano neste ciclo — restam{" "}
+          <b>
+            {ready.analises.restam} de {ready.analises.limite}
+          </b>
+          . Depois, reabrir este perfil não gasta nada.
+        </p>
+        <Button variant="accent" size="lg" onClick={onConfirmar} disabled={confirmando} className="mt-2">
+          {confirmando ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+          Usar 1 análise em @{username}
+        </Button>
+      </>
+    );
+  } else if (planoPro) {
+    corpo = (
+      <>
+        <h2 className="text-lg font-bold">As análises novas deste ciclo acabaram.</h2>
+        <p className="max-w-sm text-sm text-muted-foreground">
+          Elas renovam no próximo ciclo. Reabrir um perfil que você já analisou continua livre.
+        </p>
+        <Link href={`/pricing?next=${encodeURIComponent(`/p/${username}`)}`} className="mt-2">
+          <Button variant="outline">Ver os planos</Button>
+        </Link>
+      </>
+    );
+  } else if (!loggedIn) {
+    corpo = (
+      <>
+        <h2 className="text-lg font-bold">
+          Crie sua conta grátis para revelar quem mais aparece nas interações deste perfil.
+        </h2>
+        <Link
+          href={`/signup?next=${encodeURIComponent(`/p/${username}?revelar=1`)}`}
+          className="mt-2"
+        >
+          <Button variant="accent" size="lg">
+            Criar conta e revelar <ArrowRight className="h-4 w-4" />
+          </Button>
+        </Link>
+        <Link
+          href={`/login?next=${encodeURIComponent(`/p/${username}?revelar=1`)}`}
+          className="text-xs text-muted-foreground hover:text-foreground"
+        >
+          já tenho conta
+        </Link>
+      </>
+    );
+  } else {
+    const jaRevelou = !!revelado || semDados;
+    corpo = (
+      <>
+        {revelado ? (
+          <h2 className="text-lg font-bold">Você revelou a primeira pista. Quer ver o resto?</h2>
+        ) : semDados || revelacao.kind === "sem_dados" ? (
+          <p className="max-w-sm text-sm">
+            Ainda não temos informações suficientes para revelar esta pista. Sua revelação grátis
+            continua disponível.
+          </p>
+        ) : revelacao.kind === "usada" ? (
+          <p className="max-w-sm text-sm">
+            Sua revelação grátis já foi usada
+            {revelacao.em ? (
+              <>
+                {" "}
+                em{" "}
+                <Link href={`/p/${encodeURIComponent(revelacao.em)}`} className="font-bold underline">
+                  @{revelacao.em}
+                </Link>
+              </>
+            ) : null}
+            . Ela vale uma vez por conta.
+          </p>
+        ) : revelacao.kind === "privado" ? (
+          <p className="max-w-sm text-sm">O perfil é privado — não há interações públicas para revelar.</p>
+        ) : (
+          <>
+            <h2 className="text-lg font-bold">Revele quem mais aparece nas interações de @{username}.</h2>
+            <p className="max-w-sm text-sm text-muted-foreground">
+              Grátis, uma vez por conta. É uma pista a partir de sinais públicos dos posts — não prova de
+              relação.
+            </p>
+            <Button variant="accent" size="lg" onClick={onRevelar} disabled={revelacao.kind === "busy"} className="mt-2">
+              {revelacao.kind === "busy" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              Revelar grátis
+            </Button>
+          </>
+        )}
+        {(jaRevelou || revelacao.kind === "usada") && (
+          <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+            Desbloqueie a análise completa de @{username}.
+          </p>
+        )}
+        <SingleUnlockButton username={username} className="mt-2 w-full max-w-xs" />
+        <Link
+          href={`/pricing?next=${encodeURIComponent(`/p/${username}`)}`}
+          className="text-xs text-muted-foreground hover:text-foreground"
+        >
+          ver os planos
+        </Link>
+      </>
+    );
+  }
+
+  return (
+    <div className="relative isolate">
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-3xl">
+        <EsqueletoBorrado />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/80 to-background" />
+      </div>
+      <div className="flex flex-col items-center gap-3 px-4 py-12 text-center">{corpo}</div>
+    </div>
+  );
+}
+
 /**
  * The upgrade block shown to free visitors: two honest options — see only this
  * profile once ("uso único"), or subscribe to follow it over time (PRO).
  */
-function UpgradeCard({ username }: { username: string }) {
+function UpgradeCard({ username, planoPro = false }: { username: string; planoPro?: boolean }) {
+  // Quem assina não compra Farejador: esta parte abre quando ele usa uma
+  // análise do plano neste perfil — e isso é feito na Visão geral.
+  if (planoPro) {
+    return (
+      <div className="rounded-3xl border border-border bg-card p-6 text-center">
+        <p className="text-sm">
+          Esta parte abre quando você usar <b>1 análise do seu plano</b> em @{username}. O botão fica
+          na <b>Visão geral</b>.
+        </p>
+      </div>
+    );
+  }
   return (
     <div className="grid gap-4 md:grid-cols-2">
     <div className="flex flex-col rounded-3xl border border-border bg-card p-6 text-center">
@@ -290,10 +476,9 @@ function UpgradeCard({ username }: { username: string }) {
       </p>
       <ul className="mx-auto mt-4 max-w-sm space-y-2 text-left text-sm">
         {[
-          "📌 Coloque perfis no Faro AI",
-          "🐾 Veja quem entrou e quem saiu, sem censura",
-          "❤️ Interações públicas organizadas",
-          "🔔 Alertas quando o Faro AI encontrar algo novo",
+          "📌 Faro de Cão: um perfil acompanhado a cada 3 dias",
+          "🐾 Faro de Detetive: acompanhamento diário e todo o Faro AI",
+          "🔔 Pistas quando o Faro AI detectar uma mudança",
         ].map((b) => (
           <li key={b} className="flex items-start gap-2">
             <span className="text-foreground/80">{b}</span>
@@ -302,14 +487,14 @@ function UpgradeCard({ username }: { username: string }) {
       </ul>
       <Link href={`/pricing?next=${encodeURIComponent(`/p/${username}`)}`} className="mt-5 block">
         <Button variant="accent" size="lg" className="w-full sm:w-auto">
-          Farejo PRO <ArrowRight className="h-4 w-4" />
+          Conhecer os planos <ArrowRight className="h-4 w-4" />
         </Button>
       </Link>
       <Link
         href={`/login?next=${encodeURIComponent(`/p/${username}`)}`}
         className="mt-3 inline-block text-xs text-muted-foreground hover:text-foreground"
       >
-        já é assinante? entrar
+        já tem conta? entrar
       </Link>
     </div>
     </div>
@@ -320,11 +505,14 @@ export function ProfileView({
   username,
   loggedIn,
   planoPro = false,
+  temFaro = false,
 }: {
   username: string;
   loggedIn: boolean;
   /** A pessoa que está olhando assina. Vem da sessão, no servidor. */
   planoPro?: boolean;
+  /** O plano dela acompanha perfis (Cão, Detetive, antigo, Admin). */
+  temFaro?: boolean;
 }) {
   const router = useRouter();
 
@@ -348,13 +536,32 @@ export function ProfileView({
         real: boolean;
         counts?: Breakdown;
         recent?: { started: RecentItem[]; stopped: RecentItem[] };
+        /** Quem assina e ainda não gastou análise NESTE perfil: perguntar antes. */
+        precisaConfirmar?: boolean;
+        analises?: { usados: number; limite: number; restam: number } | null;
+        /** A coleta não entregou (privado, inexistente, fora do ar). Nada foi descontado. */
+        falhou?: string | null;
+        coletadoEm?: string | null;
+        expiraEm?: string | null;
       }
   >({ kind: "loading" });
+  /** Muda depois de uma análise gasta: as outras partes da tela releem. */
+  const [versao, setVersao] = React.useState(0);
+  const [confirmando, setConfirmando] = React.useState(false);
 
-  const [interactions, setInteractions] = React.useState<{ locked: boolean; items: Person[] }>({
+  const [interactions, setInteractions] = React.useState<{
+    locked: boolean;
+    items: Person[];
+    /** Curioso com conta: o destaque revelado, ou `semDados`. */
+    revelado?: Person | null;
+    semDados?: boolean;
+  }>({
     locked: true,
     items: [],
   });
+  const [revelacao, setRevelacao] = React.useState<
+    { kind: "idle" } | { kind: "busy" } | { kind: "usada"; em: string | null } | { kind: "sem_dados" } | { kind: "privado" }
+  >({ kind: "idle" });
 
   const [tab, setTab] = React.useState<Tab>("visao");
   // Os stories abrem em tela cheia pela foto, não como aba.
@@ -525,7 +732,9 @@ export function ProfileView({
 
     const teto = window.setTimeout(() => vivo && setRedesProntas(true), TETO_REDES_MS);
 
-    fetch(`/api/elsewhere?username=${encodeURIComponent(username)}&pagas=1`)
+    // Só as redes de graça. TikTok e YouTube (pagas) são sob demanda, pelo
+    // botão no bloco de outras redes — dentro da franquia do plano.
+    fetch(`/api/elsewhere?username=${encodeURIComponent(username)}`)
       .then((r) => r.json())
       .then((b) => vivo && setRedes(b))
       .catch(() => {})
@@ -642,7 +851,13 @@ export function ProfileView({
       try {
         const r = await fetch(`/api/interactions?username=${encodeURIComponent(username)}`);
         const b = await r.json();
-        if (alive) setInteractions({ locked: !!b.locked, items: b.items ?? [] });
+        if (alive)
+          setInteractions({
+            locked: !!b.locked,
+            items: b.items ?? [],
+            revelado: b.revelado ?? null,
+            semDados: !!b.semDados,
+          });
       } catch {
         /* stays locked */
       }
@@ -650,16 +865,24 @@ export function ProfileView({
     return () => {
       alive = false;
     };
-  }, [username]);
+  }, [username, versao]);
 
   React.useEffect(() => {
     let alive = true;
     setFollowing({ kind: "loading" });
     (async () => {
       try {
-        const res = await fetch(`/api/following-preview?username=${encodeURIComponent(username)}`);
+        let res = await fetch(`/api/following-preview?username=${encodeURIComponent(username)}`);
         if (!alive) return;
-        const body = await res.json();
+        let body = await res.json();
+        // Farejador comprado, perfil no Faro AI ou consulta de antes: a coleta
+        // já está paga, então é pedida sem perguntar.
+        if (body.coletarAgora) {
+          res = await fetch(`/api/following-preview?username=${encodeURIComponent(username)}&confirmar=1`);
+          if (!alive) return;
+          body = await res.json();
+          setVersao((v) => v + 1);
+        }
         if (res.status === 402 || body.limited) {
           setState({ kind: "limited", spentOn: body.spentOn ?? null });
           return;
@@ -688,8 +911,13 @@ export function ProfileView({
           access: body.access ?? (body.locked ? "free" : "pro"),
           users: body.following ?? [],
           real: !!body.real,
-          counts: body.counts,
+          counts: body.counts ?? undefined,
           recent: body.recent,
+          precisaConfirmar: !!body.precisaConfirmar,
+          analises: body.analises ?? null,
+          falhou: body.falhou ?? null,
+          coletadoEm: body.coletadoEm ?? null,
+          expiraEm: body.expiraEm ?? null,
         });
       } catch {
         if (alive)
@@ -715,15 +943,86 @@ export function ProfileView({
    * `planoPro` vem da sessão, pela página. `ready.access` refina para o caso
    * do desbloqueio avulso, que é por perfil.
    */
-  const isPro = planoPro || ready?.access === "pro";
+  /*
+   * Desde 24/09 ter plano não revela perfil nenhum sozinho: revela a análise
+   * gasta NESTE perfil (ou o Farejador comprado para ele). `planoPro` só
+   * decide o que a tela oferece.
+   */
+  const revelado = !!ready && !ready.locked;
+  const isPro = revelado && ready?.access === "pro";
+
+  /** Gasta uma análise da franquia neste perfil — só depois do clique. */
+  async function confirmarAnalise() {
+    setConfirmando(true);
+    try {
+      const res = await fetch(`/api/following-preview?username=${encodeURIComponent(username)}&confirmar=1`);
+      const body = await res.json();
+      if (res.status === 402 || body.limited) {
+        setFollowing((f) => (f.kind === "ready" ? { ...f, precisaConfirmar: false, analises: { usados: body.used ?? 0, limite: body.limit ?? 0, restam: 0 } } : f));
+        return;
+      }
+      if (body.private) {
+        setFollowing({ kind: "private" });
+        return;
+      }
+      setFollowing({
+        kind: "ready",
+        seguindoOculto: !!body.seguindoOculto,
+        locked: !!body.locked,
+        access: body.access ?? "free",
+        users: body.following ?? [],
+        real: !!body.real,
+        counts: body.counts ?? undefined,
+        recent: body.recent,
+        falhou: body.falhou ?? null,
+        coletadoEm: body.coletadoEm ?? null,
+        expiraEm: body.expiraEm ?? null,
+      });
+      setVersao((v) => v + 1);
+    } finally {
+      setConfirmando(false);
+    }
+  }
+
+  /** Curioso com conta: a revelação grátis do destaque, uma por conta. */
+  async function revelar() {
+    setRevelacao({ kind: "busy" });
+    try {
+      const r = await fetch("/api/revelacao", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ username }),
+      });
+      const b = await r.json().catch(() => ({}));
+      if (b.ok) {
+        setInteractions((i) => ({ ...i, revelado: b.destaque ?? null, semDados: !b.destaque }));
+        setRevelacao({ kind: "idle" });
+      } else if (b.motivo === "ja_usada") setRevelacao({ kind: "usada", em: b.em ?? null });
+      else if (b.motivo === "privado") setRevelacao({ kind: "privado" });
+      else setRevelacao({ kind: "sem_dados" });
+    } catch {
+      setRevelacao({ kind: "idle" });
+    }
+  }
+
+  // Voltou do cadastro com `?revelar=1`: entrega a pista prometida, sem outro clique.
+  React.useEffect(() => {
+    if (!loggedIn || planoPro) return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("revelar") !== "1") return;
+    url.searchParams.delete("revelar");
+    window.history.replaceState(null, "", url.toString());
+    revelar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loggedIn, planoPro, username]);
 
   async function startTracking() {
     if (!loggedIn) {
       router.push(`/signup?next=${encodeURIComponent(`/p/${username}`)}`);
       return;
     }
-    // Not a subscriber: this is the Pro moment, not an error.
-    if (!isPro) {
+    // O plano não acompanha perfis: é a hora de mostrar os que acompanham.
+    if (!temFaro) {
       setUpsell(true);
       return;
     }
@@ -770,7 +1069,8 @@ export function ProfileView({
    * Carregando não é o mesmo que trancado. A tela passa a dizer qual dos dois.
    */
   const carregandoAnalise = following.kind === "loading";
-  const topInteraction = interactions.items[0] ?? ready?.users[0];
+  // O destaque revelado ao Curioso com conta entra no lugar do primeiro lugar.
+  const topInteraction = interactions.revelado ?? interactions.items[0] ?? ready?.users[0];
   const others = interactions.items.length > 1 ? interactions.items.slice(1) : ready?.users ?? [];
 
   return (
@@ -806,10 +1106,10 @@ export function ProfileView({
               // `isPro` primeiro: ele vem da sessão e não depende de nenhuma
             // leitura dar certo. `ready.access` só refina o caso do
             // desbloqueio avulso, que é por perfil.
-            const t = isPro ? "pro" : (ready?.access ?? "free");
-              if (t === "pro") return <StatusPill tone="yellow">PRO</StatusPill>;
+            const t = revelado ? (ready?.access ?? "free") : "free";
+              if (t === "pro") return <StatusPill tone="yellow">ANÁLISE COMPLETA</StatusPill>;
               if (t === "single") return <StatusPill tone="dark">DESBLOQUEADO</StatusPill>;
-              return <StatusPill tone="pink">GRÁTIS</StatusPill>;
+              return <StatusPill tone="pink">PRÉVIA</StatusPill>;
             })()}
             {!loggedIn && <Logo className="h-6" />}
           </div>
@@ -854,20 +1154,20 @@ export function ProfileView({
                       diferentes e agora têm dois textos diferentes. */}
                   <h1 className="text-2xl font-bold">
                     {planoPro
-                      ? "Você já usou as análises novas deste mês"
-                      : "Sua análise gratuita já foi usada"}
+                      ? "As consultas de perfil novas deste ciclo acabaram"
+                      : "Você já usou a consulta grátis"}
                   </h1>
                   <p className="max-w-sm text-sm text-muted-foreground">
                     {planoPro ? (
                       <>
-                        Seu plano inclui um número de <b>perfis novos</b> por mês, e ele acabou.
-                        Reabrir um @ que você já analisou <b>continua livre</b> — e os perfis do
-                        seu Faro AI seguem sendo lidos todo dia.
+                        Abrir um perfil que ninguém consultou há pouco é uma leitura paga, e o seu
+                        plano inclui algumas por ciclo. Reabrir um @ que você já analisou{" "}
+                        <b>continua livre</b>.
                       </>
                     ) : (
                       <>
-                        O plano grátis inclui <b>1 perfil</b>. Veja só este perfil com um pagamento
-                        único, ou assine o PRO para farejar mais.
+                        A experiência grátis inclui <b>uma</b> consulta de perfil. Digite o @ de um
+                        perfil já consultado, veja este com o Farejador, ou conheça os planos.
                       </>
                     )}
                   </p>
@@ -879,7 +1179,7 @@ export function ProfileView({
                     className="w-full max-w-xs"
                   >
                     <Button variant="outline" size="lg" className="w-full">
-                      {planoPro ? "Ir para o meu Faro AI" : "Conhecer o Farejo PRO"}{" "}
+                      {planoPro ? "Ir para o meu Faro AI" : "Conhecer os planos"}{" "}
                       <ArrowRight className="h-4 w-4" />
                     </Button>
                   </Link>
@@ -895,7 +1195,7 @@ export function ProfileView({
                     href={`/login?next=${encodeURIComponent(`/p/${username}`)}`}
                     className="text-xs text-muted-foreground hover:text-foreground"
                   >
-                    já é assinante? entrar
+                    já tem conta? entrar
                   </Link>
                 </div>
               </Panel>
@@ -928,10 +1228,10 @@ export function ProfileView({
             <div>
               <ProfileHero
                 profile={state.data}
-                premium={isPro}
+                premium={revelado}
                 note={state.note}
                 tracking={tracking}
-                locked={!isPro}
+                locked={!revelado}
                 onVerStories={
                   state.data.isPrivate || temStories === false
                     ? undefined
@@ -1051,7 +1351,7 @@ export function ProfileView({
                       />
                       <TopInteraction
                         person={topInteraction}
-                        locked={locked}
+                        locked={locked && !interactions.revelado}
                         username={state.data.username}
                       />
                     </div>
@@ -1062,17 +1362,36 @@ export function ProfileView({
                     />
                     </>
                     )}
-                    {locked && !carregandoAnalise && <UpgradeCard username={state.data.username} />}
+                    {locked && !carregandoAnalise && (
+                      <Oferta
+                        username={state.data.username}
+                        loggedIn={loggedIn}
+                        planoPro={planoPro}
+                        ready={ready}
+                        confirmando={confirmando}
+                        onConfirmar={confirmarAnalise}
+                        revelacao={revelacao}
+                        revelado={interactions.revelado ?? null}
+                        semDados={!!interactions.semDados}
+                        onRevelar={revelar}
+                      />
+                    )}
                   </div>
                 )}
 
                 {tab === "seguindo" && (
                   <div className="mt-5">
-                    <Panel title="Novos seguindo">
+                    {/* "Novos seguindo" só com base para isso: a análise pontual
+                        lê UMA página da lista, na ordem que o Instagram entrega
+                        — em geral as mais recentes primeiro, sem garantia. O
+                        que é novo de verdade sai da comparação entre coletas
+                        do Faro AI. */}
+                    <Panel title="Quem segue — amostra">
                       <p className="-mt-1 mb-3 text-[11px] text-muted-foreground">
-                        Os {MAX_SEGUINDO} perfis mais recentes que @{state.data.username} começou
-                        a seguir. Apenas pessoas reais — contas verificadas e de marcas ficam de
-                        fora.
+                        Até {MAX_SEGUINDO} contas que @{state.data.username} segue, na ordem em que o
+                        Instagram entrega a lista (em geral, as mais recentes primeiro — a ordem não é
+                        garantida). Contas verificadas ficam de fora. Para saber quem entrou e quem
+                        saiu, o Faro AI compara uma coleta com a outra.
                       </p>
                       {following.kind === "loading" ? (
                         <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
@@ -1112,7 +1431,7 @@ export function ProfileView({
                     </Panel>
                     {locked && (
                       <div className="mt-5">
-                        <UpgradeCard username={state.data.username} />
+                        <UpgradeCard username={state.data.username} planoPro={planoPro} />
                       </div>
                     )}
                   </div>
@@ -1142,7 +1461,7 @@ export function ProfileView({
                           locked
                           username={state.data.username}
                         />
-                        <UpgradeCard username={state.data.username} />
+                        <UpgradeCard username={state.data.username} planoPro={planoPro} />
                       </div>
                     )}
                   </div>
@@ -1154,7 +1473,7 @@ export function ProfileView({
                       key={tab}
                       username={state.data.username}
                       section={tab}
-                      upgrade={<UpgradeCard username={state.data.username} />}
+                      upgrade={<UpgradeCard username={state.data.username} planoPro={planoPro} />}
                     />
                   </div>
                 )}
@@ -1172,7 +1491,12 @@ export function ProfileView({
 
                 {/* O mesmo @ em outras redes também no perfil público, no fim
                     da página. Some sozinho quando não há nenhuma. */}
-                <OtherNetworks username={state.data.username} destaque inicial={redes} />
+                <OtherNetworks
+                  username={state.data.username}
+                  destaque
+                  inicial={redes}
+                  podeBuscarPagas={revelado}
+                />
               </>
             )}
           </>

@@ -1,77 +1,84 @@
 /**
- * "Esta pessoa pode consultar este perfil?" — em um lugar só.
- *
- * ## O furo que isto conserta
- *
- * As três rotas que gastam provedor (`profile-preview`, `raio-x`,
- * `following-preview`) perguntavam o limite assim:
- *
- * ```ts
- * const paid = access !== "free";
- * if (!paid) { ...checkAllowance... }
- * ```
- *
- * E `accessFor` devolve `"pro"` para **qualquer** plano diferente de FREE. Ou
- * seja: o teto de consultas de quem paga nunca era conferido. Faro de Cão (3),
- * PRO (10) e Detetive (30) podiam consultar quantos perfis quisessem — cada um
- * é crédito da HikerAPI saindo. Pelo mesmo motivo, `claimAnalysis` também não
- * rodava para assinante: por isso "Perfis consultados: 0 de 10" ficava parado
- * e a tela Pesquisados aparecia vazia justamente para quem paga.
+ * Gastar uma análise — em um lugar só.
  *
  * ## A regra
  *
- * - **`single`** (Farejador, pago para AQUELE perfil) passa direto: já foi
- *   pago por nome, e cobrar a cota de novo seria cobrar duas vezes.
- * - **Todo o resto** — grátis ou assinante — passa pelo teto do seu plano.
- * - Um perfil **já consultado nunca conta de novo**: reabrir o mesmo @ é
- *   grátis em qualquer plano.
- */
-import { accessFor, type Access } from "@/lib/access";
-import { checkAllowance, claimAnalysis, consultLimitFor, usageKey } from "@/lib/usage";
-import type { Allowance } from "@/lib/usage";
-import type { User } from "@prisma/client";
-
-export interface Consulta {
-  access: Access;
-  /** Falso quando este perfil estouraria o teto do plano. */
-  permitido: boolean;
-  allowance: Allowance | null;
-  /** A identidade contra a qual a cota é contada. */
-  chave: string;
-}
-
-/**
- * Confere a cota **sem** registrar. Use antes de qualquer chamada ao provedor.
+ * - **Reabrir** uma análise salva nunca vai ao provedor e nunca conta de novo.
+ * - **Análise nova** de quem assina: reserva 1 da franquia do ciclo, coleta o
+ *   pacote (`analise.ts`), guarda. Se a coleta não entregar — perfil que não
+ *   existe, privado, provedor fora —, a reserva é devolvida.
+ * - **Farejador** (avulso): já foi pago por nome; coleta sem tocar em
+ *   franquia, e o prazo de 7 dias começa agora.
+ * - **Plano antigo** que já tinha consultado o @ pela regra de antes: coleta
+ *   uma vez sem cobrar franquia nova — era direito dele.
+ * - **Curioso**: não tem análise. Tem a revelação (`revelacao.ts`).
  *
- * `marcar: true` registra o gasto no mesmo passo — para a rota que representa
- * a análise em si (`following-preview`).
+ * Nada aqui é chamado sem confirmação de quem usa: gastar uma de três
+ * análises do mês só porque a página abriu seria cobrar por clique errado.
  */
-export async function checarConsulta(
-  user: User | null,
-  username: string,
-  marcar = false,
-): Promise<Consulta> {
-  const access = await accessFor(user, username);
-  const chave = usageKey(user);
+import type { User } from "@prisma/client";
+import { acessoA, DIAS_DO_AVULSO, type Access } from "@/lib/access";
+import { coletarAnalise, guardar, type Origem, type Salva } from "@/lib/analise";
+import { comQuem } from "@/lib/custo";
+import { direitosDe } from "@/lib/direitos";
+import { devolver, reservar, saldo } from "@/lib/franquia";
+import { prisma } from "@/lib/db";
 
-  // Quem pagou por este perfil específico não passa pela cota.
-  if (access === "single") {
-    return { access, permitido: true, allowance: null, chave };
+export type Consumo =
+  | { ok: true; access: Access; salva: Salva }
+  | { ok: false; motivo: "sem_plano" | "limite" | "nao_encontrado" | "privado" | "indisponivel"; usados?: number; limite?: number };
+
+export async function consumirAnalise(user: User, username: string): Promise<Consumo> {
+  const acesso = await acessoA(user, username);
+  if (acesso.salva && acesso.access !== "free") {
+    return { ok: true, access: acesso.access, salva: acesso.salva };
   }
 
-  const allowance = await checkAllowance(chave, username, consultLimitFor(user));
-  if (allowance.allowed && marcar) await claimAnalysis(chave, username);
+  const d = direitosDe(user);
+  let origem: Origem;
+  let reserva: Awaited<ReturnType<typeof reservar>> | null = null;
 
-  return { access, permitido: allowance.allowed, allowance, chave };
+  if (acesso.avulso) origem = "avulso";
+  else if (d.admin) origem = "admin";
+  else if (acesso.jaConsultadoAntes || (acesso.noFaro && d.config.maxProfiles > 0)) origem = "legado";
+  else if (d.config.maxConsults > 0) {
+    origem = "plano";
+    reserva = await reservar(user, "analise");
+    if (!reserva.ok) return { ok: false, motivo: "limite", usados: reserva.usados, limite: reserva.limite };
+  } else {
+    return { ok: false, motivo: "sem_plano" };
+  }
+
+  const r = await comQuem({ userId: user.id, admin: d.admin, motivo: `analise:${origem}` }, () =>
+    coletarAnalise(username, origem),
+  );
+  if (!r.ok) {
+    if (reserva) await devolver(reserva);
+    return { ok: false, motivo: r.motivo };
+  }
+
+  // Duas abas confirmando o mesmo @ ao mesmo tempo: a que chegar depois
+  // encontra a análise gravada e devolve a sua reserva. As leituras dobradas
+  // ficam no registro de custo — pagas, mas não cobradas duas vezes do cliente.
+  const jaGravada = await acessoA(user, username);
+  if (jaGravada.salva && jaGravada.access !== "free") {
+    if (reserva) await devolver(reserva);
+    return { ok: true, access: jaGravada.access, salva: jaGravada.salva };
+  }
+
+  const agora = new Date();
+  const expira =
+    origem === "avulso" ? new Date(agora.getTime() + DIAS_DO_AVULSO * 24 * 60 * 60 * 1000) : null;
+  const salva = await guardar(user, username, r.data, expira);
+  if (origem === "avulso" && acesso.avulso) {
+    await prisma.profileUnlock.update({ where: { id: acesso.avulso.id }, data: { expiresAt: expira } });
+  }
+  return { ok: true, access: origem === "avulso" ? "single" : "pro", salva };
 }
 
-/** O corpo do 402, igual nas três rotas. */
-export function respostaDeLimite(c: Consulta) {
-  return {
-    limited: true,
-    error: "limit_reached",
-    used: c.allowance?.used ?? 0,
-    limit: c.allowance?.limit ?? 0,
-    spentOn: c.allowance?.spentOn ?? null,
-  };
+/** O que a tela precisa para oferecer a análise sem gastá-la. */
+export async function ofertaDeAnalise(user: User) {
+  const d = direitosDe(user);
+  if (d.config.maxConsults <= 0) return null;
+  return saldo(user, "analise");
 }
