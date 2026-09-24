@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ChevronRight, Clock, Loader2, Search, Star } from "lucide-react";
+import { ChevronRight, Clock, Loader2, Search, Sparkles, Star } from "lucide-react";
 import { Panel } from "@/components/ui/brand";
 import { StoryViewer } from "@/components/story-viewer";
 import { planFor } from "@/lib/plans";
@@ -74,6 +74,53 @@ export function SavedStories({
   const [cota, setCota] = React.useState(cotaInicial);
   const [semCota, setSemCota] = React.useState(false);
 
+  /*
+   * O que os stories disseram — assunto, texto na imagem e marcas.
+   *
+   * Chega em duas etapas de propósito: ao abrir, só o que JÁ foi lido (não
+   * custa nada); o resto só quando alguém aperta "Resumir stories", porque
+   * ler imagem é a parte cara da casa.
+   */
+  type Leitura = { id: string; assunto: string; texto: string | null; marcas: string[] };
+  const [leituras, setLeituras] = React.useState<Record<string, Leitura>>({});
+  const [lendo, setLendo] = React.useState(false);
+  const [iaLigada, setIaLigada] = React.useState(false);
+  const [busca, setBusca] = React.useState("");
+
+  const guardar = React.useCallback((corpo: { ligada?: boolean; lidos?: Leitura[] }) => {
+    setIaLigada(!!corpo.ligada);
+    const mapa: Record<string, Leitura> = {};
+    for (const l of corpo.lidos ?? []) mapa[l.id] = l;
+    setLeituras((antes) => ({ ...antes, ...mapa }));
+  }, []);
+
+  React.useEffect(() => {
+    let vivo = true;
+    fetch(`/api/stories-resumo?username=${encodeURIComponent(username)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((b) => vivo && b && guardar(b))
+      .catch(() => {});
+    return () => {
+      vivo = false;
+    };
+  }, [username, guardar]);
+
+  async function resumir() {
+    setLendo(true);
+    try {
+      const r = await fetch("/api/stories-resumo", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ username }),
+      });
+      if (r.ok) guardar(await r.json());
+    } catch {
+      /* fica como está */
+    } finally {
+      setLendo(false);
+    }
+  }
+
   /**
    * Marca ou desmarca, mudando a tela antes da resposta.
    *
@@ -134,6 +181,32 @@ export function SavedStories({
   const visiveis = stories.filter((s) => horas(s.detectedAt) <= janela || salvos.includes(s.id));
   if (!visiveis.length) return null;
 
+  /*
+   * A busca corre sobre o que a IA leu: assunto, texto da imagem e marcas —
+   * mais as menções, que já vinham do Instagram. É por isso que procurar
+   * "cupom" acha um story onde a palavra nunca esteve na legenda: ela estava
+   * ESCRITA na imagem.
+   */
+  const termo = busca.trim().toLowerCase();
+  const casa = (s: SavedStory) => {
+    if (!termo) return true;
+    const l = leituras[s.id];
+    const palheiro = [
+      l?.assunto ?? "",
+      l?.texto ?? "",
+      ...(l?.marcas ?? []),
+      ...s.mentions,
+    ]
+      .join(" ")
+      .toLowerCase();
+    return palheiro.includes(termo);
+  };
+
+  // A lista que a tela mostra de fato — é ela que o visualizador recebe, senão
+  // clicar no terceiro com a busca ligada abriria o terceiro da lista inteira.
+  const mostrados = visiveis.filter(casa);
+  const quantosLidos = visiveis.filter((s) => leituras[s.id]).length;
+
   const paraViewer = (lista: SavedStory[]) =>
     lista.map((s) => ({
       id: s.id,
@@ -144,9 +217,45 @@ export function SavedStories({
     }));
 
   return (
-    <Panel title="Stories guardados">
+    <Panel
+      title="Stories guardados"
+      action={
+        iaLigada && quantosLidos < visiveis.length ? (
+          <button
+            type="button"
+            onClick={resumir}
+            disabled={lendo}
+            className="inline-flex min-h-[36px] items-center gap-1.5 rounded-2xl border border-border px-3 text-xs font-bold transition hover:bg-muted/50 disabled:opacity-60"
+          >
+            {lendo ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 text-accent" />}
+            {lendo ? "Lendo…" : "Resumir stories"}
+          </button>
+        ) : null
+      }
+    >
+      {/* A busca só aparece quando há o que buscar: sem leitura, ela olharia
+          apenas as menções e prometeria mais do que entrega. */}
+      {quantosLidos > 0 && (
+        <div className="relative mb-3">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Procurar nos stories: cupom, praia, uma marca…"
+            aria-label="Procurar nos stories"
+            className="h-11 w-full rounded-2xl border border-input bg-card pl-9 pr-4 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          />
+        </div>
+      )}
+
+      {termo && mostrados.length === 0 && (
+        <p className="py-6 text-center text-sm text-muted-foreground">
+          Nenhum story guardado fala nisso.
+        </p>
+      )}
+
       <div className="flex gap-3 overflow-x-auto pb-2">
-        {visiveis.map((s, i) => {
+        {mostrados.map((s, i) => {
           const h = horas(s.detectedAt);
           const expirou = h >= 24;
           return (
@@ -196,6 +305,15 @@ export function SavedStories({
                   )}
                 </button>
               )}
+              {/* O que a IA leu. Fica sob a miniatura, junto da prova — a
+                  imagem está bem ali para quem quiser conferir. */}
+              {leituras[s.id] && (
+                <p className="mt-1.5 line-clamp-3 text-[11px] leading-snug text-muted-foreground">
+                  {leituras[s.id].texto ? `“${leituras[s.id].texto}” · ` : ""}
+                  {leituras[s.id].assunto}
+                </p>
+              )}
+
               {s.mentions.length > 0 && (
                 <div className="mt-1.5 space-y-1">
                   {s.mentions.map((m) => (
@@ -220,7 +338,7 @@ export function SavedStories({
           username={username}
           avatarUrl={avatarUrl}
           startAt={aberto}
-          stories={paraViewer(visiveis)}
+          stories={paraViewer(mostrados)}
           onClose={() => setAberto(-1)}
         />
       )}
