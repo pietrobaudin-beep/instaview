@@ -38,6 +38,15 @@ export async function GET(req: Request) {
       },
     });
 
+  /*
+   * A cópia guardada primeiro. Antes o proxy tentava o Instagram antes — e o
+   * endereço de story e de foto antiga já venceu: cada imagem esperava até 10s
+   * de erro para só então cair na cópia, e o painel do Faro AI ficava com os
+   * quadrinhos em branco. Com cópia, a resposta sai do banco, na hora.
+   */
+  const guardada = await readStored(key);
+  if (guardada) return serve(guardada.bytes, guardada.type);
+
   try {
     const res = await fetch(target, {
       headers: {
@@ -46,7 +55,7 @@ export async function GET(req: Request) {
         accept: "image/avif,image/webp,image/*,*/*;q=0.8",
         referer: "https://www.instagram.com/",
       },
-      signal: AbortSignal.timeout(10_000),
+      signal: AbortSignal.timeout(5_000),
     });
     if (res.ok) {
       const type = res.headers.get("content-type") || "image/jpeg";
@@ -61,10 +70,6 @@ export async function GET(req: Request) {
   } catch {
     log.info("upstream falhou", { host: target.hostname });
   }
-
-  // Deu errado lá fora (ou o story já expirou): usa a cópia.
-  const copy = await readStored(key);
-  if (copy) return serve(copy.bytes, copy.type);
 
   // Sem cópia: 404 para o <img> cair direto no lugar reservado.
   return new NextResponse("sem imagem", { status: 404 });
