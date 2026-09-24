@@ -128,7 +128,9 @@ export const PLANS: Record<Plan, PlanConfig> = {
     // 2, e não 5. Cada perfil no Faro AI custa 3 leituras por dia do provedor
     // — R$ 9,90/mês a US$ 0,02 a requisição. Com 5 perfis o PRO custava
     // R$ 63 e recebia R$ 29,90: cada assinante saía do bolso do dono.
-    maxProfiles: 2,
+    // 1 perfil no Faro AI (24/09). Cada perfil vigiado custa R$ 7,70/mês de
+    // provedor; com 1, o PRO sai de 24% para 50% de margem.
+    maxProfiles: 1,
     /*
      * 5, e não 3.
      *
@@ -160,9 +162,9 @@ export const PLANS: Record<Plan, PlanConfig> = {
     exportAndApi: false,
     stripePriceEnv: "NEXT_PUBLIC_STRIPE_PRICE_PRO",
     features: [
-      "2 perfis no Faro AI, vigiados todo dia",
+      "1 perfil no Faro AI, vigiado todo dia",
       "5 análises novas por mês",
-      "Quem eles começam a seguir, e quem deixam",
+      "Quem ele começa a seguir, e quem deixa",
       "Stories guardados SEM PRAZO, com busca por dentro",
       "Resumir stories: o Faro AI lê o que está escrito neles",
       "Pergunte ao Faro AI, sem limite",

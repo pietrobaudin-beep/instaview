@@ -451,7 +451,9 @@ export function Landing({ demo }: { demo: boolean }) {
                 Você não precisa voltar todo dia. O Faro AI volta.
               </h2>
               <p className="mt-4 max-w-md text-[15px] leading-relaxed text-cream/75 sm:text-lg">
-                Coloque até {pro.maxProfiles} perfis no Faro AI. Todo dia ele relê cada um e mostra{" "}
+                {pro.maxProfiles === 1
+                  ? "Coloque a pessoa que importa no Faro AI. Todo dia ele relê o perfil e mostra"
+                  : `Coloque até ${pro.maxProfiles} perfis no Faro AI. Todo dia ele relê cada um e mostra`}{" "}
                 <b className="font-semibold text-cream">só o que mudou</b> desde a última vez.
               </p>
 
@@ -691,7 +693,10 @@ export function Landing({ demo }: { demo: boolean }) {
           </SwipeDeck>
           <p className="mt-8 text-center text-sm text-muted-foreground">
             O uso único libera <b className="text-foreground">um perfil</b>; o PRO acompanha{" "}
-            <b className="text-foreground">até {pro.maxProfiles}</b> ao longo do tempo.
+            <b className="text-foreground">
+              {pro.maxProfiles === 1 ? "um perfil todo dia" : `até ${pro.maxProfiles}`}
+            </b>{" "}
+            ao longo do tempo.
           </p>
           <TrustLine className="mt-2 text-center" />
         </div>
