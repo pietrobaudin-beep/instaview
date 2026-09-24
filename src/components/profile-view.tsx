@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, BadgeCheck, Check, Loader2, Lock, Unlock } from "lucide-react";
+import { ArrowLeft, ArrowRight, BadgeCheck, Check, Loader2, Lock, PawPrint, Unlock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
 import { Panel, PersonRow, StatusPill } from "@/components/ui/brand";
@@ -385,6 +385,15 @@ export function ProfileView({
   }, [username]);
   const [tracking, setTracking] = React.useState({ saved: false, busy: false });
   const [upsell, setUpsell] = React.useState(false);
+  /**
+   * "O Faro AI está cheio" — que NÃO é "você não tem plano".
+   *
+   * A rota devolve 402 nos dois casos: sem PRO (`code: "pro_required"`) e com
+   * PRO mas sem vaga. A tela tratava os dois como falta de plano e abria o
+   * convite "Desbloquear Farejo PRO" — para quem já assina e só precisava
+   * abrir uma vaga. Aqui fica a mensagem do servidor, que já vem escrita.
+   */
+  const [faroCheio, setFaroCheio] = React.useState<string | null>(null);
   const [justPinned, setJustPinned] = React.useState(false);
 
   // Is this profile already in the user's Faro AI? DB read only — no provider call.
@@ -718,6 +727,7 @@ export function ProfileView({
       setUpsell(true);
       return;
     }
+    setFaroCheio(null);
     setTracking({ saved: false, busy: true });
     try {
       const r = await fetch("/api/track", {
@@ -727,7 +737,13 @@ export function ProfileView({
       });
       if (r.status === 402) {
         setTracking({ saved: false, busy: false });
-        setUpsell(true);
+        const corpo = (await r.json().catch(() => null)) as
+          | { error?: string; code?: string }
+          | null;
+        // Sem plano → é a hora de oferecer. Com plano e sem vaga → é recado,
+        // não venda.
+        if (corpo?.code === "pro_required") setUpsell(true);
+        else setFaroCheio(corpo?.error ?? "Seu Faro AI está cheio.");
         return;
       }
       setTracking({ saved: r.ok, busy: false });
@@ -911,6 +927,21 @@ export function ProfileView({
                 onClose={() => setStoriesAbertos(false)}
                 onVazio={() => setTemStories(false)}
               />
+            )}
+
+            {/* Faro AI cheio: recado com a saída, não convite para comprar o
+                que a pessoa já tem. */}
+            {faroCheio && (
+              <NoteBox className="mt-4" icon={<PawPrint className="h-4 w-4" />}>
+                <p className="font-bold">Seu Faro AI está cheio.</p>
+                <p className="mt-0.5 text-sm opacity-80">{faroCheio}</p>
+                <Link
+                  href="/rastros"
+                  className="mt-2 inline-flex items-center gap-1 text-sm font-bold text-accent hover:underline"
+                >
+                  Ver quem está no meu Faro AI <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </NoteBox>
             )}
 
             {justPinned && (
