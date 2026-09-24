@@ -75,7 +75,7 @@ function Midias({ itens, href, formato }: { itens: MidiaResumo[]; href: string; 
             >
               {src && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
+                <img src={src} alt="" className="h-full w-full object-cover" />
               )}
             </Link>
           </li>
