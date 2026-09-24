@@ -131,6 +131,47 @@ export function TrackingSettings({
   const [status, setStatus] = React.useState<Status | undefined>(refresh);
   const [ajustesAbertos, setAjustesAbertos] = React.useState(false);
 
+  /*
+   * O alerta que a pessoa escreve. Vive junto das outras chaves, porque é do
+   * mesmo assunto: o que ela quer que o Faro AI olhe neste perfil.
+   */
+  const [pedido, setPedido] = React.useState("");
+  const [pedidoSalvo, setPedidoSalvo] = React.useState("");
+  const [salvandoPedido, setSalvandoPedido] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!profileId || !ajustesAbertos) return;
+    let vivo = true;
+    fetch(`/api/alerta-escrito?profileId=${encodeURIComponent(profileId)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((b) => {
+        if (!vivo || !b) return;
+        setPedido(b.texto ?? "");
+        setPedidoSalvo(b.texto ?? "");
+      })
+      .catch(() => {});
+    return () => {
+      vivo = false;
+    };
+  }, [profileId, ajustesAbertos]);
+
+  async function salvarPedido() {
+    if (!profileId) return;
+    setSalvandoPedido(true);
+    try {
+      const r = await fetch("/api/alerta-escrito", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ profileId, texto: pedido }),
+      });
+      if (r.ok) setPedidoSalvo((await r.json()).texto ?? "");
+    } catch {
+      /* fica como está */
+    } finally {
+      setSalvandoPedido(false);
+    }
+  }
+
   // Esc fecha: é o que se espera de qualquer janela que cobre a tela.
   React.useEffect(() => {
     if (!ajustesAbertos) return;
@@ -356,6 +397,46 @@ export function TrackingSettings({
                   </li>
                 ))}
               </ul>
+
+              {/* O alerta em texto livre. Fica junto das chaves fixas porque
+                  responde a mesma pergunta: o que você quer que eu olhe aqui. */}
+              {profileId && plan !== "FREE" && (
+                <div className="border-t border-border py-4">
+                  <label htmlFor="alerta-escrito" className="text-sm font-bold">
+                    Me avise quando…
+                  </label>
+                  <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
+                    Escreva com suas palavras. O Faro AI compara cada publicação nova com o
+                    que você pediu — e só avisa quando bate.
+                  </p>
+                  <textarea
+                    id="alerta-escrito"
+                    value={pedido}
+                    onChange={(e) => setPedido(e.target.value)}
+                    rows={2}
+                    maxLength={200}
+                    placeholder="publicar sobre um lançamento · aparecer cupom de desconto · marcar alguma loja"
+                    className="mt-2 w-full resize-none rounded-2xl border border-input bg-card p-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                  <button
+                    type="button"
+                    onClick={salvarPedido}
+                    disabled={salvandoPedido || pedido === pedidoSalvo}
+                    className="mt-2 flex min-h-[40px] w-full items-center justify-center gap-2 rounded-2xl border border-border text-sm font-bold transition hover:bg-muted/50 disabled:opacity-50"
+                  >
+                    {salvandoPedido ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : pedido === pedidoSalvo && pedidoSalvo ? (
+                      <Check className="h-4 w-4" />
+                    ) : null}
+                    {pedido === pedidoSalvo && pedidoSalvo
+                      ? "Alerta guardado"
+                      : pedido.trim()
+                        ? "Guardar este alerta"
+                        : "Desligar o alerta escrito"}
+                  </button>
+                </div>
+              )}
 
               <button
                 type="button"

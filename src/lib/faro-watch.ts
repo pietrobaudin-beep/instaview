@@ -14,6 +14,7 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { syncPostActivity } from "@/lib/post-activity";
+import { avaliarNovidades } from "@/lib/alerta-escrito";
 import { getProvider } from "@/lib/providers";
 import { recordFollowing } from "@/lib/following-tracker";
 import { logger } from "@/lib/logger";
@@ -197,6 +198,25 @@ export async function watchProfile(
     await syncPostActivity(profileId, username);
   } catch (e) {
     log.warn("post activity failed", { username, error: (e as Error).message });
+  }
+
+  /*
+   * O alerta que a pessoa escreveu com as próprias palavras.
+   *
+   * Roda aqui e não na tela por dois motivos: a publicação só chega uma vez,
+   * e a pessoa não está olhando quando o Faro AI passa — esse é o produto.
+   * Sem pedido escrito, sai na primeira linha sem gastar nada.
+   */
+  try {
+    const recentes = await prisma.profileEvent.findMany({
+      where: { profileId, baseline: false, kind: { in: ["post", "reel", "story"] } },
+      orderBy: { detectedAt: "desc" },
+      take: 10,
+      select: { id: true, kind: true, data: true },
+    });
+    await avaliarNovidades(profileId, recentes);
+  } catch (e) {
+    log.warn("alerta escrito falhou", { username, error: (e as Error).message });
   }
 
   await prisma.trackedProfile.update({ where: { id: profileId }, data: { lastCollectedAt: new Date(), lastError: null } });
