@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowUpRight, ChevronDown, PawPrint } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { TirarDoFaro } from "@/components/tirar-do-faro";
+import { HistoryPanel } from "@/components/history-panel";
 import { activityLevel, pistas } from "@/lib/voice";
 
 export interface PessoaResumo {
@@ -166,6 +167,10 @@ export function ResumoDoFaro({ perfil }: { perfil: PerfilResumo }) {
             <Vazio>Nenhuma marcação encontrada ainda.</Vazio>
           )}
         </div>
+
+        {/* Pistas, Novidades, Rastro recente e o gráfico — os mesmos blocos do
+            painel, aqui à vista. Só lê o banco: abrir Rastros não paga nada. */}
+        <HistoryPanel username={perfil.username} loggedIn isPro />
 
         <Link
           href={painel}
