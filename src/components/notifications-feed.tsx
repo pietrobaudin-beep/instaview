@@ -120,6 +120,7 @@ function Linha({ n, compacta = false }: { n: Notification; compacta?: boolean })
   const quem = interacao ? n.target : n.subject;
   const quemAvatar = interacao ? n.targetAvatarUrl : n.subjectAvatarUrl;
   const alvo = interacao ? n.subject : n.target;
+  const alvoAvatar = interacao ? n.subjectAvatarUrl : n.targetAvatarUrl;
   const [explicando, setExplicando] = React.useState(false);
   const explicacao = EXPLICACAO[n.action];
 
@@ -132,7 +133,18 @@ function Linha({ n, compacta = false }: { n: Notification; compacta?: boolean })
       }`}
     >
       <span aria-hidden className={`h-8 w-1 shrink-0 rounded-full ${COR[kindOf(n.action)]}`} />
-      <Avatar src={quemAvatar} name={quem} size={compacta ? 28 : 32} />
+      {/* A foto que diz alguma coisa é a de quem ENTROU ou SAIU da lista: a
+          do perfil acompanhado se repetia igual em todas as linhas. Ela
+          fica pequena no canto, para a página Pistas (vários perfis). */}
+      <span className="relative shrink-0">
+        <Avatar src={alvoAvatar} name={alvo} size={compacta ? 30 : 36} />
+        <Avatar
+          src={quemAvatar}
+          name={quem}
+          size={16}
+          className="absolute -bottom-1 -right-1 ring-2 ring-card"
+        />
+      </span>
       {/* A frase quebra em duas linhas em vez de virar "@nasa começ…": na
           coluna estreita do rastro, truncar comia justamente o nome novo. */}
       <div className="min-w-0 flex-1">
