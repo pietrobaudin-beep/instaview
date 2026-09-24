@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowUpRight, PawPrint } from "lucide-react";
+import { PawPrint } from "lucide-react";
 import { AppNav, NavSpacer } from "@/components/app-nav";
-import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Panel, StatusPill } from "@/components/ui/brand";
 import { getCurrentUser } from "@/lib/auth";
@@ -10,10 +9,11 @@ import { prisma } from "@/lib/db";
 import { FOLLOWING_KIND } from "@/lib/following-tracker";
 import { planFor } from "@/lib/plans";
 import { PlanLimits } from "@/components/plan-limits";
-import { TirarDoFaro } from "@/components/tirar-do-faro";
+import { ResumoDoFaro, type PerfilResumo } from "@/components/resumo-do-faro";
+import type { EventData } from "@/lib/faro-watch";
 import { consultsUsed, peekUsageKey } from "@/lib/usage";
 import { COMMENTS_KIND, LIKES_KIND } from "@/lib/post-activity";
-import { activityLevel, pistas } from "@/lib/voice";
+import { pistas } from "@/lib/voice";
 import { Mascot } from "@/components/ui/mascot";
 
 export const dynamic = "force-dynamic";
@@ -79,6 +79,58 @@ export default async function RastrosPage() {
   const weekBy = new Map(week.map((c) => [c.profileId, c._count._all]));
   const totalWeek = week.reduce((n, c) => n + c._count._all, 0);
 
+  // O conteúdo de cada perfil para o resumo. Só banco: nada aqui chama o
+  // provedor. São poucos perfis por conta (o PRO tem 1), então uma leva de
+  // consultas por perfil é barata.
+  const desde = new Date(Date.now() - WEEK);
+  const janelaStories = planFor(user.plan).storiesHours;
+  const storiesDesde = Number.isFinite(janelaStories)
+    ? new Date(Date.now() - janelaStories * 3_600_000)
+    : undefined;
+  const resumos: PerfilResumo[] = await Promise.all(
+    profiles.map(async (p) => {
+      const seguindo = (type: "FOLLOW" | "UNFOLLOW") => ({
+        profileId: p.id,
+        kind: FOLLOWING_KIND,
+        type,
+        isVerified: false,
+        detectedAt: { gte: desde },
+      });
+      const midia = (kind: string) => ({
+        profileId: p.id,
+        kind,
+        ...(kind === "story" && storiesDesde ? { detectedAt: { gte: storiesDesde } } : {}),
+      });
+      const [seguiu, nSeguiu, deixou, nDeixou, stories, nStories, marcacoes, nMarcacoes] =
+        await Promise.all([
+          prisma.followerChange.findMany({ where: seguindo("FOLLOW"), orderBy: { detectedAt: "desc" }, take: 12 }),
+          prisma.followerChange.count({ where: seguindo("FOLLOW") }),
+          prisma.followerChange.findMany({ where: seguindo("UNFOLLOW"), orderBy: { detectedAt: "desc" }, take: 12 }),
+          prisma.followerChange.count({ where: seguindo("UNFOLLOW") }),
+          prisma.profileEvent.findMany({ where: midia("story"), orderBy: { detectedAt: "desc" }, take: 12 }),
+          prisma.profileEvent.count({ where: midia("story") }),
+          prisma.profileEvent.findMany({ where: midia("tagged"), orderBy: { detectedAt: "desc" }, take: 12 }),
+          prisma.profileEvent.count({ where: midia("tagged") }),
+        ]);
+      const pessoa = (c: (typeof seguiu)[number]) => ({ username: c.followerUsername, avatarUrl: c.avatarUrl });
+      const item = (e: (typeof stories)[number]) => ({
+        id: e.id,
+        thumbnailUrl: (e.data as unknown as EventData | null)?.thumbnailUrl ?? null,
+      });
+      return {
+        id: p.id,
+        username: p.username,
+        displayName: p.displayName,
+        avatarUrl: p.avatarUrl,
+        pistasSemana: weekBy.get(p.id) ?? 0,
+        seguiu: { total: nSeguiu, pessoas: seguiu.map(pessoa) },
+        deixou: { total: nDeixou, pessoas: deixou.map(pessoa) },
+        stories: { total: nStories, itens: stories.map(item) },
+        marcacoes: { total: nMarcacoes, itens: marcacoes.map(item) },
+      };
+    }),
+  );
+
   return (
     <>
       <AppNav plan={user.plan} />
@@ -124,37 +176,11 @@ export default async function RastrosPage() {
             </div>
           </Panel>
         ) : (
-          <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {profiles.map((p) => {
-              const n = weekBy.get(p.id) ?? 0;
-              const level = activityLevel(n);
-              return (
-                <li key={p.id} className="relative">
-                  <TirarDoFaro profileId={p.id} username={p.username} />
-                  <Link
-                    href={`/rastros/${encodeURIComponent(p.username)}`}
-                    className="flex items-center gap-4 rounded-3xl border border-border bg-card p-4 pr-11 transition hover:border-accent/50"
-                  >
-                    <div className="relative shrink-0">
-                      <div className="rounded-full p-0.5 ring-2 ring-pink">
-                        <Avatar src={p.avatarUrl} name={p.displayName ?? p.username} size={52} />
-                      </div>
-                      {/* The pink pin: this profile is in your Faro AI. */}
-                      <PawPrint className="absolute -right-1 -top-1 h-5 w-5 fill-pink text-accent" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-bold">@{p.username}</p>
-                      <p className="mt-0.5 text-xs font-semibold">
-                        {level.emoji} {level.label}
-                      </p>
-                      <p className="text-xs text-muted-foreground">{pistas(n)} esta semana</p>
-                    </div>
-                    <ArrowUpRight className="h-5 w-5 shrink-0 text-muted-foreground" />
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+          <div className="grid items-start gap-5 xl:grid-cols-2">
+            {resumos.map((r) => (
+              <ResumoDoFaro key={r.id} perfil={r} />
+            ))}
+          </div>
         )}
       </main>
       <NavSpacer />
