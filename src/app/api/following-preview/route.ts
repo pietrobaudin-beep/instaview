@@ -69,7 +69,7 @@ export async function GET(req: Request) {
         where: { userId_username: { userId: user.id, username } },
         select: { id: true },
       });
-      if (tracked) recent = await getRecentFollowingChanges(tracked.id, 5);
+      if (tracked) recent = await getRecentFollowingChanges(tracked.id, 12);
     }
     return NextResponse.json({
       locked: false,

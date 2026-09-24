@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, BadgeCheck, Check, Loader2, Lock, PawPrint, Unlock } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Avatar } from "@/components/ui/avatar";
 import { Logo } from "@/components/ui/logo";
 import { Panel, PersonRow, StatusPill } from "@/components/ui/brand";
 import {
@@ -261,6 +262,57 @@ function GenderBadge({ gender }: { gender?: "f" | "m" | "u" }) {
       </span>
     );
   return null;
+}
+
+/** Quem entrou e quem saiu da lista, pelas coletas do Faro AI. */
+function MudancasDoFaro({
+  username,
+  recent,
+}: {
+  username: string;
+  recent: { started: RecentItem[]; stopped: RecentItem[] };
+}) {
+  const Linha = ({ titulo, pessoas }: { titulo: string; pessoas: RecentItem[] }) => (
+    <div>
+      <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-plum/50">{titulo}</p>
+      {pessoas.length ? (
+        <ul className="sem-barra -mx-5 flex gap-3 overflow-x-auto px-5 pb-1">
+          {pessoas.map((p) => (
+            <li key={p.username} className="w-16 shrink-0 text-center">
+              <a href={`/p/${encodeURIComponent(p.username)}`}>
+                <PersonAvatar p={p} />
+                <p className="mt-1 truncate text-[11px] font-semibold">@{p.username}</p>
+              </a>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="py-1 text-sm text-muted-foreground">Nada detectado ainda.</p>
+      )}
+    </div>
+  );
+  return (
+    <Panel
+      title="No seu Faro AI"
+      action={
+        <Link
+          href={`/rastros/${encodeURIComponent(username)}`}
+          className="inline-flex items-center gap-1 text-xs font-bold text-accent"
+        >
+          Abrir o painel <ArrowRight className="h-3.5 w-3.5" />
+        </Link>
+      }
+    >
+      <div className="space-y-5">
+        <Linha titulo="Começou a seguir" pessoas={recent.started} />
+        <Linha titulo="Deixou de seguir" pessoas={recent.stopped} />
+      </div>
+    </Panel>
+  );
+}
+
+function PersonAvatar({ p }: { p: RecentItem }) {
+  return <Avatar src={p.avatarUrl} name={p.displayName ?? p.username} size={56} className="mx-auto" />;
 }
 
 type Pronto = {
@@ -1360,6 +1412,13 @@ export function ProfileView({
                       locked={locked}
                       username={state.data.username}
                     />
+
+                    {/* Perfil no Faro AI: o que ele detectou entre uma coleta e
+                        outra, aqui mesmo — antes só aparecia na aba Interações. */}
+                    {!locked && ready?.recent &&
+                      (ready.recent.started.length > 0 || ready.recent.stopped.length > 0) && (
+                        <MudancasDoFaro username={state.data.username} recent={ready.recent} />
+                      )}
                     </>
                     )}
                     {locked && !carregandoAnalise && (
