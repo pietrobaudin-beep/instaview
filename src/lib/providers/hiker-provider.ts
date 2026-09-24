@@ -177,7 +177,33 @@ export class HikerApiProvider implements InstagramDataProvider {
       throw new ProviderError(`Network error calling HikerAPI: ${(e as Error).message}`, "UNAVAILABLE", true);
     }
 
-    if (res.status === 401 || res.status === 403) throw new ProviderError("HikerAPI rejected the API key", "AUTH");
+    if (res.status === 401) throw new ProviderError("HikerAPI rejected the API key", "AUTH");
+
+    /*
+     * 403 não é chave recusada — e tratar os dois juntos custou caro.
+     *
+     * Em 24/09 uma análise falhou e o log disse "HikerAPI rejected the API
+     * key". Foram trocadas chaves, renomeadas variáveis e refeitos deploys
+     * atrás de um problema que não existia: a chave estava certa o tempo
+     * todo. O que a HikerAPI dizia, no corpo da resposta, era outra coisa:
+     *
+     *   {"detail":"User hid data using privacy settings",
+     *    "exc_type":"PrivateAccount"}
+     *
+     * Ou seja: conta pública que fechou a lista de "seguindo" — coisa que o
+     * Instagram permite. Mensagem de erro que mente sobre a causa faz perder
+     * horas; esta agora diz o que é.
+     */
+    if (res.status === 403) {
+      const corpo = await res.text().catch(() => "");
+      if (/PrivateAccount|hid data|privacy settings/i.test(corpo)) {
+        throw new ProviderError(
+          "Esta conta escondeu esta informação nas configurações de privacidade",
+          "HIDDEN",
+        );
+      }
+      throw new ProviderError("HikerAPI rejected the API key", "AUTH");
+    }
     if (res.status === 404) throw new ProviderError("Profile not found", "NOT_FOUND");
     if (res.status === 429) throw new ProviderError("HikerAPI rate limit hit", "RATE_LIMIT", true);
     if (!res.ok) throw new ProviderError(`HikerAPI returned ${res.status}`, "UNKNOWN", res.status >= 500);

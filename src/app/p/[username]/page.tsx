@@ -8,5 +8,7 @@ export const dynamic = "force-dynamic";
 export default async function PublicProfilePage({ params }: { params: { username: string } }) {
   const username = normalizeUsername(decodeURIComponent(params.username));
   const user = await getCurrentUser();
-  return <ProfileView username={username} loggedIn={!!user} />;
+  return (
+    <ProfileView username={username} loggedIn={!!user} planoPro={!!user && user.plan !== "FREE"} />
+  );
 }

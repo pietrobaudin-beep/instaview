@@ -116,7 +116,20 @@ export interface AboutInfo {
 export class ProviderError extends Error {
   constructor(
     message: string,
-    public code: "AUTH" | "RATE_LIMIT" | "NOT_FOUND" | "PRIVATE" | "UNAVAILABLE" | "UNKNOWN",
+    public code:
+      | "AUTH"
+      | "RATE_LIMIT"
+      | "NOT_FOUND"
+      /** Conta privada: nem o perfil se abre. */
+      | "PRIVATE"
+      /**
+       * Conta **pública** que escondeu um dado específico — o caso mais comum
+       * é a lista de "seguindo", que o Instagram deixa fechar sem fechar o
+       * perfil. O resto da análise continua valendo.
+       */
+      | "HIDDEN"
+      | "UNAVAILABLE"
+      | "UNKNOWN",
     public retryable = false,
   ) {
     super(message);

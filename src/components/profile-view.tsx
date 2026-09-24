@@ -300,7 +300,16 @@ function UpgradeCard({ username }: { username: string }) {
   );
 }
 
-export function ProfileView({ username, loggedIn }: { username: string; loggedIn: boolean }) {
+export function ProfileView({
+  username,
+  loggedIn,
+  planoPro = false,
+}: {
+  username: string;
+  loggedIn: boolean;
+  /** A pessoa que está olhando assina. Vem da sessão, no servidor. */
+  planoPro?: boolean;
+}) {
   const router = useRouter();
 
   const [state, setState] = React.useState<
@@ -315,6 +324,8 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
     | { kind: "private" }
     | {
         kind: "ready";
+        /** Público, mas com a lista de "seguindo" fechada por quem é olhado. */
+        seguindoOculto?: boolean;
         locked: boolean;
         access: "free" | "single" | "pro";
         users: Person[];
@@ -620,6 +631,7 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
         }
         setFollowing({
           kind: "ready",
+          seguindoOculto: !!body.seguindoOculto,
           locked: !!body.locked || !body.real,
           access: body.real ? (body.access ?? (body.locked ? "free" : "pro")) : "free",
           users: body.following ?? [],
@@ -639,9 +651,19 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
 
   const ready = following.kind === "ready" ? following : null;
   const paid = !!ready && !ready.locked;
-  // Pro features (Faro AI, history, extras) need a subscription — a one-off
-  // unlock only reveals this profile.
-  const isPro = ready?.access === "pro";
+  /*
+   * O plano é do servidor, não da leitura.
+   *
+   * Em 24/09 uma conta pública que fechou a lista de "seguindo" derrubou a
+   * leitura, o `catch` devolveu `access: "free"` — e a tela concluiu que quem
+   * estava olhando não tinha plano: selo "GRÁTIS", tudo borrado, e o botão
+   * "Colocar no Faro AI" abrindo o convite para assinar o que a pessoa já
+   * assina. Quem paga não pode depender de um perfil de terceiro responder.
+   *
+   * `planoPro` vem da sessão, pela página. `ready.access` refina para o caso
+   * do desbloqueio avulso, que é por perfil.
+   */
+  const isPro = planoPro || ready?.access === "pro";
 
   async function startTracking() {
     if (!loggedIn) {
@@ -889,6 +911,19 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
 
                 {tab === "visao" && (
                   <div className="mt-5 space-y-5">
+                    {/* Dizer o que aconteceu, em vez de sumir com o painel.
+                        A lista fechada é escolha de quem está sendo olhado —
+                        não é falha do Farejo nem falta de plano de quem olha. */}
+                    {ready?.seguindoOculto && (
+                      <NoteBox icon={<Lock className="h-4 w-4" />}>
+                        <span>
+                          <b className="font-semibold">@{state.data.username}</b> fechou a lista de
+                          quem ela segue nas configurações do Instagram. Isso é possível mesmo em
+                          conta pública, e nenhum site consegue ler. O resto da análise continua
+                          aqui: stories, marcações e os outros @ dela.
+                        </span>
+                      </NoteBox>
+                    )}
                     <div className="grid gap-5 lg:grid-cols-2">
                       <FollowsBreakdown
                         counts={ready?.counts}
@@ -943,6 +978,11 @@ export function ProfileView({ username, loggedIn }: { username: string; loggedIn
                             </li>
                           ))}
                         </ul>
+                      ) : ready?.seguindoOculto ? (
+                        <p className="py-6 text-center text-sm text-muted-foreground">
+                          @{state.data.username} fechou esta lista nas configurações do Instagram.
+                          Nem o Farejo nem nenhum outro site consegue ler.
+                        </p>
                       ) : (
                         <p className="py-6 text-center text-sm text-muted-foreground">
                           Nada encontrado nesta leitura.

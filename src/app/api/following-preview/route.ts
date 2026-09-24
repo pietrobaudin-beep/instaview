@@ -63,6 +63,8 @@ export async function GET(req: Request) {
   let all: FollowerEntry[] = [];
   let brands = 0;
   let isPrivate = false;
+  /** Conta pública que fechou a lista de "seguindo" — o resto vale. */
+  let seguindoOculto = false;
   let fresh = false;
   const hit = cache.get(username);
   if (hit && Date.now() - hit.at < TTL) {
@@ -81,6 +83,9 @@ export async function GET(req: Request) {
       // Private accounts: Instagram only shows their following to approved
       // followers, so no provider can read it. Report it explicitly.
       if (e instanceof ProviderError && e.code === "PRIVATE") isPrivate = true;
+      // Público, mas com a lista de seguindo fechada. Não é erro nosso nem
+      // falta de plano: é escolha de quem está sendo olhado. A análise segue.
+      else if (e instanceof ProviderError && e.code === "HIDDEN") seguindoOculto = true;
       else log.warn("following fetch failed", { username, error: (e as Error).message });
       all = [];
     }
@@ -206,6 +211,7 @@ export async function GET(req: Request) {
   return NextResponse.json({
     locked: !paid,
     access,
+    seguindoOculto,
     counts,
     following: out,
     recent: { started: maskRecent(recent.started), stopped: maskRecent(recent.stopped) },
