@@ -3,21 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  ArrowLeft,
-  ArrowRight,
-  BadgeCheck,
-  Check,
-  CircleDot,
-  Heart,
-  History,
-  Loader2,
-  Lock,
-  PawPrint,
-  Tag,
-  Unlock,
-  UserPlus,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, BadgeCheck, Check, Loader2, Lock, PawPrint, Unlock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
 import { Panel, PersonRow, StatusPill } from "@/components/ui/brand";
@@ -173,7 +159,7 @@ function Abas({ value, onChange }: { value: Tab; onChange: (t: Tab) => void }) {
   }, [value]);
 
   return (
-    <div id="abas-perfil" className="relative -mx-5 mt-3 scroll-mt-4 sm:mx-0">
+    <div className="relative -mx-5 mt-3 sm:mx-0">
       <div
         ref={faixa}
         role="tablist"
@@ -257,47 +243,6 @@ function EsqueletoBorrado() {
           ))}
         </ul>
       </div>
-    </div>
-  );
-}
-
-/**
- * Uma porta para cada coisa que o Farejo mostra deste perfil, na Visão geral.
- *
- * Só abre a aba — não busca nada. Marcações e stories são leituras pagas, e
- * elas continuam acontecendo apenas quando alguém pede para ver.
- */
-function Atalhos({
-  onAbrir,
-  onStories,
-}: {
-  onAbrir: (t: Tab) => void;
-  onStories?: () => void;
-}) {
-  const itens: { icon: React.ElementType; titulo: string; linha: string; acao: () => void }[] = [
-    ...(onStories
-      ? [{ icon: CircleDot, titulo: "Stories", linha: "O que foi postado nas últimas 24h", acao: onStories }]
-      : []),
-    { icon: UserPlus, titulo: "Seguindo", linha: "Contas que passou a seguir", acao: () => onAbrir("seguindo") },
-    { icon: Heart, titulo: "Interações", linha: "Com quem mais interage", acao: () => onAbrir("interacoes") },
-    { icon: Tag, titulo: "Marcações", linha: "Onde o perfil foi marcado", acao: () => onAbrir("tagged") },
-    { icon: History, titulo: "Rastro", linha: "O que mudou no perfil", acao: () => onAbrir("historico") },
-  ];
-
-  return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-      {itens.map((it) => (
-        <button
-          key={it.titulo}
-          type="button"
-          onClick={it.acao}
-          className="flex min-h-[44px] flex-col items-start gap-1 rounded-3xl border border-border bg-card p-4 text-left transition hover:border-vinho/40"
-        >
-          <it.icon className="h-[18px] w-[18px] text-vinho" />
-          <span className="text-sm font-bold">{it.titulo}</span>
-          <span className="text-xs text-muted-foreground">{it.linha}</span>
-        </button>
-      ))}
     </div>
   );
 }
@@ -412,12 +357,6 @@ export function ProfileView({
   });
 
   const [tab, setTab] = React.useState<Tab>("visao");
-  // Vindo de um atalho da Visão geral: troca a aba e sobe até ela, senão a
-  // pessoa fica olhando o rodapé enquanto o conteúdo muda lá em cima.
-  const abrirAba = (t: Tab) => {
-    setTab(t);
-    document.getElementById("abas-perfil")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
   // Os stories abrem em tela cheia pela foto, não como aba.
   const [storiesAbertos, setStoriesAbertos] = React.useState(false);
   /**
@@ -1120,44 +1059,6 @@ export function ProfileView({
                       people={others}
                       locked={locked}
                       username={state.data.username}
-                    />
-
-                    {/* O resumo de tudo, na primeira tela: quem abre o perfil
-                        vê um pouco de cada coisa sem precisar adivinhar o que
-                        mora em cada aba. As abas continuam para o detalhe. */}
-                    {ready && ready.users.length > 0 && (
-                      <Panel title="Novos seguindo">
-                        <ul className="divide-y divide-border">
-                          {ready.users.slice(0, 3).map((u, i) => (
-                            <li key={u.username + i}>
-                              <PersonRow
-                                username={u.username}
-                                displayName={u.displayName}
-                                avatarUrl={u.avatarUrl}
-                                blurred={locked}
-                                right={<GenderBadge gender={u.gender} />}
-                              />
-                            </li>
-                          ))}
-                        </ul>
-                        <button
-                          type="button"
-                          onClick={() => abrirAba("seguindo")}
-                          className="mt-3 flex min-h-[44px] w-full items-center justify-center gap-1 rounded-2xl text-sm font-semibold text-vinho transition hover:bg-muted"
-                        >
-                          Ver os {Math.min(ready.users.length, MAX_SEGUINDO)} mais recentes
-                          <ArrowRight className="h-4 w-4" />
-                        </button>
-                      </Panel>
-                    )}
-
-                    <Atalhos
-                      onAbrir={abrirAba}
-                      onStories={
-                        state.data.isPrivate || temStories === false
-                          ? undefined
-                          : () => setStoriesAbertos(true)
-                      }
                     />
                     </>
                     )}
