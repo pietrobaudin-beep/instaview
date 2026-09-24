@@ -119,7 +119,10 @@ export default async function PricingPage({
 
         <Panel title={`Farejo ${PLANS.AGENCY.name}`}>
           <ul className="space-y-1.5 text-sm text-muted-foreground">
-            {PLANS.AGENCY.features.slice(0, 4).map((f) => (
+            {/* A lista inteira: cortar em 4 escondia justamente o que o plano
+                ganhou de novo — resumir stories, perguntar ao Faro AI, o
+                alerta escrito. */}
+            {PLANS.AGENCY.features.map((f) => (
               <li key={f} className="flex items-start gap-2">
                 <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
                 {f}

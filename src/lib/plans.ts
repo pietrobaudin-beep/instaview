@@ -111,8 +111,10 @@ export const PLANS: Record<Plan, PlanConfig> = {
       "1 perfil no Faro AI, vigiado todo dia",
       "3 análises novas por mês",
       "Quem ele começa a seguir, e quem deixa",
-      "Stories guardados antes de sumirem",
+      "Stories guardados por 48 horas, com busca por dentro",
       "Pergunte ao Faro AI",
+      "Me avise quando… — o alerta que você escreve",
+      "Histórico desde a entrada no Faro AI",
     ],
   },
 
@@ -128,9 +130,13 @@ export const PLANS: Record<Plan, PlanConfig> = {
     // R$ 63 e recebia R$ 29,90: cada assinante saía do bolso do dono.
     maxProfiles: 2,
     maxConsults: 3,
-    storiesHours: 72, // três dias — tabela de 20/09
+    // Sem prazo, como o arquivo do plano de cima costumava ser. Guardar story
+    // não custa provedor — é imagem que o Farejo já baixou. Cobrar por prazo
+    // aqui era criar escassez artificial no plano que deveria ser o melhor.
+    storiesHours: Number.POSITIVE_INFINITY,
     // Cinco perfis no Faro AI; dez por perfil é a conta que o preço sustenta.
-    storiesSalvosMes: 50,
+    // A estrela também deixa de ter cota: ela só marca o que já está guardado.
+    storiesSalvosMes: Number.POSITIVE_INFINITY,
     refreshesPorDia: 5,
     // Once a day, on purpose. A story lasts 24h, so a daily pass catches every
     // one of them — reading every six hours finds nothing extra and costs four
@@ -146,16 +152,17 @@ export const PLANS: Record<Plan, PlanConfig> = {
       "2 perfis no Faro AI, vigiados todo dia",
       "3 análises novas por mês",
       "Quem eles começam a seguir, e quem deixam",
-      "Stories guardados antes de sumirem, com busca por dentro",
+      "Stories guardados SEM PRAZO, com busca por dentro",
+      "Resumir stories: o Faro AI lê o que está escrito neles",
       "Pergunte ao Faro AI, sem limite",
-      "\"Me avise quando…\", com suas palavras",
-      "Histórico desde a entrada no Faro AI",
+      "Me avise quando… — o alerta que você escreve",
+      "Histórico completo e área Meu Faro AI",
     ],
   },
   AGENCY: {
     id: "AGENCY",
     name: "Faro Detetive",
-    para: "Para quem não deixa pista passar.",
+    para: "O Faro AI de olho em uma pista, pago uma vez no ano.",
     // Cobrado UMA vez por ano: R$ 99,90. Preço definido pelo dono do produto.
     //
     /*
@@ -183,10 +190,12 @@ export const PLANS: Record<Plan, PlanConfig> = {
     // custava R$ 79/mês contra R$ 14,92 recebidos.
     maxProfiles: 1,
     maxConsults: 2,
-    storiesHours: Number.POSITIVE_INFINITY,
+    // 72h, não "sem prazo": o arquivo sem fim passou a ser do PRO, que é o
+    // topo. Este custa metade por mês — não pode entregar mais.
+    storiesHours: 72,
     // É o plano de quem documenta; o teto existe só para o banco não crescer sem fim.
-    storiesSalvosMes: 200,
-    refreshesPorDia: 10,
+    storiesSalvosMes: 50,
+    refreshesPorDia: 3,
     // The paid-for extra: four passes a day instead of one. Costs ~4x per
     // profile, which the Agency price covers and the Pro price does not.
     minIntervalMinutes: 6 * 60,
@@ -199,11 +208,11 @@ export const PLANS: Record<Plan, PlanConfig> = {
       "1 perfil no Faro AI, pago uma vez no ano",
       "2 análises novas por mês",
       "Quem ele começa a seguir, e quem deixa",
-      "Stories guardados antes de sumirem",
+      "Stories guardados por 72 horas, com busca por dentro",
+      "Resumir stories: o Faro AI lê o que está escrito neles",
       "Pergunte ao Faro AI",
-      "Histórico contínuo desde a entrada no Faro AI",
-      "Arquivo de stories desde a entrada no Faro AI",
-      "Área Meu Faro AI completa",
+      "Me avise quando… — o alerta que você escreve",
+      "Histórico contínuo e área Meu Faro AI",
     ],
   },
 };
