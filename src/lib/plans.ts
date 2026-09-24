@@ -108,10 +108,11 @@ export const PLANS: Record<Plan, PlanConfig> = {
     exportAndApi: false,
     stripePriceEnv: "NEXT_PUBLIC_STRIPE_PRICE_WEEK",
     features: [
-      "Até 3 perfis para consultar",
-      "1 perfil no Faro AI, com tudo liberado",
-      "Alertas quando o Faro AI encontrar algo",
-      "Stories guardados enquanto o perfil estiver no Faro AI",
+      "1 perfil no Faro AI, vigiado todo dia",
+      "3 análises novas por mês",
+      "Quem ele começa a seguir, e quem deixa",
+      "Stories guardados antes de sumirem",
+      "Pergunte ao Faro AI",
     ],
   },
 
@@ -122,8 +123,11 @@ export const PLANS: Record<Plan, PlanConfig> = {
     billing: "monthly",
     priceMonthly: 29.9,
     priceYearly: 239.9,
-    maxProfiles: 5,
-    maxConsults: 10,
+    // 2, e não 5. Cada perfil no Faro AI custa 3 leituras por dia do provedor
+    // — R$ 9,90/mês a US$ 0,02 a requisição. Com 5 perfis o PRO custava
+    // R$ 63 e recebia R$ 29,90: cada assinante saía do bolso do dono.
+    maxProfiles: 2,
+    maxConsults: 3,
     storiesHours: 72, // três dias — tabela de 20/09
     // Cinco perfis no Faro AI; dez por perfil é a conta que o preço sustenta.
     storiesSalvosMes: 50,
@@ -139,12 +143,13 @@ export const PLANS: Record<Plan, PlanConfig> = {
     exportAndApi: false,
     stripePriceEnv: "NEXT_PUBLIC_STRIPE_PRICE_PRO",
     features: [
-      "Até 10 perfis para consultar",
-      "Até 5 perfis no Faro AI",
-      "Alertas de follows, unfollows e interações",
+      "2 perfis no Faro AI, vigiados todo dia",
+      "3 análises novas por mês",
+      "Quem eles começam a seguir, e quem deixam",
+      "Stories guardados antes de sumirem, com busca por dentro",
+      "Pergunte ao Faro AI, sem limite",
+      "\"Me avise quando…\", com suas palavras",
       "Histórico desde a entrada no Faro AI",
-      "Stories guardados enquanto o perfil estiver no Faro AI",
-      "Área Meu Faro AI",
     ],
   },
   AGENCY: {
@@ -173,8 +178,11 @@ export const PLANS: Record<Plan, PlanConfig> = {
     billing: "yearly",
     priceMonthly: 179 / 12,
     priceYearly: 179,
-    maxProfiles: 8,
-    maxConsults: 20,
+    // R$ 179/ano são R$ 14,92/mês — METADE do PRO. Então oferece menos, não
+    // mais: 1 perfil cabe em R$ 9,90 de leitura e ainda sobra. Com 8 perfis
+    // custava R$ 79/mês contra R$ 14,92 recebidos.
+    maxProfiles: 1,
+    maxConsults: 2,
     storiesHours: Number.POSITIVE_INFINITY,
     // É o plano de quem documenta; o teto existe só para o banco não crescer sem fim.
     storiesSalvosMes: 200,
@@ -188,9 +196,11 @@ export const PLANS: Record<Plan, PlanConfig> = {
     exportAndApi: true,
     stripePriceEnv: "NEXT_PUBLIC_STRIPE_PRICE_AGENCY",
     features: [
-      "Até 20 perfis para consultar por mês",
-      "Até 8 perfis no Faro AI",
-      "Alertas de conexões, interações e mudanças",
+      "1 perfil no Faro AI, pago uma vez no ano",
+      "2 análises novas por mês",
+      "Quem ele começa a seguir, e quem deixa",
+      "Stories guardados antes de sumirem",
+      "Pergunte ao Faro AI",
       "Histórico contínuo desde a entrada no Faro AI",
       "Arquivo de stories desde a entrada no Faro AI",
       "Área Meu Faro AI completa",

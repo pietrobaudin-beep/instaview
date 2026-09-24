@@ -518,10 +518,11 @@ export function TrackingSettings({
           <p className="mb-2 mt-5 text-[11px] font-bold uppercase tracking-[0.14em] text-plum/50">
             Últimos 7 dias
           </p>
-          <div className="grid grid-cols-3 gap-3">
+          {/* Dois números: "interações" saiu junto com a coleta que o
+              alimentava (24/09). Ver `faro-watch`. */}
+          <div className="grid grid-cols-2 gap-3">
             <Numero valor={semana.follows} label="novos follows" tom="follow" />
             <Numero valor={semana.unfollows} label="unfollows" tom="unfollow" />
-            <Numero valor={semana.interacoes} label="interações" tom="interacao" />
           </div>
         </>
       )}

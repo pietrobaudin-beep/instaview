@@ -13,7 +13,6 @@
  */
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { syncPostActivity } from "@/lib/post-activity";
 import { avaliarNovidades } from "@/lib/alerta-escrito";
 import { getProvider } from "@/lib/providers";
 import { recordFollowing } from "@/lib/following-tracker";
@@ -49,10 +48,29 @@ const log = logger.scope("faro-watch");
  * e longo o bastante para um "Atualizar agora" logo depois do cron não cobrar
  * duas vezes.
  */
+/*
+ * O que o Faro AI olha todo dia — e o que ele deixou de olhar em 24/09.
+ *
+ * Cada linha aqui é **uma requisição paga por passagem**, e a requisição da
+ * HikerAPI custa US$ 0,02 (confirmado no saldo deles e na queda diária real).
+ * Um perfil vigiado é, portanto, R$ 3,30/mês por linha desta lista.
+ *
+ * **Saiu: os posts do próprio perfil.** Quem quer ver o que a pessoa publicou
+ * abre o Instagram; o Farejo existe para o que o Instagram NÃO mostra.
+ *
+ * **Saiu também quem curtiu e quem comentou** os posts dela (era o
+ * `syncPostActivity`, 2 requisições por passagem). Custava um terço do perfil
+ * para responder uma pergunta que ninguém fez — a pergunta que as pessoas
+ * fazem é o contrário, "o que ELA curtiu", e essa o Instagram não publica
+ * desde 2019. Não existe endpoint para isso em nenhum provedor: a HikerAPI
+ * tem 157 e nenhum de atividade do usuário.
+ *
+ * **Marcações a cada 3 dias.** Não é conteúdo que expira: saber um dia depois
+ * não muda nada para quem lê, e economiza dois terços da linha.
+ */
 const WATCH: { section: Section; kind: string; fresco: number }[] = [
-  { section: "posts", kind: "post", fresco: 20 * 60 * 60 * 1000 },
   { section: "stories", kind: "story", fresco: 60 * 60 * 1000 },
-  { section: "tagged", kind: "tagged", fresco: 20 * 60 * 60 * 1000 },
+  { section: "tagged", kind: "tagged", fresco: 3 * 24 * 60 * 60 * 1000 },
 ];
 
 /** What the news card needs, frozen at detection time. */
@@ -180,43 +198,6 @@ export async function watchProfile(
     );
   } catch (e) {
     log.warn("following read failed", { username, error: (e as Error).message });
-  }
-
-  /*
-   * Interações no post mais recente — quem curtiu, quem comentou, quem tirou.
-   *
-   * Isto ficou de fora quando a coleta virou `watchProfile`, e as pistas de
-   * interação pararam em 17/09: o "Interações" do painel do Faro AI só voltava a
-   * ter conteúdo se alguém apertasse "Analisar" na mão. Era um recurso do PRO
-   * que tinha deixado de acontecer sozinho.
-   *
-   * Preço: `WATCHED_POSTS` post × 2 requisições (quem curtiu, quem comentou)
-   * por passagem completa — hoje, ~2 por perfil por dia. Se o provedor não
-   * oferecer esses endpoints, a função sai sozinha sem gastar nada.
-   */
-  try {
-    await syncPostActivity(profileId, username);
-  } catch (e) {
-    log.warn("post activity failed", { username, error: (e as Error).message });
-  }
-
-  /*
-   * O alerta que a pessoa escreveu com as próprias palavras.
-   *
-   * Roda aqui e não na tela por dois motivos: a publicação só chega uma vez,
-   * e a pessoa não está olhando quando o Faro AI passa — esse é o produto.
-   * Sem pedido escrito, sai na primeira linha sem gastar nada.
-   */
-  try {
-    const recentes = await prisma.profileEvent.findMany({
-      where: { profileId, baseline: false, kind: { in: ["post", "reel", "story"] } },
-      orderBy: { detectedAt: "desc" },
-      take: 10,
-      select: { id: true, kind: true, data: true },
-    });
-    await avaliarNovidades(profileId, recentes);
-  } catch (e) {
-    log.warn("alerta escrito falhou", { username, error: (e as Error).message });
   }
 
   await prisma.trackedProfile.update({ where: { id: profileId }, data: { lastCollectedAt: new Date(), lastError: null } });

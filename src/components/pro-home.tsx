@@ -2,7 +2,7 @@ import * as React from "react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowUpRight, Heart, PawPrint, Undo2, UserPlus } from "lucide-react";
+import { ArrowUpRight, PawPrint, Undo2, UserPlus } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Nose } from "@/components/ui/doodles";
 import type { ProHome as ProHomeData } from "@/lib/pro-home";
@@ -87,10 +87,15 @@ export function ProHome({
 }) {
   const found = data.pistasSinceYesterday;
 
+  /*
+   * Dois números, não três. O terceiro era "interações" — quem curtiu e
+   * comentou os posts do perfil —, e o Faro AI deixou de colher isso em 24/09:
+   * custava um terço do preço de vigiar um perfil para responder uma pergunta
+   * que ninguém faz. Um contador parado em zero é pior que contador nenhum.
+   */
   const cards = [
     { icon: UserPlus, value: data.follows, label: "novos follows", tone: "bg-blush text-plum" },
     { icon: Undo2, value: data.unfollows, label: "unfollows", tone: "bg-mint text-plum" },
-    { icon: Heart, value: data.interactions, label: "interações", tone: "bg-magenta text-white" },
   ];
 
   return (
@@ -119,7 +124,7 @@ export function ProHome({
           )}
         </p>
 
-        <div className="mt-8 grid grid-cols-3 gap-3 sm:gap-4">
+        <div className="mt-8 grid grid-cols-2 gap-3 sm:gap-4">
           {cards.map((c) => (
             <div key={c.label} className={`rounded-2xl px-4 py-5 ${c.tone}`}>
               <c.icon className="h-[18px] w-[18px] opacity-70" />
