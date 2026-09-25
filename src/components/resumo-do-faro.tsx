@@ -2,7 +2,6 @@ import Link from "next/link";
 import { ArrowUpRight, ChevronDown, PawPrint } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { TirarDoFaro } from "@/components/tirar-do-faro";
-import { HistoryPanel } from "@/components/history-panel";
 import { ProximaColeta } from "@/components/proxima-coleta";
 import { activityLevel, pistas } from "@/lib/voice";
 
@@ -57,8 +56,8 @@ function Pessoas({ pessoas }: { pessoas: PessoaResumo[] }) {
   return (
     <ul className="sem-barra -mx-5 flex gap-3 overflow-x-auto px-5 pb-1">
       {pessoas.map((p) => (
-        <li key={p.username} className="w-16 shrink-0 text-center">
-          <Avatar src={p.avatarUrl} name={p.username} size={56} className="mx-auto" />
+        <li key={p.username} className="w-12 shrink-0 text-center">
+          <Avatar src={p.avatarUrl} name={p.username} size={44} className="mx-auto" />
           <p className="mt-1 truncate text-[11px] font-semibold">@{p.username}</p>
         </li>
       ))}
@@ -76,7 +75,7 @@ function Midias({ itens, href, formato }: { itens: MidiaResumo[]; href: string; 
             <Link
               href={href}
               className={`block overflow-hidden rounded-xl bg-muted ${
-                formato === "story" ? "h-52 w-[117px]" : "h-28 w-28"
+                formato === "story" ? "h-32 w-[72px]" : "h-16 w-16"
               }`}
             >
               {src && (
@@ -131,16 +130,24 @@ export function ResumoDoFaro({ perfil }: { perfil: PerfilResumo }) {
         </span>
       </Link>
 
-      {/* Tudo à vista, como era: quem abre o Faro AI quer ver o que ele
-          achou sem mais um clique. "Esconder prévia" fica para quem quiser a
-          lista curta. `<details>` dispensa JavaScript. */}
+      {/* Uma prévia curta, aberta: stories e quem entrou e saiu da lista. O
+          resto (marcações, pistas, novidades, gráfico) mora no painel. */}
       <details open className="group border-t border-border">
         <summary className="mx-5 my-4 flex min-h-[44px] cursor-pointer list-none items-center justify-center gap-1 rounded-2xl bg-muted text-sm font-semibold transition hover:bg-pink [&::-webkit-details-marker]:hidden">
           <span className="group-open:hidden">Exibir prévia</span>
           <span className="hidden group-open:inline">Esconder prévia</span>
           <ChevronDown className="h-4 w-4 transition group-open:rotate-180" />
         </summary>
-      <div className="space-y-5 px-5 pb-5">
+      <div className="space-y-4 px-5 pb-5">
+        <div>
+          <Rotulo titulo="Stories guardados" total={perfil.stories.total} sufixo="no acervo" />
+          {perfil.stories.itens.length ? (
+            <Midias itens={perfil.stories.itens} href={painel} formato="story" />
+          ) : (
+            <Vazio>Nenhum story guardado ainda.</Vazio>
+          )}
+        </div>
+
         <div>
           <Rotulo titulo="Começou a seguir" total={perfil.seguiu.total} sufixo={desde} />
           {perfil.seguiu.pessoas.length ? (
@@ -163,33 +170,14 @@ export function ResumoDoFaro({ perfil }: { perfil: PerfilResumo }) {
           )}
         </div>
 
-        <div>
-          <Rotulo titulo="Stories guardados" total={perfil.stories.total} sufixo="no acervo" />
-          {perfil.stories.itens.length ? (
-            <Midias itens={perfil.stories.itens} href={painel} formato="story" />
-          ) : (
-            <Vazio>Nenhum story guardado ainda.</Vazio>
-          )}
-        </div>
 
-        <div>
-          <Rotulo titulo="Marcações" total={perfil.marcacoes.total} sufixo={`novas, ${desde}`} />
-          {perfil.marcacoes.itens.length ? (
-            <Midias itens={perfil.marcacoes.itens} href={painel} formato="post" />
-          ) : (
-            <Vazio>Nenhuma marcação nova desde que o perfil entrou no Faro AI.</Vazio>
-          )}
-        </div>
 
-        {/* Pistas, Novidades, Rastro recente e o gráfico — os mesmos blocos do
-            painel, aqui à vista. Só lê o banco: abrir Rastros não paga nada. */}
-        <HistoryPanel username={perfil.username} loggedIn isPro />
 
         <Link
           href={painel}
           className="flex min-h-[44px] items-center justify-center gap-1 rounded-2xl bg-muted text-sm font-semibold transition hover:bg-pink"
         >
-          Abrir o painel completo <ArrowUpRight className="h-4 w-4" />
+          Ver tudo no painel <ArrowUpRight className="h-4 w-4" />
         </Link>
       </div>
       </details>
