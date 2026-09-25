@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { readPrefs, tiposVisiveis } from "@/lib/tracking-prefs";
 import { redirect } from "next/navigation";
 import { AppNav, NavSpacer } from "@/components/app-nav";
 import { NotificationsFeed, type Notification } from "@/components/notifications-feed";
@@ -23,16 +24,26 @@ export default async function NotificacoesPage() {
 
   const profiles = await prisma.trackedProfile.findMany({
     where: { userId: user.id },
-    select: { id: true, username: true, avatarUrl: true },
+    select: { id: true, username: true, avatarUrl: true, trackingPrefs: true },
   });
+  // "Mostrar na página Pistas" desligado tira o perfil do feed; "Começou a
+  // seguir" / "Deixou de seguir" escolhem o que entra de cada um.
+  const visiveis = profiles
+    .map((p) => ({ p, prefs: readPrefs(p.trackingPrefs) }))
+    .filter(({ prefs }) => prefs.notifications);
   const byId = new Map(profiles.map((p) => [p.id, p]));
 
-  const changes = profiles.length
+  const changes = visiveis.length
     ? await prisma.followerChange.findMany({
         where: {
-          profileId: { in: profiles.map((p) => p.id) },
-          kind: { in: [FOLLOWING_KIND, LIKES_KIND, COMMENTS_KIND] },
           isVerified: false,
+          OR: visiveis.map(({ p, prefs }) => ({
+            profileId: p.id,
+            OR: [
+              { kind: FOLLOWING_KIND, type: { in: tiposVisiveis(prefs) } },
+              { kind: { in: [LIKES_KIND, COMMENTS_KIND] } },
+            ],
+          })),
         },
         orderBy: { detectedAt: "desc" },
         take: 60,

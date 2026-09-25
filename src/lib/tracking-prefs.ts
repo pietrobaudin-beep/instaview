@@ -12,8 +12,8 @@ export const DEFAULT_PREFS: TrackingPrefs = {
   newFollowing: true,
   unfollowed: true,
   postInteractions: true,
-  // Stories are not exposed by any provider we use — off and disabled.
-  stories: false,
+  // O Faro AI coleta stories desde 22/09 — ligado por padrão.
+  stories: true,
 };
 
 /** Coerce whatever is in the JSON column into a complete, safe prefs object. */
@@ -27,6 +27,17 @@ export function readPrefs(raw: unknown): TrackingPrefs {
     newFollowing: bool("newFollowing"),
     unfollowed: bool("unfollowed"),
     postInteractions: bool("postInteractions"),
-    stories: false,
+    stories: bool("stories"),
   };
+}
+
+/**
+ * Quais tipos de mudança de "seguindo" a pessoa quer ver deste perfil.
+ * FOLLOW = começou a seguir; UNFOLLOW = deixou de seguir.
+ */
+export function tiposVisiveis(prefs: TrackingPrefs): ("FOLLOW" | "UNFOLLOW")[] {
+  const t: ("FOLLOW" | "UNFOLLOW")[] = [];
+  if (prefs.newFollowing) t.push("FOLLOW");
+  if (prefs.unfollowed) t.push("UNFOLLOW");
+  return t;
 }

@@ -23,8 +23,9 @@ export interface PerfilResumo {
   pistasSemana: number;
   /** Quando o perfil entrou no Faro AI (ISO). */
   desde: string;
-  seguiu: { total: number; pessoas: PessoaResumo[] };
-  deixou: { total: number; pessoas: PessoaResumo[] };
+  /** `null` = desligado nas configurações do perfil. */
+  seguiu: { total: number; pessoas: PessoaResumo[] } | null;
+  deixou: { total: number; pessoas: PessoaResumo[] } | null;
   stories: { total: number; itens: MidiaResumo[] };
   marcacoes: { total: number; itens: MidiaResumo[] };
   /** Quando a próxima coleta acontece (ISO) — para o contador. */
@@ -103,7 +104,7 @@ export function ResumoDoFaro({ perfil }: { perfil: PerfilResumo }) {
   const level = activityLevel(perfil.pistasSemana);
   // Nada de quem-entrou-quem-saiu ainda: é a base da primeira coleta. O
   // contador diz quando as mudanças começam a aparecer.
-  const semHistorico = perfil.seguiu.total === 0 && perfil.deixou.total === 0;
+  const semHistorico = (perfil.seguiu?.total ?? 0) === 0 && (perfil.deixou?.total ?? 0) === 0;
   const desde = `desde ${new Date(perfil.desde).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}, no Faro AI`;
 
   return (
@@ -148,6 +149,7 @@ export function ResumoDoFaro({ perfil }: { perfil: PerfilResumo }) {
           )}
         </div>
 
+        {perfil.seguiu && (
         <div>
           <Rotulo titulo="Começou a seguir" total={perfil.seguiu.total} sufixo={desde} />
           {perfil.seguiu.pessoas.length ? (
@@ -158,7 +160,9 @@ export function ResumoDoFaro({ perfil }: { perfil: PerfilResumo }) {
             <Vazio>Ninguém novo desde a entrada no Faro AI.</Vazio>
           )}
         </div>
+        )}
 
+        {perfil.deixou && (
         <div>
           <Rotulo titulo="Deixou de seguir" total={perfil.deixou.total} sufixo={desde} />
           {perfil.deixou.pessoas.length ? (
@@ -169,6 +173,7 @@ export function ResumoDoFaro({ perfil }: { perfil: PerfilResumo }) {
             <Vazio>Ninguém saiu da lista desde a entrada no Faro AI.</Vazio>
           )}
         </div>
+        )}
 
 
 

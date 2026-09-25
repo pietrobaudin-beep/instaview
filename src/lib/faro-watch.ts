@@ -21,6 +21,7 @@ import { getSection, type Section } from "@/lib/raio-x";
 import { keepImage } from "@/lib/img-store";
 import { TEST_EMAIL_DOMAIN, usingMockData } from "@/lib/sandbox";
 import { comQuem } from "@/lib/custo";
+import { readPrefs } from "@/lib/tracking-prefs";
 import { direitosDe, fimDoCiclo } from "@/lib/direitos";
 import { devolver, reservar } from "@/lib/franquia";
 import type { PostItem, StoryItem } from "@/lib/providers/types";
@@ -177,7 +178,14 @@ export async function watchProfile(
   let houveNovos = false;
   const inicioDaPassagem = new Date();
 
-  const secoes = modo === "stories" ? WATCH.filter((w) => w.section === "stories") : WATCH;
+  // "Guardar stories" desligado nas configurações: pula a leitura (e o custo).
+  const prefs = readPrefs(
+    (await prisma.trackedProfile.findUnique({ where: { id: profileId }, select: { trackingPrefs: true } }))
+      ?.trackingPrefs,
+  );
+  const secoes = (modo === "stories" ? WATCH.filter((w) => w.section === "stories") : WATCH).filter(
+    (w) => w.section !== "stories" || prefs.stories,
+  );
 
   for (const { section, kind, fresco } of secoes) {
     const res = await getSection(username, section, fresco);

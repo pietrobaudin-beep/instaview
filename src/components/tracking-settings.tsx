@@ -35,22 +35,28 @@ import { HistoryPanel } from "@/components/history-panel";
 
 import type { TrackingPrefs } from "@/lib/tracking-prefs";
 
+/*
+ * Cada chave muda algo de verdade (antes eram gravadas e nada as lia):
+ * - Pistas na página Pistas: se as mudanças deste perfil entram no feed geral.
+ * - Começou a seguir / Deixou de seguir: se aparecem no painel, em Rastros e
+ *   em Pistas. A coleta é a mesma (uma página de seguindo traz os dois).
+ * - Stories: se o Faro AI coleta stories deste perfil. Desligado, é uma
+ *   leitura a menos por coleta.
+ */
 const ROWS = [
   {
     key: "notifications" as const,
     icon: Bell,
-    title: "Notificações",
-    hint: "Receba alertas em tempo real.",
+    title: "Mostrar na página Pistas",
+    hint: "As mudanças deste perfil entram no feed de Pistas.",
   },
-  { key: "newFollowing" as const, icon: UserPlus, title: "Novos seguidos" },
+  { key: "newFollowing" as const, icon: UserPlus, title: "Começou a seguir" },
   { key: "unfollowed" as const, icon: UserMinus, title: "Deixou de seguir" },
-  { key: "postInteractions" as const, icon: Heart, title: "Interações em posts" },
   {
     key: "stories" as const,
     icon: Camera,
-    title: "Stories (quando disponível)",
-    disabled: true,
-    hint: "Depende do que o perfil torna público.",
+    title: "Guardar stories",
+    hint: "O Faro AI guarda os stories a cada coleta.",
   },
 ];
 
@@ -364,7 +370,6 @@ export function TrackingSettings({
                         <Toggle
                           label={r.title}
                           checked={prefs[r.key]}
-                          disabled={r.disabled}
                           onChange={(v) => set(r.key, v)}
                         />
                       }

@@ -12,6 +12,7 @@ import { PlanLimits } from "@/components/plan-limits";
 import { ResumoDoFaro, type PerfilResumo } from "@/components/resumo-do-faro";
 import type { EventData } from "@/lib/faro-watch";
 import { visivel } from "@/lib/acervo";
+import { readPrefs } from "@/lib/tracking-prefs";
 import { StoriesDoFaro } from "@/components/stories-do-faro";
 import type { ViewerStory } from "@/components/story-viewer";
 import { lerSalvos } from "@/lib/stories-salvos";
@@ -116,6 +117,7 @@ export default async function RastrosPage() {
           : // Marcações que já existiam quando o perfil entrou são a base, não
             // novidade: ficam de fora.
             { profileId: p.id, kind, baseline: false };
+      const prefs = readPrefs(p.trackingPrefs);
       const [seguiu, nSeguiu, deixou, nDeixou, todosStories, favoritos, marcacoes, nMarcacoes] =
         await Promise.all([
           prisma.followerChange.findMany({ where: seguindo("FOLLOW"), orderBy: { detectedAt: "desc" }, take: 12 }),
@@ -160,8 +162,9 @@ export default async function RastrosPage() {
         avatarUrl: p.avatarUrl,
         pistasSemana: weekBy.get(p.id) ?? 0,
         desde: p.monitoringStartedAt.toISOString(),
-        seguiu: { total: nSeguiu, pessoas: seguiu.map(pessoa) },
-        deixou: { total: nDeixou, pessoas: deixou.map(pessoa) },
+        // Desligado nas configurações = a seção não aparece.
+        seguiu: prefs.newFollowing ? { total: nSeguiu, pessoas: seguiu.map(pessoa) } : null,
+        deixou: prefs.unfollowed ? { total: nDeixou, pessoas: deixou.map(pessoa) } : null,
         stories: { total: stories.length, itens: stories.slice(0, 12).map(item) },
         marcacoes: { total: nMarcacoes, itens: marcacoes.map(item) },
         // Última coleta + cadência do plano; sem coleta ainda, é agora.

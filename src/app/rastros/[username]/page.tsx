@@ -4,7 +4,7 @@ import { refreshStatusFor } from "@/lib/refresh-limit";
 import { TrackingSettings } from "@/components/tracking-settings";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { readPrefs } from "@/lib/tracking-prefs";
+import { readPrefs, tiposVisiveis } from "@/lib/tracking-prefs";
 import { normalizeUsername } from "@/lib/utils";
 import { NotificationsFeed, type Notification } from "@/components/notifications-feed";
 import { FOLLOWING_KIND } from "@/lib/following-tracker";
@@ -56,7 +56,13 @@ export default async function TrackingPage({ params }: { params: { username: str
   const [changes, storyEvents, semana, noFaro, resumoPlano, storiesSalvos, cotaSalvos] =
     await Promise.all([
     prisma.followerChange.findMany({
-      where: { profileId: profile.id, kind: { in: PISTA_KINDS }, isVerified: false },
+      where: {
+        profileId: profile.id,
+        kind: { in: PISTA_KINDS },
+        isVerified: false,
+        // As chaves "Começou a seguir" / "Deixou de seguir" das configurações.
+        type: { in: tiposVisiveis(readPrefs(profile.trackingPrefs)) },
+      },
       orderBy: { detectedAt: "desc" },
       take: 40,
     }),
