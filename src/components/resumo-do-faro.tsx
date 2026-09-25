@@ -22,6 +22,8 @@ export interface PerfilResumo {
   displayName: string | null;
   avatarUrl: string | null;
   pistasSemana: number;
+  /** Quando o perfil entrou no Faro AI (ISO). */
+  desde: string;
   seguiu: { total: number; pessoas: PessoaResumo[] };
   deixou: { total: number; pessoas: PessoaResumo[] };
   stories: { total: number; itens: MidiaResumo[] };
@@ -66,7 +68,7 @@ function Pessoas({ pessoas }: { pessoas: PessoaResumo[] }) {
 
 function Midias({ itens, href, formato }: { itens: MidiaResumo[]; href: string; formato: "story" | "post" }) {
   return (
-    <ul className="sem-barra -mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
+    <ul className="sem-barra -mx-5 flex gap-3 overflow-x-auto px-5 pb-1">
       {itens.map((m) => {
         const src = proxied(m.thumbnailUrl);
         return (
@@ -74,7 +76,7 @@ function Midias({ itens, href, formato }: { itens: MidiaResumo[]; href: string; 
             <Link
               href={href}
               className={`block overflow-hidden rounded-xl bg-muted ${
-                formato === "story" ? "h-28 w-16" : "h-20 w-20"
+                formato === "story" ? "h-52 w-[117px]" : "h-28 w-28"
               }`}
             >
               {src && (
@@ -103,6 +105,7 @@ export function ResumoDoFaro({ perfil }: { perfil: PerfilResumo }) {
   // Nada de quem-entrou-quem-saiu ainda: é a base da primeira coleta. O
   // contador diz quando as mudanças começam a aparecer.
   const semHistorico = perfil.seguiu.total === 0 && perfil.deixou.total === 0;
+  const desde = `desde ${new Date(perfil.desde).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}, no Faro AI`;
 
   return (
     <section className="relative min-w-0 rounded-3xl border border-border bg-card">
@@ -139,24 +142,24 @@ export function ResumoDoFaro({ perfil }: { perfil: PerfilResumo }) {
         </summary>
       <div className="space-y-5 px-5 pb-5">
         <div>
-          <Rotulo titulo="Começou a seguir" total={perfil.seguiu.total} sufixo="nos últimos 7 dias" />
+          <Rotulo titulo="Começou a seguir" total={perfil.seguiu.total} sufixo={desde} />
           {perfil.seguiu.pessoas.length ? (
             <Pessoas pessoas={perfil.seguiu.pessoas} />
           ) : semHistorico ? (
             <ProximaColeta alvo={perfil.proximaColeta} />
           ) : (
-            <Vazio>Ninguém novo esta semana.</Vazio>
+            <Vazio>Ninguém novo desde a entrada no Faro AI.</Vazio>
           )}
         </div>
 
         <div>
-          <Rotulo titulo="Deixou de seguir" total={perfil.deixou.total} sufixo="nos últimos 7 dias" />
+          <Rotulo titulo="Deixou de seguir" total={perfil.deixou.total} sufixo={desde} />
           {perfil.deixou.pessoas.length ? (
             <Pessoas pessoas={perfil.deixou.pessoas} />
           ) : semHistorico ? (
             <ProximaColeta alvo={perfil.proximaColeta} texto="Quem sair da lista aparece aqui depois da próxima coleta" />
           ) : (
-            <Vazio>Ninguém saiu da lista esta semana.</Vazio>
+            <Vazio>Ninguém saiu da lista desde a entrada no Faro AI.</Vazio>
           )}
         </div>
 
@@ -170,11 +173,11 @@ export function ResumoDoFaro({ perfil }: { perfil: PerfilResumo }) {
         </div>
 
         <div>
-          <Rotulo titulo="Marcações" total={perfil.marcacoes.total} sufixo="encontradas" />
+          <Rotulo titulo="Marcações" total={perfil.marcacoes.total} sufixo={`novas, ${desde}`} />
           {perfil.marcacoes.itens.length ? (
             <Midias itens={perfil.marcacoes.itens} href={painel} formato="post" />
           ) : (
-            <Vazio>Nenhuma marcação encontrada ainda.</Vazio>
+            <Vazio>Nenhuma marcação nova desde que o perfil entrou no Faro AI.</Vazio>
           )}
         </div>
 

@@ -94,7 +94,6 @@ export default async function RastrosPage() {
   // O conteúdo de cada perfil para o resumo. Só banco: nada aqui chama o
   // provedor. São poucos perfis por conta (o PRO tem 1), então uma leva de
   // consultas por perfil é barata.
-  const desde = new Date(Date.now() - WEEK);
   // Os stories no prazo de cada perfil, para a faixa do topo.
   const storiesPorPerfil = new Map<string, ViewerStory[]>();
   const proxied = (url: string | null) =>
@@ -102,14 +101,21 @@ export default async function RastrosPage() {
 
   const resumos: PerfilResumo[] = await Promise.all(
     profiles.map(async (p) => {
+      // Só o que aconteceu desde que o perfil entrou no Faro AI. Stories são a
+      // exceção: todos os capturados valem (dentro da janela do plano).
       const seguindo = (type: "FOLLOW" | "UNFOLLOW") => ({
         profileId: p.id,
         kind: FOLLOWING_KIND,
         type,
         isVerified: false,
-        detectedAt: { gte: desde },
+        detectedAt: { gte: p.monitoringStartedAt },
       });
-      const midia = (kind: string) => ({ profileId: p.id, kind });
+      const midia = (kind: string) =>
+        kind === "story"
+          ? { profileId: p.id, kind }
+          : // Marcações que já existiam quando o perfil entrou são a base, não
+            // novidade: ficam de fora.
+            { profileId: p.id, kind, baseline: false };
       const [seguiu, nSeguiu, deixou, nDeixou, todosStories, favoritos, marcacoes, nMarcacoes] =
         await Promise.all([
           prisma.followerChange.findMany({ where: seguindo("FOLLOW"), orderBy: { detectedAt: "desc" }, take: 12 }),
@@ -153,6 +159,7 @@ export default async function RastrosPage() {
         displayName: p.displayName,
         avatarUrl: p.avatarUrl,
         pistasSemana: weekBy.get(p.id) ?? 0,
+        desde: p.monitoringStartedAt.toISOString(),
         seguiu: { total: nSeguiu, pessoas: seguiu.map(pessoa) },
         deixou: { total: nDeixou, pessoas: deixou.map(pessoa) },
         stories: { total: stories.length, itens: stories.slice(0, 12).map(item) },
