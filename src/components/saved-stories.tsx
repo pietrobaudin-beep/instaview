@@ -43,6 +43,9 @@ function quando(h: number): string {
   return `há ${Math.round(h / 24)} d`;
 }
 
+/** O giro de cada cartão do leque, em graus — alterna para parecer à mão. */
+const GIROS = [-5, 3, -2, 5, -4, 2];
+
 export function SavedStories({
   stories,
   plan,
@@ -70,6 +73,8 @@ export function SavedStories({
   ferramentas?: { resumos: boolean; buscaStories: boolean; storiesHours: number | null };
 }) {
   const [aberto, setAberto] = React.useState(-1);
+  /** O story em destaque no leque — o que a legenda descreve. */
+  const [foco, setFoco] = React.useState(0);
   const [salvos, setSalvos] = React.useState<string[]>(salvosIniciais);
   const [marcando, setMarcando] = React.useState<string | null>(null);
   /*
@@ -267,33 +272,43 @@ export function SavedStories({
         </p>
       )}
 
-      <div className="flex gap-3 overflow-x-auto pb-2">
+      {/*
+        * O leque: miniaturas sobrepostas, levemente giradas, com borda branca —
+        * como fotos espalhadas na mesa. Passar o mouse (ou tocar) endireita e
+        * traz para a frente; a legenda embaixo diz o que aquele story tem.
+        */}
+      <div className="sem-barra -mx-5 flex overflow-x-auto px-7 pb-3 pt-4">
         {mostrados.map((s, i) => {
           const h = horas(s.detectedAt);
           const expirou = h >= 24;
+          const giro = GIROS[i % GIROS.length];
+          const emFoco = foco === i;
           return (
-            <div key={s.id} className="relative w-32 shrink-0 sm:w-36">
+            <div
+              key={s.id}
+              onMouseEnter={() => setFoco(i)}
+              onFocus={() => setFoco(i)}
+              style={{ transform: emFoco ? "rotate(0deg) translateY(-6px) scale(1.04)" : `rotate(${giro}deg)` }}
+              className={`relative w-28 shrink-0 transition duration-200 sm:w-32 ${i > 0 ? "-ml-5" : ""} ${
+                emFoco ? "z-20" : ""
+              }`}
+            >
               <button
                 type="button"
                 onClick={() => setAberto(i)}
                 aria-label={`Ver story guardado de @${username}`}
-                className="relative block aspect-[9/16] w-full overflow-hidden rounded-2xl bg-gradient-to-br from-pink/40 to-purple/40 ring-2 ring-pink ring-offset-2 ring-offset-background transition hover:opacity-90"
+                className="relative block aspect-[9/16] w-full overflow-hidden rounded-[1.4rem] border-4 border-white bg-gradient-to-br from-pink/40 to-purple/40 shadow-[0_10px_24px_-8px_rgba(0,0,0,0.35)]"
               >
                 {s.thumbnailUrl && (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={proxied(s.thumbnailUrl)!}
-                    alt=""
-                    loading="lazy"
-                    className="h-full w-full object-cover"
-                  />
+                  <img src={proxied(s.thumbnailUrl)!} alt="" className="h-full w-full object-cover" />
                 )}
                 <span className="absolute left-2 top-2 rounded-full bg-ink/65 px-1.5 py-0.5 text-[10px] font-bold text-cream">
                   {quando(h)}
                 </span>
                 {expirou && (
-                  <span className="absolute inset-x-2 bottom-2 flex items-center justify-center gap-1 rounded-full bg-ink/75 px-2 py-1 text-[10px] font-semibold text-cream">
-                    <Clock className="h-3 w-3" /> expirou no Instagram
+                  <span className="absolute inset-x-2 bottom-2 flex items-center justify-center gap-1 rounded-full bg-ink/75 px-2 py-1 text-[9px] font-semibold text-cream">
+                    <Clock className="h-3 w-3" /> expirou
                   </span>
                 )}
               </button>
@@ -307,45 +322,44 @@ export function SavedStories({
                   aria-pressed={salvos.includes(s.id)}
                   aria-label={salvos.includes(s.id) ? "Tirar dos salvos" : "Salvar este story"}
                   title={salvos.includes(s.id) ? "Tirar dos salvos" : "Salvar este story"}
-                  className="absolute right-1 top-1 flex h-9 w-9 items-center justify-center rounded-full bg-ink/65 text-cream transition hover:bg-ink/80"
+                  className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-ink/65 text-cream transition hover:bg-ink/80"
                 >
                   {marcando === s.id ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <Star
-                      className={`h-4 w-4 ${salvos.includes(s.id) ? "fill-yellow text-yellow" : ""}`}
-                    />
+                    <Star className={`h-4 w-4 ${salvos.includes(s.id) ? "fill-yellow text-yellow" : ""}`} />
                   )}
                 </button>
-              )}
-              {/* O que a IA leu. Fica sob a miniatura, junto da prova — a
-                  imagem está bem ali para quem quiser conferir. */}
-              {leituras[s.id] && (
-                <p className="mt-1.5 line-clamp-3 text-[11px] leading-snug text-muted-foreground">
-                  {leituras[s.id].texto ? `“${leituras[s.id].texto}” · ` : ""}
-                  {leituras[s.id].assunto}
-                </p>
-              )}
-
-              {s.mentions.length > 0 && (
-                <div className="mt-1.5 space-y-1">
-                  {s.mentions.map((m) => (
-                    <Link
-                      key={m}
-                      href={`/p/${encodeURIComponent(m)}`}
-                      title={`Farejar @${m}`}
-                      className="flex items-center gap-1 truncate text-[11px] font-semibold text-accent hover:underline"
-                    >
-                      <Search className="h-3 w-3 shrink-0" />
-                      <span className="truncate">Farejar @{m}</span>
-                    </Link>
-                  ))}
-                </div>
               )}
             </div>
           );
         })}
       </div>
+
+      {/* A legenda do story em foco: o que a IA leu e quem ele marca. */}
+      {mostrados[foco] && (leituras[mostrados[foco].id] || mostrados[foco].mentions.length > 0) && (
+        <div className="mt-1 rounded-2xl bg-muted/40 px-4 py-3">
+          {leituras[mostrados[foco].id] && (
+            <p className="text-[12px] leading-snug text-muted-foreground">
+              {leituras[mostrados[foco].id].texto ? `“${leituras[mostrados[foco].id].texto}” · ` : ""}
+              {leituras[mostrados[foco].id].assunto}
+            </p>
+          )}
+          {mostrados[foco].mentions.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
+              {mostrados[foco].mentions.map((m) => (
+                <Link
+                  key={m}
+                  href={`/p/${encodeURIComponent(m)}`}
+                  className="inline-flex items-center gap-1 text-[12px] font-semibold text-accent hover:underline"
+                >
+                  <Search className="h-3 w-3" /> Farejar @{m}
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       {aberto >= 0 && (
         <StoryViewer
           username={username}
