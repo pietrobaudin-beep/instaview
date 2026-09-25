@@ -35,6 +35,7 @@ export type Tipo =
   | "perfil_basico" // cartão do perfil que chegou ao provedor
   | "previa" // página de seguindo lida para a prévia grátis (previa-seguindo.ts)
   | `teto:${string}` // tetos diários de segurança (teto-diario.ts)
+  | `curtidas:${string}` // "o que curtiu": uma vez por análise (ciclo = data da coleta)
   | `perfil:${string}`; // marca de qual @ entrou no acompanhamento neste ciclo
 
 /** O teto de cada tipo, lido do plano. */

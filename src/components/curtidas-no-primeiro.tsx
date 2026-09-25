@@ -1,4 +1,7 @@
-import { Heart, ImageIcon, MessageCircle } from "lucide-react";
+"use client";
+
+import * as React from "react";
+import { Heart, ImageIcon, Loader2, MessageCircle } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Panel } from "@/components/ui/brand";
 import type { CurtidasNoPrimeiro } from "@/lib/analise";
@@ -40,7 +43,7 @@ export function CurtidasNoPrimeiroPanel({ username, dados }: { username: string;
         </div>
       }
     >
-      <div className="grid max-w-md grid-cols-3 gap-2">
+      <div className="grid max-w-sm grid-cols-2 gap-2">
         {posts.map((p) => {
           const link = p.code ? `https://instagram.com/p/${p.code}` : `https://instagram.com/${alvo.username}`;
           return (
@@ -83,8 +86,76 @@ export function CurtidasNoPrimeiroPanel({ username, dados }: { username: string;
       <p className="mt-3 text-sm font-semibold">
         {achou === 0
           ? `Não apareceu nos ${posts.length} posts mais recentes.`
-          : `Apareceu em ${achou} de ${posts.length} posts mais recentes.`}
+          : `Curtiu ${achou} de ${posts.length} posts mais recentes.`}
       </p>
     </Panel>
+  );
+}
+
+/**
+ * O botão que busca "o que curtiu" — a leitura só acontece aqui, quando a
+ * pessoa toca. Uma vez por análise; depois fica salvo.
+ */
+export function CurtidasSobDemanda({
+  username,
+  alvo,
+  inicial,
+}: {
+  username: string;
+  alvo: { username: string; displayName: string | null; avatarUrl: string | null };
+  inicial: CurtidasNoPrimeiro | null;
+}) {
+  const [dados, setDados] = React.useState<CurtidasNoPrimeiro | null>(inicial);
+  const [estado, setEstado] = React.useState<"idle" | "busy" | "erro">("idle");
+  React.useEffect(() => setDados(inicial), [inicial]);
+
+  if (dados) return <CurtidasNoPrimeiroPanel username={username} dados={dados} />;
+
+  async function ver() {
+    setEstado("busy");
+    try {
+      const r = await fetch("/api/curtidas", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ username }),
+      });
+      const b = await r.json().catch(() => ({}));
+      if (b?.curtidas) {
+        setDados(b.curtidas);
+        setEstado("idle");
+      } else setEstado("erro");
+    } catch {
+      setEstado("erro");
+    }
+  }
+
+  return (
+    <section className="flex flex-wrap items-center gap-4 rounded-3xl border border-border bg-card p-5">
+      <Avatar src={alvo.avatarUrl} name={alvo.displayName ?? alvo.username} size={48} />
+      <div className="min-w-0 flex-1">
+        <p className="font-bold">❤️ O que @{username} curtiu</p>
+        <p className="text-sm text-muted-foreground">
+          nos posts recentes de <b className="font-semibold text-foreground">@{alvo.username}</b>, com quem mais
+          interage
+        </p>
+        {estado === "erro" && (
+          <p className="mt-1 text-sm text-red-600">Não deu para conferir agora. Tente de novo mais tarde.</p>
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={ver}
+        disabled={estado === "busy"}
+        className="flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:opacity-90 disabled:opacity-70 max-sm:w-full max-sm:justify-center"
+      >
+        {estado === "busy" ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" /> Farejando…
+          </>
+        ) : (
+          "Ver curtidas"
+        )}
+      </button>
+    </section>
   );
 }

@@ -21,9 +21,9 @@
  * 4. stories disponíveis
  * 5. marcações
  * 6. sobre a conta
- * 7. o que a pessoa curtiu/comentou nos 3 posts mais recentes de quem ela
- *    mais interage — posts dele (1) + curtidas (3) + comentários (3)
  *
+ * "O que a pessoa curtiu" NÃO entra: é sob demanda (`coletarCurtidas`,
+ * `/api/curtidas`), uma vez por análise, só quando alguém toca no botão.
  * Mais o id do perfil, que a HikerAPI precisa e que fica guardado por 24h.
  * Outras redes NÃO entram: são sob demanda, com franquia própria.
  */
@@ -71,7 +71,10 @@ export interface AnaliseSalva {
   interacoes?: Interaction[];
   /** Stories, marcações e sobre, como o provedor entregou. */
   secoes?: Partial<Record<"stories" | "tagged" | "about", SectionData | null>>;
-  /** O que a pessoa curtiu/comentou nos posts de quem ela mais interage. */
+  /**
+   * O que a pessoa curtiu nos posts de quem ela mais interage. Ausente = ainda
+   * não pedido; `null` = pedido e sem resultado.
+   */
   curtidas?: CurtidasNoPrimeiro | null;
   /** Curioso com conta: só o destaque, ou `null` quando não há dado. */
   destaque?: Interaction | null;
@@ -90,7 +93,8 @@ export interface CurtidasNoPrimeiro {
     thumbnailUrl: string | null;
     takenAt: string | null;
     curtiu: boolean;
-    comentou: boolean;
+    /** Só em análises de 25/09 (depois os comentários saíram, por custo). */
+    comentou?: boolean;
   }[];
 }
 
@@ -192,29 +196,29 @@ async function coletarInteracoes(username: string): Promise<Interaction[]> {
     .slice(0, 10);
 }
 
-const POSTS_CONFERIDOS = 3;
+/**
+ * Custo: posts da conta (1, grátis se alguém a leu nas últimas 24h) + quem
+ * curtiu cada post (2) = até R$ 0,33. Comentários ficaram de fora: são
+ * públicos no próprio post e dobravam a conta.
+ */
+const POSTS_CONFERIDOS = 2;
 
-async function coletarCurtidas(username: string, alvo: Interaction): Promise<CurtidasNoPrimeiro | null> {
+export async function coletarCurtidas(username: string, alvo: Interaction): Promise<CurtidasNoPrimeiro | null> {
   const provider = getProvider();
-  if (!provider.getMediaLikers || !provider.getMediaCommenters) return null;
+  if (!provider.getMediaLikers) return null;
   const posts = (await getRecentMediaCached(alvo.username)).slice(0, POSTS_CONFERIDOS);
   if (!posts.length) return null;
   const eu = username.toLowerCase();
-  const tem = (lista: FollowerEntry[]) => lista.some((u) => u.username.toLowerCase() === eu);
   const conferidos = await Promise.all(
     posts.map(async (p) => {
-      const [curtidas, comentarios] = await Promise.allSettled([
-        provider.getMediaLikers!(p.id),
-        provider.getMediaCommenters!(p.id),
-      ]);
-      if (curtidas.status === "rejected" && comentarios.status === "rejected") return null;
+      const curtidas = await provider.getMediaLikers!(p.id).catch(() => null);
+      if (!curtidas) return null;
       return {
         id: p.id,
         code: p.code ?? null,
         thumbnailUrl: p.thumbnailUrl ?? null,
         takenAt: p.takenAt ?? null,
-        curtiu: curtidas.status === "fulfilled" && tem(curtidas.value),
-        comentou: comentarios.status === "fulfilled" && tem(comentarios.value),
+        curtiu: curtidas.some((u) => u.username.toLowerCase() === eu),
       };
     }),
   );
@@ -254,21 +258,9 @@ export async function coletarAnalise(username: string, origem: Origem): Promise<
     return { ok: false, motivo: "indisponivel" };
   }
 
-  let curtidas: CurtidasNoPrimeiro | null = null;
   const [seguindo, interacoes, stories, tagged, about] = await Promise.allSettled([
     coletarSeguindo(username),
-    // As curtidas dependem do ranking: saem logo em seguida, ainda em paralelo
-    // com o resto.
-    coletarInteracoes(username).then(async (lista) => {
-      const primeiro = lista[0];
-      curtidas = primeiro
-        ? await coletarCurtidas(username, primeiro).catch((e) => {
-            log.warn("curtidas falharam", { username, erro: (e as Error).message });
-            return null;
-          })
-        : null;
-      return lista;
-    }),
+    coletarInteracoes(username),
     secao(username, "stories"),
     secao(username, "tagged"),
     secao(username, "about"),
@@ -281,7 +273,6 @@ export async function coletarAnalise(username: string, origem: Origem): Promise<
     perfil,
     seguindo: valor(seguindo),
     interacoes: valor(interacoes),
-    curtidas,
     secoes: { stories: valor(stories) ?? null, tagged: valor(tagged) ?? null, about: valor(about) ?? null },
   };
 

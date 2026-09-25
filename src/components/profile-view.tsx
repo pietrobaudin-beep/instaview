@@ -1,6 +1,6 @@
 "use client";
 
-import { CurtidasNoPrimeiroPanel } from "@/components/curtidas-no-primeiro";
+import { CurtidasSobDemanda } from "@/components/curtidas-no-primeiro";
 import type { CurtidasNoPrimeiro } from "@/lib/analise";
 import * as React from "react";
 import Link from "next/link";
@@ -682,6 +682,7 @@ export function ProfileView({
     revelado?: Person | null;
     semDados?: boolean;
     curtidas?: CurtidasNoPrimeiro | null;
+    curtidasPedidas?: boolean;
   }>({
     locked: true,
     items: [],
@@ -987,6 +988,7 @@ export function ProfileView({
             revelado: b.revelado ?? null,
             semDados: !!b.semDados,
             curtidas: b.curtidas ?? null,
+            curtidasPedidas: !!b.curtidasPedidas,
           });
       } catch {
         /* stays locked */
@@ -1624,8 +1626,12 @@ export function ProfileView({
                   <div className="mt-5">
                     {paid && ready ? (
                       <div className="space-y-5">
-                      {interactions.curtidas && (
-                        <CurtidasNoPrimeiroPanel username={state.data.username} dados={interactions.curtidas} />
+                      {(interactions.curtidas || (!interactions.curtidasPedidas && interactions.items[0])) && (
+                        <CurtidasSobDemanda
+                          username={state.data.username}
+                          alvo={interactions.curtidas?.alvo ?? interactions.items[0]}
+                          inicial={interactions.curtidas ?? null}
+                        />
                       )}
                       <ProDashboard
                         username={state.data.username}
