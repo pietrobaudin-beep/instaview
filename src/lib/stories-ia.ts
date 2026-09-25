@@ -22,7 +22,7 @@
  * único caminho que funciona sempre.
  */
 import { prisma } from "@/lib/db";
-import { conversarJson, iaLigada, iaSimulada } from "@/lib/ia";
+import { conversarJson, iaLigada } from "@/lib/ia";
 import { imageKey, readStored } from "@/lib/img-store";
 import { logger } from "@/lib/logger";
 import type { Prisma } from "@prisma/client";
@@ -80,7 +80,7 @@ export async function lerStory(eventId: string, thumbnailUrl: string | null): Pr
     .catch(() => null);
   if (guardada) return guardada.data as unknown as LeituraDeStory;
 
-  const imagem = iaSimulada() ? "data:image/gif;base64,R0lGODlhAQABAAAAACw=" : await imagemEmBase64(thumbnailUrl);
+  const imagem = await imagemEmBase64(thumbnailUrl);
   if (!imagem) return null;
 
   const lido = await conversarJson<LeituraDeStory>(
