@@ -1,5 +1,6 @@
 "use client";
 
+import { FakeAvatar, PEOPLE } from "@/components/landing/people";
 import * as React from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
@@ -44,8 +45,9 @@ function CartaoGenero({
   const extra = Math.max(0, quantos - rostos.length);
   return (
     <div className="flex items-center gap-4 rounded-3xl bg-pink p-4 shadow-sm">
-      <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white text-3xl">
-        {genero === "f" ? "👩" : "👨"}
+      {/* O mesmo desenho das pessoas da página inicial, no lugar de emoji. */}
+      <span className="shrink-0 rounded-full bg-white p-1 ring-2 ring-white">
+        <FakeAvatar person={genero === "f" ? PEOPLE.julia : PEOPLE.lucas} size={52} />
       </span>
       <p className="min-w-0 flex-1 leading-none">
         <span className="block text-3xl font-extrabold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.15)]">
