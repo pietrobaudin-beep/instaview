@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { readPrefs } from "@/lib/tracking-prefs";
+import { paraGravar, readPrefs } from "@/lib/tracking-prefs";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
 
 const bodySchema = z.object({
@@ -28,10 +28,15 @@ export async function POST(req: Request) {
   });
   if (!profile) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
-  const prefs = readPrefs(parsed.data.prefs);
+  // A tela manda `stories`; no banco ele vive como `guardarStories`.
+  const vindo = parsed.data.prefs as Record<string, unknown>;
+  const prefs = {
+    ...readPrefs(vindo),
+    ...(typeof vindo?.stories === "boolean" ? { stories: vindo.stories } : {}),
+  };
   await prisma.trackedProfile.update({
     where: { id: profile.id },
-    data: { trackingPrefs: { ...prefs } },
+    data: { trackingPrefs: paraGravar(prefs) },
   });
   return NextResponse.json({ ok: true, prefs });
 }

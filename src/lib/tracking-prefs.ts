@@ -27,7 +27,10 @@ export function readPrefs(raw: unknown): TrackingPrefs {
     newFollowing: bool("newFollowing"),
     unfollowed: bool("unfollowed"),
     postInteractions: bool("postInteractions"),
-    stories: bool("stories"),
+    // Lido de `guardarStories`, não de `stories`: até 24/09 o código gravava
+    // `stories: false` à força em toda configuração salva — não era escolha
+    // de ninguém, e relê-lo pararia a coleta de stories desses perfis.
+    stories: typeof v.guardarStories === "boolean" ? v.guardarStories : DEFAULT_PREFS.stories,
   };
 }
 
@@ -40,4 +43,10 @@ export function tiposVisiveis(prefs: TrackingPrefs): ("FOLLOW" | "UNFOLLOW")[] {
   if (prefs.newFollowing) t.push("FOLLOW");
   if (prefs.unfollowed) t.push("UNFOLLOW");
   return t;
+}
+
+/** O que vai para o banco: `stories` gravado como `guardarStories`. */
+export function paraGravar(prefs: TrackingPrefs) {
+  const { stories, ...resto } = prefs;
+  return { ...resto, guardarStories: stories };
 }
