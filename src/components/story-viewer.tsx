@@ -225,7 +225,10 @@ export function StoryViewer({
       {/* Largura calculada da altura (9:16), como no Instagram. Antes havia um
           teto de 26rem: numa tela alta o quadro virava uma tira 1:3, fina e
           cortada nas laterais. O teto agora é só não passar da tela. */}
-      <div className="relative h-[94dvh] min-w-0 flex-1 overflow-hidden rounded-3xl bg-neutral-900 sm:h-[92dvh] sm:w-[calc(92dvh*9/16)] sm:max-w-[calc(100vw-7rem)] sm:flex-none">
+      {/* `isolate` + camada própria: sem isso o Safari (iPhone) desenha o
+          vídeo e a imagem por cima do canto arredondado, e o story aparece
+          com canto reto. */}
+      <div className="relative isolate h-[94dvh] min-w-0 flex-1 overflow-hidden rounded-3xl bg-neutral-900 [transform:translateZ(0)] sm:h-[92dvh] sm:w-[calc(92dvh*9/16)] sm:max-w-[calc(100vw-7rem)] sm:flex-none">
         {/* Sombra atrás das barrinhas e do cabeçalho: em story claro, o
             branco sumia no fundo. Não recebe toque — só escurece. */}
         <div
@@ -347,7 +350,7 @@ export function StoryViewer({
               onEnded={() => avancar()}
               // Link vencido: fica a capa, e o relógio de 5s volta a valer.
               onError={() => setVideoFalhou((f) => ({ ...f, [atual.id]: true }))}
-              className="h-full w-full object-cover"
+              className="h-full w-full rounded-3xl object-cover"
             />
           ) : atual.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -355,7 +358,7 @@ export function StoryViewer({
               src={atual.imageUrl}
               alt=""
               draggable={false}
-              className="h-full w-full object-cover"
+              className="h-full w-full rounded-3xl object-cover"
             />
           ) : (
             <div className="flex h-full items-center justify-center text-white/40">

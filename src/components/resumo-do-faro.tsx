@@ -75,7 +75,7 @@ function Midias({ itens, href, formato }: { itens: MidiaResumo[]; href: string; 
           <li key={m.id} className="shrink-0">
             <Link
               href={href}
-              className={`block overflow-hidden rounded-xl bg-muted ${
+              className={`block overflow-hidden rounded-2xl bg-muted ${
                 formato === "story" ? "h-32 w-[72px]" : "h-16 w-16"
               }`}
             >
