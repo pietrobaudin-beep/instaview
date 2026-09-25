@@ -118,8 +118,11 @@ const NADA_DE_FARO = {
 export const PLANS: Record<Plan, PlanConfig> = {
   FREE: {
     id: "FREE",
+    // "Curioso" é a CONTA grátis. Quem entra sem conta não tem plano nem nome:
+    // é visitante, e a tela o convida a criar a conta para desbloquear uma
+    // informação.
     name: "Curioso",
-    para: "Para encontrar o perfil e ver o que dá para descobrir.",
+    para: "A conta grátis: desbloqueie uma informação de um perfil.",
     billing: "free",
     priceMonthly: 0,
     ciclo: null,
@@ -133,12 +136,15 @@ export const PLANS: Record<Plan, PlanConfig> = {
     minIntervalMinutes: 24 * 60,
     historyDays: 0,
     features: [
-      "Busca de @ e sugestões de contas",
-      "Cartão do perfil, para confirmar que é a pessoa certa",
+      "Conta grátis, criada só com o seu e-mail",
+      "Desbloqueie 1 informação: quem mais aparece nas interações de um perfil",
+      "Busca de @ e cartão do perfil",
       "Prévia da análise, com os resultados borrados",
-      "Com conta grátis: revele quem mais aparece nas interações do perfil",
     ],
-    avisos: ["Sem stories, sem acompanhamento e sem o Faro AI"],
+    avisos: [
+      "Uma informação por conta, no perfil que você escolher",
+      "Sem stories, sem acompanhamento e sem o Faro AI",
+    ],
   },
 
   FAREJADOR_MAIS: {

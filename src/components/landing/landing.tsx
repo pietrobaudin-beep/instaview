@@ -200,10 +200,11 @@ function TrustChecks({ className = "" }: { className?: string }) {
 }
 
 // What the free plan really delivers: one analysis, with names blurred.
+// A conta grátis: sem conta não há plano — só a busca e a prévia.
 const FREE_INCLUDES = [
-  "Busca por @ e cartão do perfil",
-  "Prévia da análise, borrada",
-  "Com conta grátis: quem mais aparece nas interações, uma vez",
+  "Crie a conta só com o seu e-mail",
+  "Desbloqueie 1 informação de um perfil",
+  "Busca de @ e prévia da análise",
 ];
 
 const PRO_INCLUDES = [
@@ -614,7 +615,7 @@ export function Landing({ demo }: { demo: boolean }) {
           <SwipeDeck className="mt-12" label="Planos do Farejo">
             <Reveal className="relative flex h-full flex-col rounded-3xl border border-border bg-card p-8">
               <h3 className="text-2xl font-bold">Curioso</h3>
-              <p className="mt-1 text-muted-foreground">Para matar aquela curiosidade.</p>
+              <p className="mt-1 text-muted-foreground">A conta grátis.</p>
               <p className="mt-6 text-4xl font-bold">R$ 0</p>
               <ul className="mt-6 flex-1 space-y-3">
                 {FREE_INCLUDES.map((f) => (
@@ -624,12 +625,12 @@ export function Landing({ demo }: { demo: boolean }) {
                   </li>
                 ))}
               </ul>
-              <a
-                href="#buscar"
+              <Link
+                href="/signup"
                 className="mt-8 rounded-full border-2 border-vinho px-6 py-3 text-center font-semibold text-vinho transition hover:bg-vinho hover:text-cream"
               >
-                Começar grátis
-              </a>
+                Criar conta grátis
+              </Link>
             </Reveal>
 
             {/* Uso único: a compra de quem só quer resolver uma curiosidade. */}

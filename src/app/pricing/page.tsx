@@ -139,7 +139,7 @@ export default async function PricingPage({ searchParams }: { searchParams: { ne
       <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
         {!assina && !d.admin && (
           <Cartao
-            plano={{ ...PLANS.FREE, name: "Curioso" }}
+            plano={PLANS.FREE}
             atual={!!user}
             acao={
               !user ? (

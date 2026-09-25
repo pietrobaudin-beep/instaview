@@ -28,6 +28,7 @@ import { AnalysisLoading, type RevealProfile } from "@/components/analysis-loadi
 import { markSeen, wasSeenRecently } from "@/lib/seen-profiles";
 import { BRAND, LOADING_LINES } from "@/lib/voice";
 import { FaroUpsell } from "@/components/faro-upsell";
+import { ConviteConta } from "@/components/convite-conta";
 import { SingleUnlockButton } from "@/components/single-unlock-button";
 import { NoteBox } from "@/components/ui/brand";
 import { Mascot } from "@/components/ui/mascot";
@@ -404,7 +405,7 @@ function Oferta({
     corpo = (
       <>
         <h2 className="text-lg font-bold">
-          Crie sua conta grátis para revelar quem mais aparece nas interações deste perfil.
+          Crie sua conta grátis e desbloqueie uma informação: quem mais aparece nas interações deste perfil.
         </h2>
         <Link
           href={`/signup?next=${encodeURIComponent(`/p/${username}?revelar=1`)}`}
@@ -1328,6 +1329,10 @@ export function ProfileView({
             )}
 
             <FaroUpsell open={upsell} onClose={() => setUpsell(false)} next={`/p/${username}`} />
+
+            {/* Sem conta: o convite para criar a conta grátis e desbloquear
+                uma informação deste perfil. */}
+            {!loggedIn && <ConviteConta username={state.data.username} />}
 
             {following.kind === "private" ? (
               <>
