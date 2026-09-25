@@ -218,6 +218,23 @@ export async function watchProfile(
     if (!baseline) news += created.count;
     if (!baseline && created.count > 0) houveNovos = true;
 
+    // Story já guardado que ainda está no ar: o `createMany` acima o ignora
+    // (skipDuplicates), então o link do vídeo — que vence em horas — nunca
+    // chegaria até ele. Aqui ele ganha o link novo a cada coleta, e o vídeo
+    // continua tocando enquanto o story existir no Instagram.
+    if (section === "stories") {
+      for (const x of items as StoryItem[]) {
+        if (!x.id || !x.videoUrl) continue;
+        await prisma.$executeRawUnsafe(
+          `UPDATE profile_events SET data = data || jsonb_build_object('videoUrl', $1::text, 'midia', 'video')
+           WHERE "profileId" = $2 AND kind = 'story' AND "refId" = $3`,
+          x.videoUrl,
+          profileId,
+          x.id,
+        );
+      }
+    }
+
     // Story expira em 24h no Instagram. Como o perfil está no Faro AI, a
     // miniatura é guardada AGORA — é ela que vai sustentar a tela depois,
     // dentro do prazo do plano. Sem custo de provedor: é só baixar a imagem.
