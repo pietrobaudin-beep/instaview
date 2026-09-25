@@ -28,6 +28,9 @@ const ENV: Record<Produto, string> = {
 };
 
 export function linkDe(p: Produto): string | null {
+  // Sem o segredo do webhook, ninguém é liberado depois de pagar: o checkout
+  // só abre quando os dois existem.
+  if (!process.env.CAKTO_WEBHOOK_SECRET?.trim()) return null;
   const v = process.env[ENV[p]]?.trim();
   return v && /^https:\/\//.test(v) ? v : null;
 }
