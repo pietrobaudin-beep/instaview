@@ -117,9 +117,6 @@ export function FollowsBreakdown({
             rostos={rostos?.[g] ?? []}
           />
         ))}
-        <p className="text-[11px] text-muted-foreground">
-          Entre as {counts.total} contas mais recentes que @{username} segue · estimativa pelo nome.
-        </p>
       </section>
     );
   }

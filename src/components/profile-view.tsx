@@ -1498,9 +1498,6 @@ export function ProfileView({
                             </div>
                           </div>
                         </div>
-                        <p className="text-[11px] text-muted-foreground">
-                          Pelas curtidas e comentários públicos nos posts · não é prova de relação.
-                        </p>
                       </section>
                     )}
                     </div>
