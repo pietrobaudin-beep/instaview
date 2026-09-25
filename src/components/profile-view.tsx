@@ -345,7 +345,10 @@ function Oferta({
   revelado,
   semDados,
   onRevelar,
+  temPrevia = false,
 }: {
+  /** A prévia real (números e seguidos borrados) já está na tela. */
+  temPrevia?: boolean;
   username: string;
   loggedIn: boolean;
   planoPro: boolean;
@@ -480,7 +483,10 @@ function Oferta({
   // lá em cima; aqui ele sai, para não repetir.
   return (
     <div className="space-y-5">
-      <PreviaTrancada username={username} semDestaque={!!revelado} />
+      {/* Com a prévia de verdade (números e seguidos borrados) lá em cima,
+          as formas são dispensáveis. Sem ela — cota da prévia usada, lista
+          fechada — as formas mostram o que existe do outro lado. */}
+      {!temPrevia && <PreviaTrancada username={username} semDestaque={!!revelado} />}
       <div className="flex flex-col items-center gap-3 rounded-3xl border-2 border-pink bg-pink/15 px-5 py-8 text-center">
         {corpo}
       </div>
@@ -1497,6 +1503,7 @@ export function ProfileView({
                         revelado={interactions.revelado ?? null}
                         semDados={!!interactions.semDados}
                         onRevelar={revelar}
+                        temPrevia={!!ready?.counts || (ready?.users.length ?? 0) > 0}
                       />
                     )}
                   </div>

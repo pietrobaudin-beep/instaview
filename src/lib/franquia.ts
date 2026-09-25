@@ -33,6 +33,7 @@ export type Tipo =
   | "sugestao" // busca de sugestões que chegou ao provedor
   | "redes" // consulta de outras redes
   | "perfil_basico" // cartão do perfil que chegou ao provedor
+  | "previa" // página de seguindo lida para a prévia grátis (previa-seguindo.ts)
   | `teto:${string}` // tetos diários de segurança (teto-diario.ts)
   | `perfil:${string}`; // marca de qual @ entrou no acompanhamento neste ciclo
 

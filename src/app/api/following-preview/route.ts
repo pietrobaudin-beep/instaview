@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { acessoA } from "@/lib/access";
 import { consumirAnalise, ofertaDeAnalise } from "@/lib/consulta";
 import { direitosDe } from "@/lib/direitos";
+import { previaSeguindo } from "@/lib/previa-seguindo";
 import type { SeguindoSalvo } from "@/lib/analise";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
 
@@ -92,14 +93,23 @@ export async function GET(req: Request) {
 
   const oferta = user && !podeColetarSemGastar ? await ofertaDeAnalise(user) : null;
   const d = direitosDe(user);
+
+  /*
+   * Sem conta ou na conta grátis: a prévia de verdade — quantas mulheres e
+   * homens, e os seguidos borrados (nomes mascarados aqui no servidor). Uma
+   * leitura por identidade, cache de 24h por @. Ver `previa-seguindo.ts`.
+   */
+  const gratis = !podeColetarSemGastar && !d.admin && d.plano === "FREE";
+  const previa = gratis ? await previaSeguindo(user, username) : null;
   return NextResponse.json({
     locked: true,
     access: "free",
-    following: [],
-    counts: null,
+    following: previa?.following ?? [],
+    counts: previa?.counts ?? null,
+    seguindoOculto: previa?.seguindoOculto ?? false,
     recent: { started: [], stopped: [] },
-    real: false,
-    private: false,
+    real: !!previa?.following.length,
+    private: previa?.private ?? false,
     /** A tela deve pedir a coleta com `confirmar=1` sem perguntar. */
     coletarAgora: podeColetarSemGastar,
     /** A tela deve PERGUNTAR antes de gastar: "usar 1 de N análises?". */
