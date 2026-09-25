@@ -426,10 +426,13 @@ export function ProfileStories({
   avatarUrl,
   onClose,
   onVazio,
+  onPronto,
 }: {
   username: string;
   avatarUrl?: string | null;
   onClose: () => void;
+  /** Terminou de carregar (com ou sem story): o anel da foto para de girar. */
+  onPronto?: () => void;
   /** Avisa que não há story nenhum, para o anel sumir da foto. */
   onVazio?: () => void;
 }) {
@@ -445,6 +448,7 @@ export function ProfileStories({
       .then(async (r) => {
         const b = await r.json().catch(() => ({}));
         if (!vivo) return;
+        onPronto?.();
         if (r.status === 402) return setEstado({ kind: "aviso", texto: "Seu limite de perfis deste plano acabou." });
         if (b.status === "locked")
           return setEstado({ kind: "aviso", texto: "Os stories abrem com o desbloqueio deste perfil." });
@@ -468,7 +472,11 @@ export function ProfileStories({
         }
         setEstado({ kind: "ok", items });
       })
-      .catch(() => vivo && setEstado({ kind: "aviso", texto: "Não conseguimos carregar os stories agora." }));
+      .catch(() => {
+        if (!vivo) return;
+        onPronto?.();
+        setEstado({ kind: "aviso", texto: "Não conseguimos carregar os stories agora." });
+      });
     return () => {
       vivo = false;
     };
@@ -485,6 +493,10 @@ export function ProfileStories({
       />
     );
 
+  // Carregando: nada por cima da tela — quem mostra é o anel girando na foto,
+  // como no Instagram.
+  if (estado.kind === "loading") return null;
+
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-6 text-center"
@@ -492,16 +504,12 @@ export function ProfileStories({
       aria-modal="true"
       onClick={onClose}
     >
-      {estado.kind === "loading" ? (
-        <p className="text-sm text-white/70">Abrindo os stories de @{username}…</p>
-      ) : (
-        <div className="space-y-3">
-          <p className="text-sm text-white">{estado.texto}</p>
-          <button type="button" className="rounded-full bg-white/15 px-5 py-2 text-sm font-bold text-white">
-            Fechar
-          </button>
-        </div>
-      )}
+      <div className="space-y-3">
+        <p className="text-sm text-white">{estado.texto}</p>
+        <button type="button" className="rounded-full bg-white/15 px-5 py-2 text-sm font-bold text-white">
+          Fechar
+        </button>
+      </div>
     </div>
   );
 }

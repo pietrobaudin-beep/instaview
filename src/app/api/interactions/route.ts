@@ -31,5 +31,5 @@ export async function GET(req: Request) {
     });
   }
   if (acesso.access === "free" || !salva) return NextResponse.json({ locked: true, items: [] });
-  return NextResponse.json({ locked: false, items: salva.interacoes ?? [] });
+  return NextResponse.json({ locked: false, items: salva.interacoes ?? [], curtidas: salva.curtidas ?? null });
 }

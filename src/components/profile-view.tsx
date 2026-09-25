@@ -1,5 +1,7 @@
 "use client";
 
+import { CurtidasNoPrimeiroPanel } from "@/components/curtidas-no-primeiro";
+import type { CurtidasNoPrimeiro } from "@/lib/analise";
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -679,6 +681,7 @@ export function ProfileView({
     /** Curioso com conta: o destaque revelado, ou `semDados`. */
     revelado?: Person | null;
     semDados?: boolean;
+    curtidas?: CurtidasNoPrimeiro | null;
   }>({
     locked: true,
     items: [],
@@ -690,6 +693,8 @@ export function ProfileView({
   const [tab, setTab] = React.useState<Tab>("visao");
   // Os stories abrem em tela cheia pela foto, não como aba.
   const [storiesAbertos, setStoriesAbertos] = React.useState(false);
+  /** O anel da foto: gira enquanto os stories carregam, cinza depois de vistos. */
+  const [storyEstado, setStoryEstado] = React.useState<"novo" | "carregando" | "visto">("novo");
   /**
    * Tem story? `null` = ainda não dá para saber.
    *
@@ -981,6 +986,7 @@ export function ProfileView({
             items: b.items ?? [],
             revelado: b.revelado ?? null,
             semDados: !!b.semDados,
+            curtidas: b.curtidas ?? null,
           });
       } catch {
         /* stays locked */
@@ -1363,8 +1369,12 @@ export function ProfileView({
                 onVerStories={
                   state.data.isPrivate || temStories === false
                     ? undefined
-                    : () => setStoriesAbertos(true)
+                    : () => {
+                        setStoryEstado("carregando");
+                        setStoriesAbertos(true);
+                      }
                 }
+                storyEstado={storyEstado}
                 onTrack={following.kind === "private" ? undefined : startTracking}
               />
             </div>
@@ -1373,7 +1383,11 @@ export function ProfileView({
               <ProfileStories
                 username={state.data.username}
                 avatarUrl={state.data.avatarUrl}
-                onClose={() => setStoriesAbertos(false)}
+                onClose={() => {
+                  setStoriesAbertos(false);
+                  setStoryEstado("visto");
+                }}
+                onPronto={() => setStoryEstado((e) => (e === "carregando" ? "novo" : e))}
                 onVazio={() => setTemStories(false)}
               />
             )}
@@ -1609,6 +1623,10 @@ export function ProfileView({
                 {tab === "interacoes" && (
                   <div className="mt-5">
                     {paid && ready ? (
+                      <div className="space-y-5">
+                      {interactions.curtidas && (
+                        <CurtidasNoPrimeiroPanel username={state.data.username} dados={interactions.curtidas} />
+                      )}
                       <ProDashboard
                         username={state.data.username}
                         displayName={state.data.displayName}
@@ -1623,6 +1641,7 @@ export function ProfileView({
                         showHistory={false}
                         proExtras={isPro}
                       />
+                      </div>
                     ) : (
                       <div className="space-y-5">
                         <OtherInteractions

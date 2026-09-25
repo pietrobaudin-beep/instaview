@@ -62,6 +62,10 @@ export interface MediaPost {
   caption: string | null;
   /** Accounts tagged in the photo or credited as co-authors. */
   tagged: FollowerEntry[];
+  /** Para mostrar o post (a mesma leitura já traz; caches antigos não têm). */
+  code?: string | null;
+  thumbnailUrl?: string | null;
+  takenAt?: string | null;
 }
 
 // ---------------------------------------------------------------------------

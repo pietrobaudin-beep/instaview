@@ -201,7 +201,25 @@ export class MockProvider implements InstagramDataProvider {
   async getRecentMedia(username: string): Promise<MediaPost[]> {
     if (username.endsWith("_quieto")) return [];
     const posts = await this.getPosts(username);
-    return posts.map((p) => ({ id: p.id, caption: p.caption, tagged: p.tagged }));
+    return posts.map((p) => ({ id: p.id, caption: p.caption, tagged: p.tagged, takenAt: p.takenAt }));
+  }
+
+  /**
+   * Quem curtiu / comentou. Para testar "o que a pessoa curtiu" sem gastar,
+   * o perfil de teste (joao.pereira) aparece em parte dos posts.
+   */
+  async getMediaLikers(mediaId: string): Promise<FollowerEntry[]> {
+    const rng = mulberry32(hashSeed(mediaId + ":likers"));
+    const gente = Array.from({ length: 8 }, (_, i) => makeFollower(mediaId, i));
+    if (rng() > 0.4) gente.push({ username: "joao.pereira", displayName: "João Pereira", avatarUrl: null, isVerified: false });
+    return gente;
+  }
+
+  async getMediaCommenters(mediaId: string): Promise<FollowerEntry[]> {
+    const rng = mulberry32(hashSeed(mediaId + ":comments"));
+    const gente = Array.from({ length: 3 }, (_, i) => makeFollower(mediaId + "c", i));
+    if (rng() > 0.7) gente.push({ username: "joao.pereira", displayName: "João Pereira", avatarUrl: null, isVerified: false });
+    return gente;
   }
 
   async getPinned(username: string): Promise<PostItem[]> {

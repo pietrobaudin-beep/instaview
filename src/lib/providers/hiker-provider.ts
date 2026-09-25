@@ -282,6 +282,9 @@ export class HikerApiProvider implements InstagramDataProvider {
     return items.map((m) => ({
       id: String(m.pk ?? m.id ?? ""),
       caption: m.caption_text ?? null,
+      code: m.code ?? null,
+      thumbnailUrl: thumbOf(m),
+      takenAt: toIso(m.taken_at),
       tagged: [...(m.usertags ?? []), ...(m.coauthor_producers ?? [])]
         .map((t: any) => t?.user ?? t)
         .filter((u: any) => u?.username)

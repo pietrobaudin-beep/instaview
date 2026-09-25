@@ -526,7 +526,10 @@ export function ProfileHero({
   onTrack,
   locked = false,
   onVerStories,
+  storyEstado = "novo",
 }: {
+  /** O anel: story novo, abrindo (gira) ou já visto (cinza). */
+  storyEstado?: "novo" | "carregando" | "visto";
   profile: HeroProfile;
   premium?: boolean;
   note?: string | null;
@@ -561,10 +564,20 @@ export function ProfileHero({
               <button
                 type="button"
                 onClick={onVerStories}
-                title="Ver stories"
-                className="block rounded-full bg-gradient-to-tr from-yellow via-pink to-purple p-[3px] transition hover:opacity-90"
+                aria-label={`Ver os stories de @${profile.username}`}
+                className="relative block rounded-full p-[3px] transition active:scale-95"
               >
-                <span className="block rounded-full bg-card p-1">
+                {/* O anel do Instagram: colorido = story novo; gira enquanto
+                    abre; cinza depois de visto. */}
+                <span
+                  aria-hidden
+                  className={`absolute inset-0 rounded-full ${
+                    storyEstado === "visto"
+                      ? "bg-border"
+                      : "bg-[conic-gradient(from_200deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5,#feda75)]"
+                  } ${storyEstado === "carregando" ? "animate-[spin_0.9s_linear_infinite]" : ""}`}
+                />
+                <span className="relative block rounded-full bg-card p-1">
                   <Avatar
                     src={profile.avatarUrl}
                     name={profile.displayName ?? profile.username}
@@ -577,9 +590,6 @@ export function ProfileHero({
                     size={104}
                     className="hidden md:block"
                   />
-                </span>
-                <span className="mt-1 block text-center text-[11px] font-bold text-accent">
-                  Ver stories
                 </span>
               </button>
             ) : (

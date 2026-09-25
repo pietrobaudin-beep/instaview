@@ -21,6 +21,8 @@
  * 4. stories disponíveis
  * 5. marcações
  * 6. sobre a conta
+ * 7. o que a pessoa curtiu/comentou nos 3 posts mais recentes de quem ela
+ *    mais interage — posts dele (1) + curtidas (3) + comentários (3)
  *
  * Mais o id do perfil, que a HikerAPI precisa e que fica guardado por 24h.
  * Outras redes NÃO entram: são sob demanda, com franquia própria.
@@ -69,8 +71,27 @@ export interface AnaliseSalva {
   interacoes?: Interaction[];
   /** Stories, marcações e sobre, como o provedor entregou. */
   secoes?: Partial<Record<"stories" | "tagged" | "about", SectionData | null>>;
+  /** O que a pessoa curtiu/comentou nos posts de quem ela mais interage. */
+  curtidas?: CurtidasNoPrimeiro | null;
   /** Curioso com conta: só o destaque, ou `null` quando não há dado. */
   destaque?: Interaction | null;
+}
+
+/**
+ * O Instagram não mostra o que alguém curtiu. O caminho é o inverso: abrir os
+ * posts de UMA conta — a que mais aparece nas interações — e ver se a pessoa
+ * está entre quem curtiu ou comentou.
+ */
+export interface CurtidasNoPrimeiro {
+  alvo: Pick<Interaction, "username" | "displayName" | "avatarUrl">;
+  posts: {
+    id: string;
+    code: string | null;
+    thumbnailUrl: string | null;
+    takenAt: string | null;
+    curtiu: boolean;
+    comentou: boolean;
+  }[];
 }
 
 export interface Salva {
@@ -171,6 +192,40 @@ async function coletarInteracoes(username: string): Promise<Interaction[]> {
     .slice(0, 10);
 }
 
+const POSTS_CONFERIDOS = 3;
+
+async function coletarCurtidas(username: string, alvo: Interaction): Promise<CurtidasNoPrimeiro | null> {
+  const provider = getProvider();
+  if (!provider.getMediaLikers || !provider.getMediaCommenters) return null;
+  const posts = (await getRecentMediaCached(alvo.username)).slice(0, POSTS_CONFERIDOS);
+  if (!posts.length) return null;
+  const eu = username.toLowerCase();
+  const tem = (lista: FollowerEntry[]) => lista.some((u) => u.username.toLowerCase() === eu);
+  const conferidos = await Promise.all(
+    posts.map(async (p) => {
+      const [curtidas, comentarios] = await Promise.allSettled([
+        provider.getMediaLikers!(p.id),
+        provider.getMediaCommenters!(p.id),
+      ]);
+      if (curtidas.status === "rejected" && comentarios.status === "rejected") return null;
+      return {
+        id: p.id,
+        code: p.code ?? null,
+        thumbnailUrl: p.thumbnailUrl ?? null,
+        takenAt: p.takenAt ?? null,
+        curtiu: curtidas.status === "fulfilled" && tem(curtidas.value),
+        comentou: comentarios.status === "fulfilled" && tem(comentarios.value),
+      };
+    }),
+  );
+  const ok = conferidos.filter((c): c is NonNullable<typeof c> => c !== null);
+  if (!ok.length) return null;
+  return {
+    alvo: { username: alvo.username, displayName: alvo.displayName, avatarUrl: alvo.avatarUrl },
+    posts: ok,
+  };
+}
+
 async function secao(username: string, s: "stories" | "tagged" | "about"): Promise<SectionData | null> {
   const r = await getSection(username, s);
   return r.status === "ok" ? r.data : null;
@@ -199,9 +254,21 @@ export async function coletarAnalise(username: string, origem: Origem): Promise<
     return { ok: false, motivo: "indisponivel" };
   }
 
+  let curtidas: CurtidasNoPrimeiro | null = null;
   const [seguindo, interacoes, stories, tagged, about] = await Promise.allSettled([
     coletarSeguindo(username),
-    coletarInteracoes(username),
+    // As curtidas dependem do ranking: saem logo em seguida, ainda em paralelo
+    // com o resto.
+    coletarInteracoes(username).then(async (lista) => {
+      const primeiro = lista[0];
+      curtidas = primeiro
+        ? await coletarCurtidas(username, primeiro).catch((e) => {
+            log.warn("curtidas falharam", { username, erro: (e as Error).message });
+            return null;
+          })
+        : null;
+      return lista;
+    }),
     secao(username, "stories"),
     secao(username, "tagged"),
     secao(username, "about"),
@@ -214,6 +281,7 @@ export async function coletarAnalise(username: string, origem: Origem): Promise<
     perfil,
     seguindo: valor(seguindo),
     interacoes: valor(interacoes),
+    curtidas,
     secoes: { stories: valor(stories) ?? null, tagged: valor(tagged) ?? null, about: valor(about) ?? null },
   };
 
