@@ -61,21 +61,15 @@ export async function GET(req: Request) {
    * Só aqui o gasto vai acontecer de verdade — o que veio do cache, acima,
    * não consome nada.
    *
-   * Desde 24/09 a busca paga só acontece quando a pessoa PEDE (`buscar=1`,
-   * o botão "Buscar contas"): antes cada pausa na digitação era uma leitura,
-   * e o teto de 30 por dia podia custar R$ 99/mês numa conta só. Agora o
-   * limite é a franquia de sugestões do plano — 1 na experiência grátis.
+   * As sugestões aparecem sozinhas enquanto se digita (pedido do dono: a
+   * pessoa vê as contas, marca a certa e só então abre). O que segura o custo
+   * é o cache de 24h por palavra, a espera de digitação na tela e a franquia
+   * de sugestões do plano (3 na experiência grátis). Acabou a franquia: a tela
+   * oferece o @ digitado para a pessoa confirmar.
    */
   const user = await getCurrentUser();
   const d = direitosDe(user);
-  // Quem não paga não tem busca paga: sobra o @ exato (e o cache, acima).
   const extrasAvulso = user ? await prisma.profileUnlock.count({ where: { userId: user.id } }) : 0;
-  if (!d.admin && tetoDe(d.config, "sugestao") + extrasAvulso <= 0) {
-    return NextResponse.json({ results: [], soExato: true });
-  }
-  if (url.searchParams.get("buscar") !== "1") {
-    return NextResponse.json({ results: [], precisaBuscar: true });
-  }
   let reserva: Reserva | null = null;
   if (!d.admin) {
     // Cada Farejador comprado traz uma busca a mais.
