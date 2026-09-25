@@ -12,6 +12,13 @@
  *
  * Os nomes saem mascarados no servidor (só as duas primeiras letras) e a foto
  * vai para ser borrada na tela — nada identificável chega ao navegador.
+ *
+ * **"Interage bastante com" (25/09):** a mesma pessoa que a revelação vai
+ * mostrar, com nome mascarado e a foto **borrada no servidor**
+ * (`/api/previa-foto`) — o endereço da foto de verdade nunca sai daqui. Custa
+ * a leitura dos posts (R$ 0,11), dentro da mesma reserva da prévia, e fica no
+ * cache de 24h que a revelação reaproveita: quem cria a conta e revela não
+ * paga de novo.
  */
 import type { Prisma, User } from "@prisma/client";
 import { prisma } from "@/lib/db";
@@ -22,6 +29,9 @@ import { cacheSectionKey } from "@/lib/sandbox";
 import { comQuem } from "@/lib/custo";
 import { devolver, reservarBruto } from "@/lib/franquia";
 import { usageKey } from "@/lib/usage";
+import { getRecentMediaCached } from "@/lib/media-cache";
+import { rankInteractions } from "@/lib/interactions";
+import type { MediaPost } from "@/lib/providers/types";
 
 const TTL = 24 * 60 * 60 * 1000;
 /** Quantas pessoas a prévia mostra (borradas). */
@@ -44,7 +54,44 @@ export interface Previa {
   private: boolean;
   /** Algumas fotos de cada gênero, para o cartão com as fotinhas empilhadas. */
   rostos?: { f: string[]; m: string[] };
+  /**
+   * Quem mais aparece nas interações, mascarado. `undefined` = ainda não
+   * calculado (cache antigo); `null` = sem dado suficiente.
+   */
+  destaque?: { nome: string; temFoto: boolean } | null;
+  /** SÓ NO SERVIDOR: a foto de verdade, para `/api/previa-foto` borrar. */
+  destaqueFoto?: string | null;
 }
+
+/** Nome mascarado: as duas primeiras letras e pontinhos — some com o borrão. */
+const mascaraNome = (t: string) => t.slice(0, 2) + "•".repeat(Math.max(4, Math.min(10, t.length - 2)));
+
+/** A mesma regra da revelação (`coletarDestaque`): 1º lugar, com 2+ sinais. */
+function destaqueDe(posts: MediaPost[], username: string): Pick<Previa, "destaque" | "destaqueFoto"> {
+  const primeiro = rankInteractions(posts, username, 60).filter((i) => !i.isVerified)[0];
+  if (!primeiro || primeiro.count < 2) return { destaque: null, destaqueFoto: null };
+  return {
+    destaque: { nome: mascaraNome(primeiro.displayName || primeiro.username), temFoto: !!primeiro.avatarUrl },
+    destaqueFoto: primeiro.avatarUrl,
+  };
+}
+
+/** Os posts já guardados no cache, sem ler o provedor. */
+async function postsSoDoCache(username: string): Promise<MediaPost[] | null> {
+  const row = await prisma.sectionCache
+    .findUnique({ where: { username_section: { username, section: cacheSectionKey("recent-media") } } })
+    .catch(() => null);
+  if (!row || Date.now() - row.fetchedAt.getTime() > TTL) return null;
+  return row.data as unknown as MediaPost[];
+}
+
+export const SECAO_PREVIA = () => cacheSectionKey("previa-seguindo-10b");
+
+/** Para o cliente: tira o que só o servidor pode ver. */
+const publica = (p: Previa): Previa => {
+  const { destaqueFoto: _, ...resto } = p;
+  return { ...resto, following: p.following.slice(0, AMOSTRA) };
+};
 
 const mascarar = (u: FollowerEntry): FollowerEntry => ({
   username: u.username.slice(0, 2) + "•".repeat(Math.max(3, Math.min(9, u.username.length - 2))),
@@ -80,13 +127,27 @@ function montar(lista: FollowerEntry[], marcas: number): Previa {
 
 /** A prévia, do cache ou de uma leitura nova (se a franquia deixar). */
 export async function previaSeguindo(user: User | null, username: string): Promise<Previa | null> {
-  const secao = cacheSectionKey("previa-seguindo-10b");
+  const secao = SECAO_PREVIA();
   const guardada = await prisma.sectionCache
     .findUnique({ where: { username_section: { username, section: secao } } })
     .catch(() => null);
   if (guardada && Date.now() - guardada.fetchedAt.getTime() < TTL) {
     const p = guardada.data as unknown as Previa;
-    return { ...p, following: p.following.slice(0, AMOSTRA) };
+    // Prévia de antes do destaque: completa só com posts que já estão no
+    // cache — sem leitura nova.
+    if (p.destaque === undefined && !p.private && !p.seguindoOculto) {
+      const posts = await postsSoDoCache(username);
+      if (posts) {
+        Object.assign(p, destaqueDe(posts, username));
+        await prisma.sectionCache
+          .update({
+            where: { username_section: { username, section: secao } },
+            data: { data: p as unknown as Prisma.InputJsonValue },
+          })
+          .catch(() => null);
+      }
+    }
+    return publica(p);
   }
 
   // Conta grátis que já usou a revelação num perfil: nada de leitura nova em
@@ -109,6 +170,11 @@ export async function previaSeguindo(user: User | null, username: string): Promi
       dez.filter((u) => !u.isVerified),
       dez.filter((u) => u.isVerified).length,
     );
+    // O destaque borrado: posts recentes (cache de 24h, que a revelação reusa).
+    const posts = await comQuem({ userId: user?.id ?? null, motivo: "previa" }, () =>
+      getRecentMediaCached(username),
+    ).catch(() => null);
+    Object.assign(previa, posts ? destaqueDe(posts, username) : { destaque: null, destaqueFoto: null });
   } catch (e) {
     await devolver(reserva);
     if (e instanceof ProviderError && e.code === "PRIVATE") {
@@ -128,5 +194,5 @@ export async function previaSeguindo(user: User | null, username: string): Promi
       update: { data, fetchedAt: new Date() },
     })
     .catch(() => null);
-  return previa;
+  return publica(previa);
 }

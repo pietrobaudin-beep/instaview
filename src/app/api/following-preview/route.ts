@@ -107,6 +107,7 @@ export async function GET(req: Request) {
     following: previa?.following ?? [],
     counts: previa?.counts ?? null,
     rostos: previa?.rostos ?? null,
+    destaque: previa?.destaque ?? null,
     seguindoOculto: previa?.seguindoOculto ?? false,
     recent: { started: [], stopped: [] },
     real: !!previa?.following.length,

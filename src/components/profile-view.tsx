@@ -661,6 +661,8 @@ export function ProfileView({
         real: boolean;
         counts?: Breakdown;
         rostos?: { f: string[]; m: string[] } | null;
+        /** Prévia grátis: quem mais interage, mascarado (foto borrada no servidor). */
+        destaque?: { nome: string; temFoto: boolean } | null;
         recent?: { started: RecentItem[]; stopped: RecentItem[] };
         /** Quem assina e ainda não gastou análise NESTE perfil: perguntar antes. */
         precisaConfirmar?: boolean;
@@ -1047,6 +1049,7 @@ export function ProfileView({
           real: !!body.real,
           counts: body.counts ?? undefined,
           rostos: body.rostos ?? null,
+          destaque: body.destaque ?? null,
           recent: body.recent,
           precisaConfirmar: !!body.precisaConfirmar,
           analises: body.analises ?? null,
@@ -1508,13 +1511,34 @@ export function ProfileView({
                       <section className="space-y-3">
                         <p className="text-sm font-bold">👀 Interage bastante com</p>
                         <div className="flex min-h-[100px] items-center gap-4 rounded-3xl border border-border bg-card p-4 shadow-sm">
-                          <div className="flex flex-1 items-center gap-4 blur-[5px]" aria-hidden>
-                            <div className="h-[60px] w-[60px] shrink-0 rounded-full bg-muted" />
-                            <div className="min-w-0 flex-1 space-y-2">
-                              <div className="h-4 w-32 max-w-full rounded bg-muted" />
-                              <div className="h-3 w-20 max-w-full rounded bg-muted/70" />
+                          {ready?.destaque ? (
+                            // A pessoa de verdade, sem dar para identificar: a
+                            // foto chega já borrada do servidor e o nome, mascarado.
+                            <div className="flex flex-1 items-center gap-4 select-none" aria-hidden>
+                              {ready.destaque.temFoto ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={`/api/previa-foto?username=${encodeURIComponent(state.data.username)}`}
+                                  alt=""
+                                  className="h-[60px] w-[60px] shrink-0 rounded-full object-cover blur-[3px]"
+                                />
+                              ) : (
+                                <div className="h-[60px] w-[60px] shrink-0 rounded-full bg-muted" />
+                              )}
+                              <div className="min-w-0 flex-1 blur-[5px]">
+                                <p className="truncate text-base font-bold">{ready.destaque.nome}</p>
+                                <p className="truncate text-sm text-muted-foreground">@{ready.destaque.nome.toLowerCase()}</p>
+                              </div>
                             </div>
-                          </div>
+                          ) : (
+                            <div className="flex flex-1 items-center gap-4 blur-[5px]" aria-hidden>
+                              <div className="h-[60px] w-[60px] shrink-0 rounded-full bg-muted" />
+                              <div className="min-w-0 flex-1 space-y-2">
+                                <div className="h-4 w-32 max-w-full rounded bg-muted" />
+                                <div className="h-3 w-20 max-w-full rounded bg-muted/70" />
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </section>
                     )}
