@@ -26,6 +26,7 @@ import { NotificationsFeed, type Notification } from "@/components/notifications
 import { SavedStories, type SavedStory } from "@/components/saved-stories";
 import { PergunteAoFaro } from "@/components/pergunte-ao-faro";
 import { PlanLimits } from "@/components/plan-limits";
+import { ProximaColeta } from "@/components/proxima-coleta";
 import type { ResumoFranquia } from "@/lib/franquia";
 import type { Plan } from "@prisma/client";
 import { AppHeader, SettingRow, Toggle } from "@/components/ui/app-chrome";
@@ -546,10 +547,13 @@ export function TrackingSettings({
               <NotificationsFeed items={pistas} />
             ) : (
               <NoteBox className="items-center" icon={<SniffingDog className="h-12 text-ink" />}>
-                <span className="hand text-lg">
-                  {totalSemana === 0 && active
-                    ? "Ainda não achei nada por aqui. Eu aviso!"
-                    : "O Faro AI te avisa quando encontrar algo novo!"}
+                <span>
+                  <span className="hand text-lg">
+                    {totalSemana === 0 && active
+                      ? "Ainda não achei nada por aqui. Eu aviso!"
+                      : "O Faro AI te avisa quando encontrar algo novo!"}
+                  </span>
+                  {active && <ProximaColeta alvo={status?.proxima ?? null} />}
                 </span>
               </NoteBox>
             )}

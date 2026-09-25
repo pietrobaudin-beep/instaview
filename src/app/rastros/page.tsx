@@ -157,6 +157,10 @@ export default async function RastrosPage() {
         deixou: { total: nDeixou, pessoas: deixou.map(pessoa) },
         stories: { total: stories.length, itens: stories.slice(0, 12).map(item) },
         marcacoes: { total: nMarcacoes, itens: marcacoes.map(item) },
+        // Última coleta + cadência do plano; sem coleta ainda, é agora.
+        proximaColeta: p.lastCollectedAt
+          ? new Date(p.lastCollectedAt.getTime() + d.config.cadenciaHoras * 3_600_000).toISOString()
+          : new Date().toISOString(),
       };
     }),
   );

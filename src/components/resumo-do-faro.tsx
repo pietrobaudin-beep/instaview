@@ -3,6 +3,7 @@ import { ArrowUpRight, ChevronDown, PawPrint } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { TirarDoFaro } from "@/components/tirar-do-faro";
 import { HistoryPanel } from "@/components/history-panel";
+import { ProximaColeta } from "@/components/proxima-coleta";
 import { activityLevel, pistas } from "@/lib/voice";
 
 export interface PessoaResumo {
@@ -25,6 +26,8 @@ export interface PerfilResumo {
   deixou: { total: number; pessoas: PessoaResumo[] };
   stories: { total: number; itens: MidiaResumo[] };
   marcacoes: { total: number; itens: MidiaResumo[] };
+  /** Quando a próxima coleta acontece (ISO) — para o contador. */
+  proximaColeta: string | null;
 }
 
 // O CDN do Instagram bloqueia imagem embutida em outro site; passa pelo proxy.
@@ -97,6 +100,9 @@ function Midias({ itens, href, formato }: { itens: MidiaResumo[]; href: string; 
 export function ResumoDoFaro({ perfil }: { perfil: PerfilResumo }) {
   const painel = `/rastros/${encodeURIComponent(perfil.username)}`;
   const level = activityLevel(perfil.pistasSemana);
+  // Nada de quem-entrou-quem-saiu ainda: é a base da primeira coleta. O
+  // contador diz quando as mudanças começam a aparecer.
+  const semHistorico = perfil.seguiu.total === 0 && perfil.deixou.total === 0;
 
   return (
     <section className="relative min-w-0 rounded-3xl border border-border bg-card">
@@ -136,6 +142,8 @@ export function ResumoDoFaro({ perfil }: { perfil: PerfilResumo }) {
           <Rotulo titulo="Começou a seguir" total={perfil.seguiu.total} sufixo="nos últimos 7 dias" />
           {perfil.seguiu.pessoas.length ? (
             <Pessoas pessoas={perfil.seguiu.pessoas} />
+          ) : semHistorico ? (
+            <ProximaColeta alvo={perfil.proximaColeta} />
           ) : (
             <Vazio>Ninguém novo esta semana.</Vazio>
           )}
@@ -145,6 +153,8 @@ export function ResumoDoFaro({ perfil }: { perfil: PerfilResumo }) {
           <Rotulo titulo="Deixou de seguir" total={perfil.deixou.total} sufixo="nos últimos 7 dias" />
           {perfil.deixou.pessoas.length ? (
             <Pessoas pessoas={perfil.deixou.pessoas} />
+          ) : semHistorico ? (
+            <ProximaColeta alvo={perfil.proximaColeta} texto="Quem sair da lista aparece aqui depois da próxima coleta" />
           ) : (
             <Vazio>Ninguém saiu da lista esta semana.</Vazio>
           )}
