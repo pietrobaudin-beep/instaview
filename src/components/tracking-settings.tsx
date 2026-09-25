@@ -504,34 +504,29 @@ export function TrackingSettings({
         )}
       </div>
 
-      <div className="mt-5 grid items-start gap-5 lg:grid-cols-[1.4fr_1fr]">
-        <div className="min-w-0 space-y-5">
-          <section>
-            <h2 className="mb-3 text-lg font-bold tracking-tight">Quem entrou e quem saiu</h2>
-            {pistas.length > 0 ? (
-              <NotificationsFeed items={pistas} />
-            ) : (
-              <NoteBox className="items-center" icon={<SniffingDog className="h-12 text-ink" />}>
-                <span>
-                  <span className="hand text-lg">
-                    {totalSemana === 0 && active
-                      ? "Ainda não achei nada por aqui. Eu aviso!"
-                      : "O Faro AI te avisa quando encontrar algo novo!"}
-                  </span>
-                  {active && <ProximaColeta alvo={status?.proxima ?? null} />}
-                </span>
-              </NoteBox>
-            )}
-          </section>
+      {/* Quem entrou e saiu na largura toda; embaixo, Novidades e o gráfico
+          lado a lado, da mesma altura. Duas colunas de alturas diferentes
+          deixavam um buraco embaixo da mais curta. */}
+      <section className="mt-5">
+        <h2 className="mb-3 text-lg font-bold tracking-tight">Quem entrou e quem saiu</h2>
+        {pistas.length > 0 ? (
+          <NotificationsFeed items={pistas} />
+        ) : (
+          <NoteBox className="items-center" icon={<SniffingDog className="h-12 text-ink" />}>
+            <span>
+              <span className="hand text-lg">
+                {totalSemana === 0 && active
+                  ? "Ainda não achei nada por aqui. Eu aviso!"
+                  : "O Faro AI te avisa quando encontrar algo novo!"}
+              </span>
+              {active && <ProximaColeta alvo={status?.proxima ?? null} />}
+            </span>
+          </NoteBox>
+        )}
+      </section>
 
-          {/* Perguntar mora só no Chat (barra lateral → Faro AI → Chat). */}
-        </div>
-
-        <div className="min-w-0 space-y-5">
-          {/* O histórico deste perfil: só banco, nenhuma chamada paga. */}
-          <HistoryPanel username={username} loggedIn isPro enxuto />
-        </div>
-      </div>
+      {/* O histórico deste perfil: só banco, nenhuma chamada paga. */}
+      <HistoryPanel username={username} loggedIn isPro enxuto className="mt-5" />
 
       {/* O plano por último: é consulta, não é o assunto da tela. */}
       {limites && <PlanLimits resumo={limites} className="mt-8" />}

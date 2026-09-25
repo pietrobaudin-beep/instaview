@@ -78,6 +78,8 @@ function ago(iso: string) {
   }
 }
 
+const Justo = React.createContext(false);
+
 function Panel({
   title,
   icon: Icon,
@@ -91,6 +93,7 @@ function Panel({
   action?: React.ReactNode;
   className?: string;
 }) {
+  const justo = React.useContext(Justo);
   return (
     <section className={`rounded-2xl border border-border bg-card ${className}`}>
       <header className="flex items-center gap-2 border-b border-border px-5 py-4">
@@ -98,7 +101,10 @@ function Panel({
         <h2 className="font-semibold">{title}</h2>
         <span className="ml-auto">{action}</span>
       </header>
-      <div className="flex min-h-[13.5rem] flex-col p-5">{children}</div>
+      {/* Altura mínima só onde os cartões ficam em coluna, para alinhar; no
+          painel do Faro AI, lado a lado, eles se esticam juntos e o mínimo
+          fixo só deixava cartão oco. */}
+      <div className={`flex flex-1 flex-col p-5 ${justo ? "" : "min-h-[13.5rem]"}`}>{children}</div>
     </section>
   );
 }
@@ -282,7 +288,12 @@ export function HistoryPanel({
   const h = history;
 
   return (
-    <div className={`space-y-6 ${className}`}>
+    <Justo.Provider value={enxuto}>
+    <div
+      className={`${
+        enxuto ? "space-y-5" : "space-y-6"
+      } ${className}`}
+    >
       {!enxuto && (
         <>
       <p className="text-lg font-bold">{BRAND.phrases.oQueMudou}</p>
@@ -441,5 +452,6 @@ export function HistoryPanel({
         </>
       )}
     </div>
+    </Justo.Provider>
   );
 }
