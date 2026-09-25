@@ -5,6 +5,9 @@ import { Avatar } from "@/components/ui/avatar";
 import { StoryViewer, type ViewerStory } from "@/components/story-viewer";
 
 export interface PerfilComStories {
+  /** Para salvar (favoritar) direto do visualizador. */
+  profileId?: string;
+  salvos?: string[];
   username: string;
   avatarUrl: string | null;
   displayName: string | null;
@@ -21,6 +24,40 @@ export interface PerfilComStories {
  */
 export function StoriesDoFaro({ perfis }: { perfis: PerfilComStories[] }) {
   const [aberto, setAberto] = React.useState<PerfilComStories | null>(null);
+  // Favoritos por perfil, começando do que veio do servidor.
+  const [salvos, setSalvos] = React.useState<Record<string, string[]>>(() =>
+    Object.fromEntries(perfis.map((p) => [p.username, p.salvos ?? []])),
+  );
+  const [marcando, setMarcando] = React.useState<string | null>(null);
+  const [aviso, setAviso] = React.useState<string | null>(null);
+
+  async function alternar(p: PerfilComStories, storyId: string) {
+    if (!p.profileId) return;
+    const atuais = salvos[p.username] ?? [];
+    const salvar = !atuais.includes(storyId);
+    setMarcando(storyId);
+    setAviso(null);
+    try {
+      const r = await fetch("/api/stories-salvos", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ profileId: p.profileId, storyId, salvar }),
+      });
+      const b = await r.json();
+      if (Array.isArray(b?.ids)) setSalvos((s) => ({ ...s, [p.username]: b.ids }));
+      if (b?.ok === false) {
+        setAviso(
+          b.motivo === "sem_espaco"
+            ? "O espaço dos favoritos está cheio. Tire algum para salvar este."
+            : "Os favoritos do seu plano estão cheios. Tire algum para salvar este.",
+        );
+      }
+    } catch {
+      setAviso("Não deu para salvar agora. Tente de novo.");
+    } finally {
+      setMarcando(null);
+    }
+  }
   const comStories = perfis.filter((p) => p.stories.length > 0);
   if (!comStories.length) return null;
 
@@ -55,7 +92,20 @@ export function StoriesDoFaro({ perfis }: { perfis: PerfilComStories[] }) {
           username={aberto.username}
           avatarUrl={aberto.avatarUrl}
           stories={aberto.stories}
-          onClose={() => setAberto(null)}
+          onClose={() => {
+            setAberto(null);
+            setAviso(null);
+          }}
+          salvar={
+            aberto.profileId
+              ? {
+                  salvos: salvos[aberto.username] ?? [],
+                  marcando,
+                  aviso,
+                  alternar: (id) => alternar(aberto, id),
+                }
+              : undefined
+          }
         />
       )}
     </section>

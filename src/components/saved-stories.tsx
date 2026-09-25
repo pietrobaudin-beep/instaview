@@ -427,6 +427,21 @@ export function SavedStories({
           startAt={aberto}
           stories={paraViewer(mostrados)}
           onClose={() => setAberto(-1)}
+          salvar={
+            profileId
+              ? {
+                  salvos,
+                  marcando,
+                  alternar,
+                  aviso:
+                    semCota === "sem_espaco"
+                      ? "O espaço dos favoritos está cheio. Tire algum para salvar este."
+                      : semCota === "sem_cota"
+                        ? `Você já tem ${cota.limite} favoritos, o máximo do plano.`
+                        : null,
+                }
+              : undefined
+          }
         />
       )}
       <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">

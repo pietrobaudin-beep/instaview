@@ -97,6 +97,7 @@ export default async function RastrosPage() {
   // consultas por perfil é barata.
   // Os stories no prazo de cada perfil, para a faixa do topo.
   const storiesPorPerfil = new Map<string, ViewerStory[]>();
+  const salvosPorPerfil = new Map<string, string[]>();
   const proxied = (url: string | null) =>
     url && /(?:\.fbcdn\.net|\.cdninstagram\.com)/i.test(url) ? `/api/img?url=${encodeURIComponent(url)}` : url;
 
@@ -132,6 +133,7 @@ export default async function RastrosPage() {
           prisma.profileEvent.count({ where: midia("tagged") }),
         ]);
       const fav = new Set(favoritos);
+      salvosPorPerfil.set(p.id, favoritos);
       const stories = todosStories.filter((e) => visivel(user, e, fav));
       // Do mais antigo ao mais novo, como o Instagram mostra.
       storiesPorPerfil.set(
@@ -224,6 +226,8 @@ export default async function RastrosPage() {
           <>
           <StoriesDoFaro
             perfis={profiles.map((p) => ({
+              profileId: p.id,
+              salvos: salvosPorPerfil.get(p.id) ?? [],
               username: p.username,
               avatarUrl: p.avatarUrl,
               displayName: p.displayName,

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Clock, Pause as PauseIcon, Play, Search, Volume2, VolumeX, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Clock, Loader2, Pause as PauseIcon, Play, Search, Star, Volume2, VolumeX, X } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 
 /**
@@ -45,18 +45,32 @@ function quando(iso: string | null): string {
   return d === 1 ? "1 dia atrás" : `${d} dias atrás`;
 }
 
+/**
+ * "Salvar story": o favorito, a partir do visualizador. O story salvo fica
+ * guardado depois do prazo do plano, enquanto o plano estiver ativo.
+ */
+export interface SalvarStory {
+  salvos: string[];
+  marcando?: string | null;
+  /** Recado quando não deu (vagas ou espaço cheios). */
+  aviso?: string | null;
+  alternar: (storyId: string) => void;
+}
+
 export function StoryViewer({
   stories,
   startAt = 0,
   username,
   avatarUrl,
   onClose,
+  salvar,
 }: {
   stories: ViewerStory[];
   startAt?: number;
   username: string;
   avatarUrl?: string | null;
   onClose: () => void;
+  salvar?: SalvarStory;
 }) {
   const [i, setI] = React.useState(Math.min(startAt, Math.max(0, stories.length - 1)));
   const [progresso, setProgresso] = React.useState(0);
@@ -245,12 +259,36 @@ export function StoryViewer({
           <span className="truncate text-sm font-bold text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.7)]">@{username}</span>
           <span className="shrink-0 text-xs text-white/70">{quando(atual.takenAt)}</span>
 
+          {salvar && (() => {
+            const salvo = salvar.salvos.includes(atual.id);
+            const ocupado = salvar.marcando === atual.id;
+            return (
+              <button
+                type="button"
+                onClick={() => salvar.alternar(atual.id)}
+                disabled={ocupado}
+                title={salvo ? "Tirar dos salvos" : "Fica guardado depois que expirar"}
+                className={`ml-auto flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-xs font-bold shadow-md transition hover:opacity-90 disabled:opacity-70 ${
+                  salvo ? "bg-white text-ink" : "bg-pink text-ink"
+                }`}
+              >
+                {ocupado ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : salvo ? (
+                  <Check className="h-3.5 w-3.5" />
+                ) : (
+                  <Star className="h-3.5 w-3.5" />
+                )}
+                {salvo ? "Salvo" : "Salvar story"}
+              </button>
+            );
+          })()}
           {tocaVideo && (
             <button
               type="button"
               onClick={() => setMudo((m) => !m)}
               aria-label={mudo ? "Ligar o som" : "Desligar o som"}
-              className="ml-auto flex h-10 w-10 items-center justify-center rounded-full text-white/90 transition hover:bg-white/15"
+              className={`${salvar ? "" : "ml-auto "}flex h-10 w-10 items-center justify-center rounded-full text-white/90 transition hover:bg-white/15`}
             >
               {mudo ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
             </button>
@@ -260,7 +298,7 @@ export function StoryViewer({
             type="button"
             onClick={() => setPausadoNoBotao((p) => !p)}
             aria-label={pausado ? "Continuar" : "Pausar"}
-            className={`${tocaVideo ? "" : "ml-auto "}flex h-10 w-10 items-center justify-center rounded-full text-white/90 transition hover:bg-white/15`}
+            className={`${tocaVideo || salvar ? "" : "ml-auto "}flex h-10 w-10 items-center justify-center rounded-full text-white/90 transition hover:bg-white/15`}
           >
             {pausado ? <Play className="h-5 w-5" /> : <PauseIcon className="h-5 w-5" />}
           </button>
@@ -273,6 +311,15 @@ export function StoryViewer({
             <X className="h-5 w-5" />
           </button>
         </div>
+
+        {salvar?.aviso && (
+          <p
+            className="absolute inset-x-3 z-20 rounded-2xl bg-black/70 px-3 py-2 text-center text-[12px] font-semibold text-white"
+            style={{ top: "calc(env(safe-area-inset-top, 0px) + 4.5rem)" }}
+          >
+            {salvar.aviso}
+          </p>
+        )}
 
         {/* A imagem e as zonas de toque. */}
         <div
