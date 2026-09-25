@@ -5,7 +5,7 @@
  * ## A estrutura de 24/09
  *
  * Curioso (grátis, com ou sem conta) → Farejador (R$ 9,90, avulso) →
- * Farejador + (R$ 19,90, semanal) → Faro de Cão (R$ 39,90/mês) → Faro de
+ * Farejador + (R$ 19,90, passe de 7 dias) → Faro de Cão (R$ 39,90/mês) → Faro de
  * Detetive (R$ 59,90/mês). Admin não é plano: é permissão, em `direitos.ts`.
  *
  * Cada número abaixo é uma **franquia por ciclo**, contada no servidor em
@@ -64,7 +64,7 @@ export interface PlanConfig {
   redes: number;
   /**
    * "Ver curtidas": o que a pessoa curtiu nos posts de quem ela mais
-   * interage (`/api/curtidas`). Só o Farejador + (semanal), por decisão do dono.
+   * interage (`/api/curtidas`). Só o Farejador + (passe de 7 dias), por decisão do dono.
    */
   verCurtidas?: boolean;
   /**
@@ -157,7 +157,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
   FAREJADOR_MAIS: {
     id: "FAREJADOR_MAIS",
     name: "Farejador +",
-    para: "Uma semana para farejar mais perfis.",
+    para: "Um passe de 7 dias para farejar mais perfis. Sem renovação automática.",
     billing: "weekly",
     priceMonthly: 19.9,
     ciclo: "semana",
@@ -173,7 +173,8 @@ export const PLANS: Record<Plan, PlanConfig> = {
     historyDays: 7,
     stripePriceEnv: "NEXT_PUBLIC_STRIPE_PRICE_FAREJADOR_MAIS",
     features: [
-      "2 análises completas por semana",
+      "Passe de 7 dias, pagamento único — não renova sozinho",
+      "2 análises completas nos 7 dias",
       "Resultados salvos: reabrir não faz nova coleta",
       "Stories capturados pelo Farejo visíveis por até 48 horas da publicação — 24 horas a mais",
       "Até 2 consultas de outras redes",

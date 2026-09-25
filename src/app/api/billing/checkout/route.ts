@@ -7,7 +7,7 @@ import { grantUnlock } from "@/lib/access";
 import { PLANS, SINGLE_UNLOCK } from "@/lib/plans";
 import { createCheckoutSession, isBillingConfigured, isDemoBillingAllowed } from "@/lib/billing/stripe";
 import type { Plan } from "@prisma/client";
-import { linkDeCheckout } from "@/lib/billing/cakto";
+import { anotarAvulso, linkDeCheckout } from "@/lib/billing/cakto";
 
 const bodySchema = z.object({
   plan: z.enum(["CAO", "DETETIVE", "FAREJADOR_MAIS", "SINGLE"]),
@@ -43,7 +43,10 @@ export async function POST(req: Request) {
 
     // Cakto primeiro (PIX/cartão); o desbloqueio chega pelo webhook.
     const cakto = linkDeCheckout("SINGLE", { userId: user.id, email: user.email, username });
-    if (cakto) return NextResponse.json({ url: cakto });
+    if (cakto) {
+      await anotarAvulso(user.id, username);
+      return NextResponse.json({ url: cakto });
+    }
 
     if (isBillingConfigured() && singlePrice) {
       const session = await createCheckoutSession({
@@ -71,7 +74,10 @@ export async function POST(req: Request) {
    * renova a cada 7 dias, ou passe de 7 dias sem renovação. Cobrar recorrência
    * sem essa definição dita antes do pagamento não é uma opção.
    */
+  // Farejador +: passe de 7 dias (decisão de 25/09), pagamento único na Cakto.
   if (plan === "FAREJADOR_MAIS") {
+    const link = linkDeCheckout("FAREJADOR_MAIS", { userId: user.id, email: user.email });
+    if (link) return NextResponse.json({ url: link });
     return NextResponse.json(
       { error: "O Farejador + chega em breve.", code: "semanal_pendente" },
       { status: 409 },

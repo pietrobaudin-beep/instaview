@@ -8,6 +8,7 @@ import { SingleUnlockButton } from "@/components/single-unlock-button";
 import { isBillingConfigured, isDemoBillingAllowed } from "@/lib/billing/stripe";
 import { getCurrentUser } from "@/lib/auth";
 import { direitosDe } from "@/lib/direitos";
+import { linkDe } from "@/lib/billing/cakto";
 import { safeNext, withParam } from "@/lib/utils";
 import type { Plan } from "@prisma/client";
 
@@ -17,7 +18,7 @@ export const metadata = { title: "Planos · Farejo", description: "Os planos do 
 
 const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-const PERIODO: Record<string, string> = { weekly: "/semana", monthly: "/mês", free: "" };
+const PERIODO: Record<string, string> = { weekly: " por 7 dias", monthly: "/mês", free: "" };
 
 /**
  * A escada, do grátis ao topo — é ela que ordena, não o preço.
@@ -184,7 +185,8 @@ export default async function PricingPage({ searchParams }: { searchParams: { ne
         {planos.map((p) => {
           const plano = PLANS[p];
           const atual = d.plano === p;
-          const semanal = p === "FAREJADOR_MAIS";
+          // Farejador +: passe de 7 dias; vende quando o link da Cakto existe.
+          const semanal = p === "FAREJADOR_MAIS" && !linkDe("FAREJADOR_MAIS");
           return (
             <Cartao
               key={p}
@@ -193,14 +195,13 @@ export default async function PricingPage({ searchParams }: { searchParams: { ne
               atual={atual}
               acao={
                 d.admin || atual ? undefined : semanal ? (
-                  // A modalidade (renovação ou passe de 7 dias) ainda não foi
-                  // definida — e precisa estar escrita antes do pagamento.
+                  // Sem o link da Cakto do passe, não há como vender.
                   <Button variant="outline" className="w-full" disabled>
                     Em breve
                   </Button>
                 ) : (
                   <UpgradeButton
-                    plan={p as "CAO" | "DETETIVE"}
+                    plan={p as "CAO" | "DETETIVE" | "FAREJADOR_MAIS"}
                     label={`Assinar ${plano.name}`}
                     variant={p === "DETETIVE" ? "accent" : "outline"}
                     next={next}

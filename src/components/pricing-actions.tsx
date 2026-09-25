@@ -12,7 +12,7 @@ export function UpgradeButton({
   variant = "accent",
   next,
 }: {
-  plan: "CAO" | "DETETIVE";
+  plan: "CAO" | "DETETIVE" | "FAREJADOR_MAIS";
   label: string;
   variant?: "accent" | "outline";
   /** Where to send the buyer once the purchase completes (e.g. /p/<username>). */

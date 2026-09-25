@@ -5,9 +5,9 @@
  * criado no painel, e a Cakto avisa o pagamento por **webhook**.
  *
  * ## Variáveis (Vercel)
- * - `CAKTO_CHECKOUT_SINGLE`, `CAKTO_CHECKOUT_CAO`, `CAKTO_CHECKOUT_DETETIVE`
- *   (e `CAKTO_CHECKOUT_FAREJADOR_MAIS`, quando o semanal abrir): o link
- *   `https://pay.cakto.com.br/<oferta>` de cada oferta.
+ * - `CAKTO_CHECKOUT_SINGLE`, `CAKTO_CHECKOUT_FAREJADOR_MAIS`,
+ *   `CAKTO_CHECKOUT_CAO`, `CAKTO_CHECKOUT_DETETIVE`: o link
+ *   `https://pay.cakto.com.br/<oferta>_<checkout>` de cada produto.
  * - `CAKTO_WEBHOOK_SECRET`: o segredo do webhook, do painel da Cakto.
  *
  * O plano sai da **oferta** paga (o id no fim do link), nunca de algo que o
@@ -16,6 +16,7 @@
  */
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { Plan } from "@prisma/client";
+import { prisma } from "@/lib/db";
 
 export type Produto = "SINGLE" | "CAO" | "DETETIVE" | "FAREJADOR_MAIS";
 
@@ -31,20 +32,26 @@ export function linkDe(p: Produto): string | null {
   return v && /^https:\/\//.test(v) ? v : null;
 }
 
-/** O id da oferta é o último pedaço do link: pay.cakto.com.br/<id>. */
-function ofertaDoLink(link: string): string | null {
+/**
+ * Os ids que o link carrega. O link do painel é `pay.cakto.com.br/<oferta>_<checkout>`
+ * (ex.: `mwyij2q_1138762`); o webhook manda `offer.id` = `mwyij2q`.
+ */
+function idsDoLink(link: string): string[] {
   try {
-    return new URL(link).pathname.split("/").filter(Boolean).pop() ?? null;
+    const ultimo = new URL(link).pathname.split("/").filter(Boolean).pop() ?? "";
+    return [ultimo, ultimo.split("_")[0]].filter(Boolean);
   } catch {
-    return null;
+    return [];
   }
 }
 
-export function produtoDaOferta(oferta: string | null | undefined): Produto | null {
-  if (!oferta) return null;
+/** Qual produto foi pago: pela oferta, ou pelo link do checkout do evento. */
+export function produtoDaOferta(oferta: string | null | undefined, checkoutUrl?: string | null): Produto | null {
+  const candidatos = [oferta, ...(checkoutUrl ? idsDoLink(checkoutUrl) : [])].filter(Boolean) as string[];
+  if (!candidatos.length) return null;
   for (const p of Object.keys(ENV) as Produto[]) {
     const link = linkDe(p);
-    if (link && ofertaDoLink(link) === oferta) return p;
+    if (link && idsDoLink(link).some((id) => candidatos.includes(id))) return p;
   }
   return null;
 }
@@ -76,7 +83,11 @@ export function linkDeCheckout(p: Produto, opts: { userId: string; email?: strin
   const link = linkDe(p);
   if (!link) return null;
   const url = new URL(link);
-  url.searchParams.set("callback", callbackDe(opts.userId, opts.username));
+  // `callback` pela documentação; `sck` é o que aparece no modelo do webhook
+  // do painel. Os dois levam o mesmo valor, e o webhook lê o que vier.
+  const cb = callbackDe(opts.userId, opts.username);
+  url.searchParams.set("callback", cb);
+  url.searchParams.set("sck", cb);
   if (opts.email) url.searchParams.set("email", opts.email);
   return url.toString();
 }
@@ -104,4 +115,33 @@ export function webhookValido(raw: string, headers: Headers, corpo: { secret?: u
     return iguais(assinatura, esperado);
   }
   return typeof corpo.secret === "string" && iguais(corpo.secret, segredo);
+}
+
+/**
+ * O @ que a pessoa estava comprando no avulso, anotado quando ela toca em
+ * pagar. É a reserva para quando o webhook não devolve o `sck`/`callback`:
+ * aí só vem o e-mail, e o e-mail diz quem é, não qual perfil.
+ *
+ * Mora no `section_cache` (chave @ + `cakto-pendente:<conta>`) para não
+ * precisar de tabela nova.
+ */
+const PENDENTE = (userId: string) => `cakto-pendente:${userId}`;
+
+export async function anotarAvulso(userId: string, username: string): Promise<void> {
+  await prisma.sectionCache
+    .upsert({
+      where: { username_section: { username, section: PENDENTE(userId) } },
+      create: { username, section: PENDENTE(userId), data: {} },
+      update: { fetchedAt: new Date() },
+    })
+    .catch(() => null);
+}
+
+/** O último @ anotado nas últimas 48h. */
+export async function avulsoAnotado(userId: string): Promise<string | null> {
+  const row = await prisma.sectionCache
+    .findFirst({ where: { section: PENDENTE(userId) }, orderBy: { fetchedAt: "desc" } })
+    .catch(() => null);
+  if (!row || Date.now() - row.fetchedAt.getTime() > 48 * 60 * 60 * 1000) return null;
+  return row.username;
 }

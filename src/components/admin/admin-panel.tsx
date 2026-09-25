@@ -116,7 +116,7 @@ export interface Stats {
 /** Os planos como você fechou: nome, preço e como é cobrado. */
 const PLANOS: { id: PlanId; nome: string; preco: string }[] = [
   { id: "FREE", nome: "Curioso", preco: "grátis" },
-  { id: "FAREJADOR_MAIS", nome: "Farejador +", preco: "R$ 19,90/sem" },
+  { id: "FAREJADOR_MAIS", nome: "Farejador +", preco: "R$ 19,90 / 7 dias" },
   { id: "CAO", nome: "Faro de Cão", preco: "R$ 39,90/mês" },
   { id: "DETETIVE", nome: "Faro de Detetive", preco: "R$ 59,90/mês" },
   // Estrutura anterior, até a transição.
