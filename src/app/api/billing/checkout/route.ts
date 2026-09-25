@@ -42,10 +42,10 @@ export async function POST(req: Request) {
     const singlePrice = process.env[SINGLE_UNLOCK.stripePriceEnv];
 
     // Cakto primeiro (PIX/cartão); o desbloqueio chega pelo webhook.
-    const cakto = linkDeCheckout("SINGLE", { userId: user.id, email: user.email, username });
-    if (cakto) {
+    // Cakto: o pagamento acontece dentro do Farejo, em /checkout.
+    if (linkDeCheckout("SINGLE", { userId: user.id, username })) {
       await anotarAvulso(user.id, username);
-      return NextResponse.json({ url: cakto });
+      return NextResponse.json({ url: `/checkout?plano=farejador&perfil=${encodeURIComponent(username)}` });
     }
 
     if (isBillingConfigured() && singlePrice) {
@@ -76,8 +76,9 @@ export async function POST(req: Request) {
    */
   // Farejador +: passe de 7 dias (decisão de 25/09), pagamento único na Cakto.
   if (plan === "FAREJADOR_MAIS") {
-    const link = linkDeCheckout("FAREJADOR_MAIS", { userId: user.id, email: user.email });
-    if (link) return NextResponse.json({ url: link });
+    if (linkDeCheckout("FAREJADOR_MAIS", { userId: user.id })) {
+      return NextResponse.json({ url: "/checkout?plano=farejador-mais" });
+    }
     return NextResponse.json(
       { error: "O Farejador + chega em breve.", code: "semanal_pendente" },
       { status: 409 },
@@ -87,8 +88,9 @@ export async function POST(req: Request) {
   const priceId = process.env[PLANS[plan].stripePriceEnv ?? ""];
 
   // Cakto primeiro; o plano chega pelo webhook.
-  const cakto = linkDeCheckout(plan as "CAO" | "DETETIVE", { userId: user.id, email: user.email });
-  if (cakto) return NextResponse.json({ url: cakto });
+  if (linkDeCheckout(plan as "CAO" | "DETETIVE", { userId: user.id })) {
+    return NextResponse.json({ url: `/checkout?plano=${plan === "CAO" ? "cao" : "detetive"}` });
+  }
 
   // Use the real site origin (NEXT_PUBLIC_APP_URL may be unset on Vercel).
   const origin = new URL(req.url).origin;
