@@ -28,7 +28,6 @@ import { AnalysisLoading, type RevealProfile } from "@/components/analysis-loadi
 import { markSeen, wasSeenRecently } from "@/lib/seen-profiles";
 import { BRAND, LOADING_LINES } from "@/lib/voice";
 import { FaroUpsell } from "@/components/faro-upsell";
-import { ConviteConta } from "@/components/convite-conta";
 import { SingleUnlockButton } from "@/components/single-unlock-button";
 import { NoteBox } from "@/components/ui/brand";
 import { Mascot } from "@/components/ui/mascot";
@@ -405,7 +404,7 @@ function Oferta({
     corpo = (
       <>
         <h2 className="text-lg font-bold">
-          Crie sua conta grátis e desbloqueie uma informação: quem mais aparece nas interações deste perfil.
+          Crie sua conta grátis para ver com quem @{username} mais interage.
         </h2>
         <Link
           href={`/signup?next=${encodeURIComponent(`/p/${username}?revelar=1`)}`}
@@ -428,7 +427,7 @@ function Oferta({
     corpo = (
       <>
         {revelado ? (
-          <h2 className="text-lg font-bold">Você revelou a primeira pista. Quer ver o resto?</h2>
+          <h2 className="text-lg font-bold">Desbloqueie todas as informações de @{username}.</h2>
         ) : semDados || revelacao.kind === "sem_dados" ? (
           <p className="max-w-sm text-sm">
             Ainda não temos informações suficientes para revelar esta pista. Sua revelação grátis
@@ -464,28 +463,92 @@ function Oferta({
           </>
         )}
         {(jaRevelou || revelacao.kind === "usada") && (
-          <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-            Desbloqueie a análise completa de @{username}.
+          <p className="max-w-sm text-sm text-muted-foreground">
+            Veja o perfil inteiro com o Farejador, ou acompanhe com o Faro AI.
           </p>
         )}
-        <SingleUnlockButton username={username} className="mt-2 w-full max-w-xs" />
-        <Link
-          href={`/pricing?next=${encodeURIComponent(`/p/${username}`)}`}
-          className="text-xs text-muted-foreground hover:text-foreground"
-        >
-          ver os planos
-        </Link>
       </>
     );
   }
+  // Depois da pista grátis, o próximo passo é pagar — os dois caminhos de
+  // antes, lado a lado: este perfil (Farejador) ou acompanhar (planos).
+  const mostrarPagos =
+    loggedIn && !planoPro && (!!revelado || semDados || revelacao.kind === "usada" || revelacao.kind === "sem_dados");
+
+  // A prévia trancada à vista, e o convite EMBAIXO dela — sem tapar nada.
+  // Com o destaque já revelado, o bloco "mais interação" aparece de verdade
+  // lá em cima; aqui ele sai, para não repetir.
+  return (
+    <div className="space-y-5">
+      <PreviaTrancada username={username} semDestaque={!!revelado} />
+      <div className="flex flex-col items-center gap-3 rounded-3xl border-2 border-pink bg-pink/15 px-5 py-8 text-center">
+        {corpo}
+      </div>
+      {mostrarPagos && <UpgradeCard username={username} />}
+    </div>
+  );
+}
+
+/**
+ * Os blocos da análise, trancados: mesmos títulos e mesmo desenho de quando
+ * estão revelados, com o conteúdo borrado. São formas, não dados — nada foi
+ * lido do provedor para ser borrado, e nada é inventado.
+ */
+function PreviaTrancada({ username, semDestaque = false }: { username: string; semDestaque?: boolean }) {
+  const cadeado = (
+    <Link
+      href={`/pricing?next=${encodeURIComponent(`/p/${username}`)}`}
+      className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-muted px-3 py-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground"
+    >
+      <Lock className="h-3 w-3" /> Trancado
+    </Link>
+  );
+  const Barra = ({ label, largura, cor }: { label: string; largura: string; cor: string }) => (
+    <div>
+      <div className="mb-1 flex items-center justify-between text-sm">
+        <span className="font-semibold">{label}</span>
+        <span className="blur-[5px]">00</span>
+      </div>
+      <div className="h-2.5 overflow-hidden rounded-full bg-muted">
+        <div className={`h-full rounded-full blur-[2px] ${cor}`} style={{ width: largura }} />
+      </div>
+    </div>
+  );
+  const Pessoa = () => (
+    <div className="flex items-center gap-3 blur-[5px]">
+      <div className="h-12 w-12 shrink-0 rounded-full bg-muted" />
+      <div className="min-w-0 flex-1 space-y-1.5">
+        <div className="h-3.5 w-32 max-w-full rounded bg-muted" />
+        <div className="h-3 w-20 max-w-full rounded bg-muted/70" />
+      </div>
+    </div>
+  );
 
   return (
-    <div className="relative isolate">
-      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-3xl">
-        <EsqueletoBorrado />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/80 to-background" />
+    <div aria-label="Prévia trancada da análise" className="space-y-5">
+      <div className="grid gap-5 lg:grid-cols-2">
+        <Panel title="Quem essa pessoa segue" action={cadeado}>
+          <div className="space-y-3">
+            <Barra label="Mulheres" largura="58%" cor="bg-pink" />
+            <Barra label="Homens" largura="42%" cor="bg-purple" />
+          </div>
+        </Panel>
+        {!semDestaque && (
+          <Panel title="👀 Parece ter mais interação com" action={cadeado}>
+            <Pessoa />
+          </Panel>
+        )}
       </div>
-      <div className="flex flex-col items-center gap-3 px-4 py-12 text-center">{corpo}</div>
+      <Panel title="Pessoas que aparecem bastante" action={cadeado}>
+        <div className="flex justify-around gap-3 blur-[5px]">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="flex flex-col items-center gap-2">
+              <div className="h-14 w-14 rounded-full bg-muted" />
+              <div className="h-2.5 w-16 rounded bg-muted" />
+            </div>
+          ))}
+        </div>
+      </Panel>
     </div>
   );
 }
@@ -1329,10 +1392,6 @@ export function ProfileView({
             )}
 
             <FaroUpsell open={upsell} onClose={() => setUpsell(false)} next={`/p/${username}`} />
-
-            {/* Sem conta: o convite para criar a conta grátis e desbloquear
-                uma informação deste perfil. */}
-            {!loggedIn && <ConviteConta username={state.data.username} />}
 
             {following.kind === "private" ? (
               <>
