@@ -1,7 +1,17 @@
 "use client";
 
 import * as React from "react";
-import { ArrowRight, BadgeCheck, Globe, Link as LinkIcon, Loader2, Lock, PawPrint, ThumbsDown, ThumbsUp } from "lucide-react";
+import {
+  ArrowRight,
+  BadgeCheck,
+  Globe,
+  Link as LinkIcon,
+  Loader2,
+  Lock,
+  PawPrint,
+  ThumbsDown,
+  ThumbsUp,
+} from "lucide-react";
 import NextLink from "next/link";
 import { Avatar } from "@/components/ui/avatar";
 import { formatNumber } from "@/lib/utils";
@@ -33,7 +43,9 @@ export interface HeroProfile {
 function Stat({ value, label }: { value: string; label: string }) {
   return (
     <div className="text-center">
-      <div className="text-xl font-extrabold tabular-nums sm:text-2xl">{value}</div>
+      <div className="text-xl font-extrabold tabular-nums sm:text-2xl">
+        {value}
+      </div>
       <div className="text-xs text-muted-foreground">{label}</div>
     </div>
   );
@@ -82,7 +94,10 @@ export function OtherNetworks({
   destaque = false,
   inicial = null,
   podeBuscarPagas = false,
+  trancado = false,
 }: {
+  /** Quem não pagou vê as redes borradas, sem link — abrem na análise paga. */
+  trancado?: boolean;
   username: string;
   isPrivate?: boolean;
   /** No beco sem saída do perfil privado, o bloco vira a saída principal. */
@@ -118,17 +133,26 @@ export function OtherNetworks({
    */
   const vscoPossivel = /^[\w.-]{2,30}$/.test(username);
 
-  const [links, setLinks] = React.useState<Elsewhere[]>((inicial?.links as Elsewhere[]) ?? []);
+  const [links, setLinks] = React.useState<Elsewhere[]>(
+    (inicial?.links as Elsewhere[]) ?? [],
+  );
   const [procurando, setProcurando] = React.useState(false);
   const [procurouPagas, setProcurouPagas] = React.useState(false);
   const [falhou, setFalhou] = React.useState(false);
 
   /** O que esta pessoa já respondeu, por rede. */
-  const [votos, setVotos] = React.useState<Record<string, Voto>>(inicial?.votos ?? {});
+  const [votos, setVotos] = React.useState<Record<string, Voto>>(
+    inicial?.votos ?? {},
+  );
   /** As que ela escondeu — some da tela na hora, sem esperar o servidor. */
-  const [escondidas, setEscondidas] = React.useState<string[]>(inicial?.escondidas ?? []);
+  const [escondidas, setEscondidas] = React.useState<string[]>(
+    inicial?.escondidas ?? [],
+  );
   /** A última escondida, para oferecer o desfazer. */
-  const [ultima, setUltima] = React.useState<{ rede: string; label: string } | null>(null);
+  const [ultima, setUltima] = React.useState<{
+    rede: string;
+    label: string;
+  } | null>(null);
 
   /**
    * Busca em duas etapas, sozinha.
@@ -170,7 +194,9 @@ export function OtherNetworks({
     setProcurando(true);
     setFalhou(false);
     try {
-      const r = await fetch(`/api/elsewhere?username=${encodeURIComponent(username)}&pagas=1`);
+      const r = await fetch(
+        `/api/elsewhere?username=${encodeURIComponent(username)}&pagas=1`,
+      );
       if (!r.ok) throw new Error(String(r.status));
       const b = await r.json();
       setLinks(b.links ?? []);
@@ -228,7 +254,8 @@ export function OtherNetworks({
    * ruído. No privado ele fica de pé mesmo vazio, porque é a única saída da
    * tela — sumir enquanto procura pareceria que nada está acontecendo.
    */
-  if (!isPrivate && visiveis.length === 0 && !mostrarVsco && !podeBuscarPagas) return null;
+  if (!isPrivate && visiveis.length === 0 && !mostrarVsco && !podeBuscarPagas)
+    return null;
 
   return (
     <div className={destaque ? "mt-6 w-full text-left" : "mt-4"}>
@@ -237,7 +264,17 @@ export function OtherNetworks({
           Outras redes sociais
         </p>
       )}
-      <div className={destaque ? "grid gap-2" : "flex flex-wrap justify-center gap-2 md:justify-start"}>
+      {trancado && (
+        <p className="mb-2 flex items-center gap-1.5 text-[12px] font-semibold text-muted-foreground">
+          🔒 Disponível na análise completa
+        </p>
+      )}
+      <div
+        aria-hidden={trancado || undefined}
+        className={`${destaque ? "grid gap-2" : "flex flex-wrap justify-center gap-2 md:justify-start"} ${
+          trancado ? "pointer-events-none select-none blur-[5px]" : ""
+        }`}
+      >
         {visiveis.map((l) => (
           <Linha
             key={l.url}
@@ -252,15 +289,15 @@ export function OtherNetworks({
         ))}
 
         {/*
-          * O VSCO não é confirmado como as outras: o site está atrás do
-          * Cloudflare e responde 403 a qualquer pedido — inclusive para @
-          * inexistente, então nem "não existe" dá para saber —, e não há ator
-          * no Apify. O endereço é montado a partir do @.
-          *
-          * Fica igual às demais a pedido. O aviso que o segura é o do rodapé
-          * do bloco, que já vale para todas: "pode ser outra pessoa" — e agora
-          * o joinha, que deixa qualquer um tirá-lo da frente.
-          */}
+         * O VSCO não é confirmado como as outras: o site está atrás do
+         * Cloudflare e responde 403 a qualquer pedido — inclusive para @
+         * inexistente, então nem "não existe" dá para saber —, e não há ator
+         * no Apify. O endereço é montado a partir do @.
+         *
+         * Fica igual às demais a pedido. O aviso que o segura é o do rodapé
+         * do bloco, que já vale para todas: "pode ser outra pessoa" — e agora
+         * o joinha, que deixa qualquer um tirá-lo da frente.
+         */}
         {mostrarVsco && (
           <Linha
             url={`https://vsco.co/${username}/gallery`}
@@ -294,7 +331,9 @@ export function OtherNetworks({
           className="mt-3 inline-flex min-h-[44px] items-center gap-2 rounded-2xl bg-muted px-4 text-sm font-bold transition hover:bg-pink"
         >
           Procurar no TikTok e no YouTube
-          <span className="font-normal text-muted-foreground">· usa 1 consulta de outras redes</span>
+          <span className="font-normal text-muted-foreground">
+            · usa 1 consulta de outras redes
+          </span>
         </button>
       )}
       {semFranquia && (
@@ -338,11 +377,18 @@ export function OtherNetworks({
         </p>
       )}
 
-      <p className={`mt-2 text-[11px] leading-relaxed text-muted-foreground ${destaque ? "" : "text-center md:text-left"}`}>
-        {visiveis.some((l) => !l.avatarUrl) ? "Onde não há foto, o desenho é ilustrativo. " : ""}
-        Mesmo @ nessa rede — <b className="font-semibold">pode ser outra pessoa</b>. Diga se
-        acertamos com o joinha.
-      </p>
+      {!trancado && (
+        <p
+          className={`mt-2 text-[11px] leading-relaxed text-muted-foreground ${destaque ? "" : "text-center md:text-left"}`}
+        >
+          {visiveis.some((l) => !l.avatarUrl)
+            ? "Onde não há foto, o desenho é ilustrativo. "
+            : ""}
+          Mesmo @ nessa rede —{" "}
+          <b className="font-semibold">pode ser outra pessoa</b>. Diga se
+          acertamos com o joinha.
+        </p>
+      )}
     </div>
   );
 }
@@ -398,17 +444,28 @@ function Linha({
                 loading="lazy"
               />
             ) : (
-              <svg viewBox="0 0 48 48" className="h-full w-full text-vinho/35" aria-hidden>
+              <svg
+                viewBox="0 0 48 48"
+                className="h-full w-full text-vinho/35"
+                aria-hidden
+              >
                 <circle cx="24" cy="18" r="8" fill="currentColor" />
-                <path d="M8 44c0-8.8 7.2-14 16-14s16 5.2 16 14z" fill="currentColor" />
+                <path
+                  d="M8 44c0-8.8 7.2-14 16-14s16 5.2 16 14z"
+                  fill="currentColor"
+                />
               </svg>
             )}
           </span>
         )}
         <span className="min-w-0 flex-1 text-left leading-tight">
-          <span className="block truncate text-sm font-bold text-foreground">@{handle}</span>
+          <span className="block truncate text-sm font-bold text-foreground">
+            @{handle}
+          </span>
           {/* O nome vem da própria rede, quando ela devolve. */}
-          <span className="block truncate text-[11px] text-muted-foreground">{legenda}</span>
+          <span className="block truncate text-[11px] text-muted-foreground">
+            {legenda}
+          </span>
         </span>
       </a>
 
@@ -496,18 +553,37 @@ export function ProfileHero({
           ocupava a tela toda e empurrava a análise para fora da dobra. */}
       <div className="p-5 text-left md:p-6">
         <div className="flex items-start gap-4 md:gap-7">
-        <div className="relative shrink-0">
-          {/* O anel colorido é a porta dos stories, como no Instagram: toca na
+          <div className="relative shrink-0">
+            {/* O anel colorido é a porta dos stories, como no Instagram: toca na
               foto e eles abrem em tela cheia. Sem `onVerStories` (ou quando já
               se sabe que não há nenhum), fica o aro rosa da marca. */}
-          {onVerStories ? (
-            <button
-              type="button"
-              onClick={onVerStories}
-              title="Ver stories"
-              className="block rounded-full bg-gradient-to-tr from-yellow via-pink to-purple p-[3px] transition hover:opacity-90"
-            >
-              <span className="block rounded-full bg-card p-1">
+            {onVerStories ? (
+              <button
+                type="button"
+                onClick={onVerStories}
+                title="Ver stories"
+                className="block rounded-full bg-gradient-to-tr from-yellow via-pink to-purple p-[3px] transition hover:opacity-90"
+              >
+                <span className="block rounded-full bg-card p-1">
+                  <Avatar
+                    src={profile.avatarUrl}
+                    name={profile.displayName ?? profile.username}
+                    size={72}
+                    className="md:hidden"
+                  />
+                  <Avatar
+                    src={profile.avatarUrl}
+                    name={profile.displayName ?? profile.username}
+                    size={104}
+                    className="hidden md:block"
+                  />
+                </span>
+                <span className="mt-1 block text-center text-[11px] font-bold text-accent">
+                  Ver stories
+                </span>
+              </button>
+            ) : (
+              <div className="rounded-full p-1 ring-[3px] ring-pink">
                 <Avatar
                   src={profile.avatarUrl}
                   name={profile.displayName ?? profile.username}
@@ -520,47 +596,32 @@ export function ProfileHero({
                   size={104}
                   className="hidden md:block"
                 />
+              </div>
+            )}
+            {tracking?.saved && (
+              <span
+                className="absolute -right-1 top-1 flex h-8 w-8 items-center justify-center rounded-full bg-pink shadow"
+                title="No seu Faro AI"
+              >
+                <PawPrint className="h-4 w-4 fill-ink text-ink" />
               </span>
-              <span className="mt-1 block text-center text-[11px] font-bold text-accent">
-                Ver stories
-              </span>
-            </button>
-          ) : (
-            <div className="rounded-full p-1 ring-[3px] ring-pink">
-              <Avatar
-                src={profile.avatarUrl}
-                name={profile.displayName ?? profile.username}
-                size={72}
-                className="md:hidden"
-              />
-              <Avatar
-                src={profile.avatarUrl}
-                name={profile.displayName ?? profile.username}
-                size={104}
-                className="hidden md:block"
-              />
-            </div>
-          )}
-          {tracking?.saved && (
-            <span
-              className="absolute -right-1 top-1 flex h-8 w-8 items-center justify-center rounded-full bg-pink shadow"
-              title="No seu Faro AI"
-            >
-              <PawPrint className="h-4 w-4 fill-ink text-ink" />
-            </span>
-          )}
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="truncate text-2xl font-extrabold tracking-tight">
-              {profile.username}
-            </h1>
-            {profile.isVerified && <BadgeCheck className="h-5 w-5 shrink-0 text-[#3897F0]" />}
+            )}
           </div>
 
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="truncate text-2xl font-extrabold tracking-tight">
+                {profile.username}
+              </h1>
+              {profile.isVerified && (
+                <BadgeCheck className="h-5 w-5 shrink-0 text-[#3897F0]" />
+              )}
+            </div>
+
             {profile.displayName && (
-              <p className="mt-0.5 truncate text-sm text-muted-foreground">{profile.displayName}</p>
+              <p className="mt-0.5 truncate text-sm text-muted-foreground">
+                {profile.displayName}
+              </p>
             )}
           </div>
         </div>
@@ -568,11 +629,21 @@ export function ProfileHero({
         {/* Daqui para baixo, largura cheia. */}
         <div className="mt-4">
           <div className="flex items-center justify-between gap-4 md:justify-start md:gap-8">
-            {typeof profile.postsCount === "number" && profile.postsCount > 0 && (
-              <Stat value={formatNumber(profile.postsCount)} label="publicações" />
-            )}
-            <Stat value={formatNumber(profile.followersCount)} label="seguidores" />
-            <Stat value={formatNumber(profile.followingCount)} label="seguindo" />
+            {typeof profile.postsCount === "number" &&
+              profile.postsCount > 0 && (
+                <Stat
+                  value={formatNumber(profile.postsCount)}
+                  label="publicações"
+                />
+              )}
+            <Stat
+              value={formatNumber(profile.followersCount)}
+              label="seguidores"
+            />
+            <Stat
+              value={formatNumber(profile.followingCount)}
+              label="seguindo"
+            />
           </div>
 
           {/* O link é a pista mais honesta que existe: foi a própria pessoa que
@@ -598,20 +669,24 @@ export function ProfileHero({
                   : "border-emerald-500/50 bg-emerald-100 text-emerald-800"
               }`}
             >
-              {profile.isPrivate ? <Lock className="h-3 w-3" /> : <Globe className="h-3 w-3" />}
+              {profile.isPrivate ? (
+                <Lock className="h-3 w-3" />
+              ) : (
+                <Globe className="h-3 w-3" />
+              )}
               {profile.isPrivate ? "Perfil privado" : "Perfil público"}
             </span>
           </div>
           {note && <p className="mt-2 text-xs text-muted-foreground">{note}</p>}
 
           {/*
-            * Já está no Faro AI: o botão vira caminho, não aviso.
-            *
-            * Antes ele ficava desativado dizendo "No seu Faro AI" — informava um
-            * estado e não levava a lugar nenhum, bem no momento em que a
-            * pessoa mais quer ver o que o Faro AI já encontrou. Agora é um link
-            * para o painel daquele perfil.
-            */}
+           * Já está no Faro AI: o botão vira caminho, não aviso.
+           *
+           * Antes ele ficava desativado dizendo "No seu Faro AI" — informava um
+           * estado e não levava a lugar nenhum, bem no momento em que a
+           * pessoa mais quer ver o que o Faro AI já encontrou. Agora é um link
+           * para o painel daquele perfil.
+           */}
           {onTrack && tracking?.saved ? (
             <NextLink
               href={`/rastros/${encodeURIComponent(profile.username)}`}

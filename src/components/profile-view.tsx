@@ -1429,6 +1429,7 @@ export function ProfileView({
                   isPrivate
                   destaque
                   inicial={redes}
+                  trancado={!revelado}
                 />
 
                 <div className="mt-6 flex justify-center">
@@ -1660,6 +1661,7 @@ export function ProfileView({
                   destaque
                   inicial={redes}
                   podeBuscarPagas={revelado}
+                  trancado={!revelado}
                 />
               </>
             )}
