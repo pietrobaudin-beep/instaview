@@ -7,6 +7,7 @@ import { grantUnlock } from "@/lib/access";
 import { PLANS, SINGLE_UNLOCK } from "@/lib/plans";
 import { createCheckoutSession, isBillingConfigured, isDemoBillingAllowed } from "@/lib/billing/stripe";
 import type { Plan } from "@prisma/client";
+import { linkDeCheckout } from "@/lib/billing/cakto";
 
 const bodySchema = z.object({
   plan: z.enum(["CAO", "DETETIVE", "FAREJADOR_MAIS", "SINGLE"]),
@@ -39,6 +40,10 @@ export async function POST(req: Request) {
     const origin = new URL(req.url).origin;
     const back = safeNext(parsed.data.next) ?? `/p/${encodeURIComponent(username)}`;
     const singlePrice = process.env[SINGLE_UNLOCK.stripePriceEnv];
+
+    // Cakto primeiro (PIX/cartão); o desbloqueio chega pelo webhook.
+    const cakto = linkDeCheckout("SINGLE", { userId: user.id, email: user.email, username });
+    if (cakto) return NextResponse.json({ url: cakto });
 
     if (isBillingConfigured() && singlePrice) {
       const session = await createCheckoutSession({
@@ -74,6 +79,10 @@ export async function POST(req: Request) {
   }
 
   const priceId = process.env[PLANS[plan].stripePriceEnv ?? ""];
+
+  // Cakto primeiro; o plano chega pelo webhook.
+  const cakto = linkDeCheckout(plan as "CAO" | "DETETIVE", { userId: user.id, email: user.email });
+  if (cakto) return NextResponse.json({ url: cakto });
 
   // Use the real site origin (NEXT_PUBLIC_APP_URL may be unset on Vercel).
   const origin = new URL(req.url).origin;
