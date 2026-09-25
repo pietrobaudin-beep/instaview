@@ -31,6 +31,7 @@ import { FaroUpsell } from "@/components/faro-upsell";
 import { SingleUnlockButton } from "@/components/single-unlock-button";
 import { NoteBox } from "@/components/ui/brand";
 import { Mascot } from "@/components/ui/mascot";
+import { guessGender } from "@/lib/gender";
 import { AboutLine, RaioX } from "@/components/raio-x";
 import { ProfileStories } from "@/components/story-viewer";
 import type { Section } from "@/lib/raio-x";
@@ -486,7 +487,7 @@ function Oferta({
       {/* Com a prévia de verdade (números e seguidos borrados) lá em cima,
           as formas são dispensáveis. Sem ela — cota da prévia usada, lista
           fechada — as formas mostram o que existe do outro lado. */}
-      {!temPrevia && <PreviaTrancada username={username} semDestaque={!!revelado} />}
+      {!temPrevia && <PreviaTrancada username={username} semDestaque />}
       <div className="flex flex-col items-center gap-3 rounded-3xl border-2 border-pink bg-pink/15 px-5 py-8 text-center">
         {corpo}
       </div>
@@ -1192,7 +1193,10 @@ export function ProfileView({
    */
   const carregandoAnalise = following.kind === "loading";
   // O destaque revelado ao Curioso com conta entra no lugar do primeiro lugar.
-  const topInteraction = interactions.revelado ?? interactions.items[0] ?? ready?.users[0];
+  // Para quem não paga, "interage bastante" é o gancho: só aparece de verdade
+  // depois da revelação da conta grátis. A lista de seguindo não entra aqui —
+  // seguir não é interagir.
+  const topInteraction = interactions.revelado ?? (locked ? undefined : interactions.items[0] ?? ready?.users[0]);
   const others = interactions.items.length > 1 ? interactions.items.slice(1) : ready?.users ?? [];
 
   return (
@@ -1470,18 +1474,45 @@ export function ProfileView({
                         counts={ready?.counts}
                         locked={locked}
                         username={state.data.username}
+                        generoDoPerfil={guessGender(state.data.displayName, state.data.username)}
                       />
                       <TopInteraction
                         person={topInteraction}
                         locked={locked && !interactions.revelado}
                         username={state.data.username}
                       />
+                    {locked && !interactions.revelado && (
+                      <Panel title="👀 Interage bastante com">
+                        <div className="flex items-center gap-3 blur-[5px]">
+                          <div className="h-12 w-12 shrink-0 rounded-full bg-muted" />
+                          <div className="min-w-0 flex-1 space-y-1.5">
+                            <div className="h-3.5 w-32 max-w-full rounded bg-muted" />
+                            <div className="h-3 w-20 max-w-full rounded bg-muted/70" />
+                          </div>
+                        </div>
+                      </Panel>
+                    )}
                     </div>
-                    <OtherInteractions
-                      people={others}
-                      locked={locked}
-                      username={state.data.username}
-                    />
+                    {locked ? (
+                      ready && ready.users.length > 0 && (
+                        <Panel title="Algumas das contas que segue">
+                          <ul className="divide-y divide-border">
+                            {ready.users.slice(0, 5).map((u, i) => (
+                              <li key={u.username + i}>
+                                <PersonRow
+                                  username={u.username}
+                                  displayName={u.displayName}
+                                  avatarUrl={u.avatarUrl}
+                                  blurred
+                                />
+                              </li>
+                            ))}
+                          </ul>
+                        </Panel>
+                      )
+                    ) : (
+                      <OtherInteractions people={others} locked={locked} username={state.data.username} />
+                    )}
 
                     {/* Perfil no Faro AI: o que ele detectou entre uma coleta e
                         outra, aqui mesmo — antes só aparecia na aba Interações. */}

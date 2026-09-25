@@ -26,6 +26,8 @@ import { usageKey } from "@/lib/usage";
 const TTL = 24 * 60 * 60 * 1000;
 /** Quantas pessoas a prévia mostra (borradas). */
 const AMOSTRA = 5;
+/** Quantas contas entram na contagem de mulheres e homens da prévia. */
+export const CONTADAS = 10;
 /** Quantas prévias NOVAS (fora do cache) cada identidade grátis pode abrir. */
 export const PREVIAS_GRATIS = 1;
 
@@ -73,7 +75,7 @@ function montar(lista: FollowerEntry[], marcas: number): Previa {
 
 /** A prévia, do cache ou de uma leitura nova (se a franquia deixar). */
 export async function previaSeguindo(user: User | null, username: string): Promise<Previa | null> {
-  const secao = cacheSectionKey("previa-seguindo");
+  const secao = cacheSectionKey("previa-seguindo-10");
   const guardada = await prisma.sectionCache
     .findUnique({ where: { username_section: { username, section: secao } } })
     .catch(() => null);
@@ -91,9 +93,12 @@ export async function previaSeguindo(user: User | null, username: string): Promi
     const r = await comQuem({ userId: user?.id ?? null, motivo: "previa" }, () =>
       getProvider().getFollowing(username, { maxPages: 1, pageSize: 50 }),
     );
+    // Só as 10 contas mais recentes da lista entram na prévia — contagem e
+    // amostra. A leitura custa o mesmo; mostrar 50 era dar a análise de graça.
+    const dez = r.followers.slice(0, CONTADAS);
     previa = montar(
-      r.followers.filter((u) => !u.isVerified),
-      r.followers.filter((u) => u.isVerified).length,
+      dez.filter((u) => !u.isVerified),
+      dez.filter((u) => u.isVerified).length,
     );
   } catch (e) {
     await devolver(reserva);

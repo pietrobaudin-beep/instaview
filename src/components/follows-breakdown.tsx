@@ -27,10 +27,16 @@ export function FollowsBreakdown({
   counts,
   locked,
   username,
+  generoDoPerfil,
 }: {
   counts?: Breakdown;
   locked: boolean;
   username: string;
+  /**
+   * Na prévia grátis, o gênero estimado do dono do perfil: o outro gênero
+   * ganha destaque ("👀 Homens que ela segue"). Estimativa pelo nome.
+   */
+  generoDoPerfil?: "f" | "m" | "u";
 }) {
   // Only real people count here — brands/verified accounts are left out of the
   // product entirely, so the two bars are relative to each other.
@@ -51,9 +57,34 @@ export function FollowsBreakdown({
         ) : null
       }
     >
+      {locked && (
+        <p className="-mt-1 mb-3 text-[11px] text-muted-foreground">
+          Entre as {counts.total} contas mais recentes que @{username} segue.
+        </p>
+      )}
       <div className="space-y-3">
-        <BarRow label="Mulheres" percent={share(counts.girls)} value={counts.girls} tone="pink" />
-        <BarRow label="Homens" percent={share(counts.boys)} value={counts.boys} tone="blue" />
+        {locked && generoDoPerfil === "f" ? (
+          <>
+            <div className="rounded-2xl bg-blue-50 p-2.5 ring-1 ring-blue-200">
+              <p className="mb-1.5 text-xs font-bold text-blue-900">👀 Os homens que ela segue</p>
+              <BarRow label="Homens" percent={share(counts.boys)} value={counts.boys} tone="blue" />
+            </div>
+            <BarRow label="Mulheres" percent={share(counts.girls)} value={counts.girls} tone="pink" />
+          </>
+        ) : locked && generoDoPerfil === "m" ? (
+          <>
+            <div className="rounded-2xl bg-pink/20 p-2.5 ring-1 ring-pink">
+              <p className="mb-1.5 text-xs font-bold text-accent">👀 As mulheres que ele segue</p>
+              <BarRow label="Mulheres" percent={share(counts.girls)} value={counts.girls} tone="pink" />
+            </div>
+            <BarRow label="Homens" percent={share(counts.boys)} value={counts.boys} tone="blue" />
+          </>
+        ) : (
+          <>
+            <BarRow label="Mulheres" percent={share(counts.girls)} value={counts.girls} tone="pink" />
+            <BarRow label="Homens" percent={share(counts.boys)} value={counts.boys} tone="blue" />
+          </>
+        )}
       </div>
     </Panel>
   );
