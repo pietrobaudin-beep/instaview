@@ -56,6 +56,8 @@ export default async function StoriesSalvosPage({
       takenAt: d?.takenAt ?? null,
       detectedAt: e.detectedAt.toISOString(),
       thumbnailUrl: d?.thumbnailUrl ?? null,
+      videoUrl: d?.videoUrl ?? null,
+      midia: d?.midia,
       mentions: d?.people ?? [],
     };
   });

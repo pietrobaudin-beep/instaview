@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Clock, Pause as PauseIcon, Play, Search, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, Pause as PauseIcon, Play, Search, Volume2, VolumeX, X } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 
 /**
@@ -22,6 +22,11 @@ export interface ViewerStory {
   imageUrl: string | null;
   takenAt: string | null;
   kind?: "photo" | "video";
+  /**
+   * O vídeo, quando o story é vídeo e o link do Instagram ainda vale. Toca
+   * pelo proxy `/api/video`, sem guardar nada; se falhar, volta a capa.
+   */
+  videoUrl?: string | null;
   mentions: string[];
   /** Marcado quando a cópia já sobreviveu ao story no Instagram. */
   expirou?: boolean;
@@ -64,6 +69,12 @@ export function StoryViewer({
 
   const atual = stories[i];
 
+  /** Vídeos cujo link já venceu: esses mostram a capa, com o relógio de 5s. */
+  const [videoFalhou, setVideoFalhou] = React.useState<Record<string, boolean>>({});
+  const [mudo, setMudo] = React.useState(true);
+  const video = React.useRef<HTMLVideoElement>(null);
+  const tocaVideo = atual?.kind === "video" && !!atual.videoUrl && !videoFalhou[atual.id];
+
   /**
    * Posição e progresso vivem em refs, e só refletem na tela.
    *
@@ -103,7 +114,8 @@ export function StoryViewer({
    * direto para a conta. Aqui o fim é uma hora marcada; a volta só desenha.
    */
   React.useEffect(() => {
-    if (pausado) return;
+    // Vídeo tem o próprio relógio: avança quando termina (ver `onEnded`).
+    if (pausado || tocaVideo) return;
     const fim = Date.now() + restanteRef.current;
     const id = window.setInterval(() => {
       const falta = fim - Date.now();
@@ -116,7 +128,15 @@ export function StoryViewer({
       setProgresso(1 - falta / DURACAO_MS);
     }, TICK_MS);
     return () => window.clearInterval(id);
-  }, [pausado, avancar, i]);
+  }, [pausado, avancar, i, tocaVideo]);
+
+  // Pausar (botão ou segurar) também pausa o vídeo.
+  React.useEffect(() => {
+    const v = video.current;
+    if (!v) return;
+    if (pausado) v.pause();
+    else void v.play().catch(() => {});
+  }, [pausado, i, tocaVideo]);
 
   // Teclado, e a página parada atrás da tela cheia.
   React.useEffect(() => {
@@ -218,12 +238,22 @@ export function StoryViewer({
           <span className="truncate text-sm font-bold text-white">@{username}</span>
           <span className="shrink-0 text-xs text-white/70">{quando(atual.takenAt)}</span>
 
+          {tocaVideo && (
+            <button
+              type="button"
+              onClick={() => setMudo((m) => !m)}
+              aria-label={mudo ? "Ligar o som" : "Desligar o som"}
+              className="ml-auto flex h-10 w-10 items-center justify-center rounded-full text-white/90 transition hover:bg-white/15"
+            >
+              {mudo ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+            </button>
+          )}
           {/* Pausar fica no cabeçalho, como no Instagram da web. */}
           <button
             type="button"
             onClick={() => setPausadoNoBotao((p) => !p)}
             aria-label={pausado ? "Continuar" : "Pausar"}
-            className="ml-auto flex h-10 w-10 items-center justify-center rounded-full text-white/90 transition hover:bg-white/15"
+            className={`${tocaVideo ? "" : "ml-auto "}flex h-10 w-10 items-center justify-center rounded-full text-white/90 transition hover:bg-white/15`}
           >
             {pausado ? <Play className="h-5 w-5" /> : <PauseIcon className="h-5 w-5" />}
           </button>
@@ -247,7 +277,25 @@ export function StoryViewer({
             setSegurando(false);
           }}
         >
-          {atual.imageUrl ? (
+          {tocaVideo ? (
+            <video
+              key={atual.id}
+              ref={video}
+              src={`/api/video?url=${encodeURIComponent(atual.videoUrl!)}`}
+              poster={atual.imageUrl ?? undefined}
+              autoPlay
+              muted={mudo}
+              playsInline
+              onTimeUpdate={(e) => {
+                const v = e.currentTarget;
+                if (v.duration) setProgresso(v.currentTime / v.duration);
+              }}
+              onEnded={() => avancar()}
+              // Link vencido: fica a capa, e o relógio de 5s volta a valer.
+              onError={() => setVideoFalhou((f) => ({ ...f, [atual.id]: true }))}
+              className="h-full w-full object-cover"
+            />
+          ) : atual.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={atual.imageUrl}
@@ -266,9 +314,9 @@ export function StoryViewer({
           className="pointer-events-none absolute inset-x-0 bottom-0 z-20 space-y-1.5 bg-gradient-to-t from-black/70 to-transparent px-4 pt-10"
           style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1.25rem)" }}
         >
-          {atual.kind === "video" && (
+          {atual.kind === "video" && !tocaVideo && (
             <p className="flex items-center gap-1.5 text-[11px] text-white/80">
-              <Play className="h-3 w-3" /> Vídeo — mostramos a capa.
+              <Play className="h-3 w-3" /> Vídeo — o link do Instagram já venceu, mostramos a capa.
             </p>
           )}
           {atual.expirou && (
@@ -354,6 +402,7 @@ export function ProfileStories({
             : null,
           takenAt: s.takenAt ?? null,
           kind: s.kind,
+          videoUrl: s.videoUrl ?? null,
           mentions: (s.mentions ?? []).map((m: any) => m.username),
         }));
         if (!items.length) {

@@ -91,6 +91,9 @@ export interface EventData {
   caption: string | null;
   /** Owner (for tags) or mentioned accounts (for stories). */
   people: string[];
+  /** Story em vídeo: o arquivo (endereço que vence) e o tipo. */
+  videoUrl?: string | null;
+  midia?: "photo" | "video";
 }
 
 function summarize(kind: string, x: PostItem | StoryItem): EventData {
@@ -103,6 +106,7 @@ function summarize(kind: string, x: PostItem | StoryItem): EventData {
     thumbnailUrl: x.thumbnailUrl,
     code: isStory ? null : post.code,
     caption: isStory ? null : (post.caption ?? "").slice(0, 120) || null,
+    ...(isStory ? { videoUrl: story.videoUrl ?? null, midia: story.kind } : {}),
     people: isStory
       ? story.mentions.map((m) => m.username)
       : kind === "tagged"

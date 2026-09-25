@@ -372,6 +372,8 @@ export class HikerApiProvider implements InstagramDataProvider {
       takenAt: toIso(s?.taken_at),
       kind: Number(s?.media_type) === 2 ? ("video" as const) : ("photo" as const),
       thumbnailUrl: thumbOf(s),
+      // Vem na mesma resposta — usar não custa leitura nenhuma a mais.
+      videoUrl: s?.video_versions?.[0]?.url ?? s?.video_url ?? null,
       mentions: (s?.mentions ?? []).map((x: any) => userOf(x?.user)).filter(Boolean) as FollowerEntry[],
     }));
   }

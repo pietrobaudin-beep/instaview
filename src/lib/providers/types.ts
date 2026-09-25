@@ -93,6 +93,8 @@ export interface StoryItem {
   takenAt: string | null;
   kind: "photo" | "video";
   thumbnailUrl: string | null;
+  /** O arquivo do vídeo, quando o story é vídeo. Endereço assinado: vence. */
+  videoUrl?: string | null;
   /** Accounts mentioned with @ stickers. */
   mentions: FollowerEntry[];
 }

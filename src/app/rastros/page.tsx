@@ -144,6 +144,8 @@ export default async function RastrosPage() {
             return {
               id: e.id,
               imageUrl: proxied(d?.thumbnailUrl ?? null),
+              kind: d?.midia,
+              videoUrl: d?.videoUrl ?? null,
               takenAt: d?.takenAt ?? e.detectedAt.toISOString(),
               mentions: d?.people ?? [],
               expirou: Date.now() - e.detectedAt.getTime() >= 24 * 60 * 60 * 1000,

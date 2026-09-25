@@ -25,6 +25,9 @@ export interface SavedStory {
   takenAt: string | null;
   detectedAt: string;
   thumbnailUrl: string | null;
+  /** Story em vídeo: o link do Instagram (vence) e o tipo. */
+  videoUrl?: string | null;
+  midia?: "photo" | "video";
   mentions: string[];
 }
 
@@ -241,6 +244,8 @@ export function SavedStories({
     lista.map((s) => ({
       id: s.id,
       imageUrl: proxied(s.thumbnailUrl),
+      kind: s.midia,
+      videoUrl: s.videoUrl ?? null,
       takenAt: s.takenAt ?? s.detectedAt,
       mentions: s.mentions,
       expirou: horas(s.detectedAt) >= 24,
