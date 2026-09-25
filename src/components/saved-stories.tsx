@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ChevronRight, Clock, Loader2, Search, Sparkles, Star } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, Loader2, Search, Sparkles, Star } from "lucide-react";
 import { Panel } from "@/components/ui/brand";
 import { StoryViewer } from "@/components/story-viewer";
 import { planFor } from "@/lib/plans";
@@ -75,6 +75,25 @@ export function SavedStories({
   const [aberto, setAberto] = React.useState(-1);
   /** O story em destaque no leque — o que a legenda descreve. */
   const [foco, setFoco] = React.useState(0);
+
+  /*
+   * Setas para os lados quando há mais stories do que cabem. Cada uma só
+   * aparece se houver o que ver naquela direção.
+   */
+  const faixa = React.useRef<HTMLDivElement>(null);
+  const [lados, setLados] = React.useState({ esq: false, dir: false });
+  const medir = React.useCallback(() => {
+    const el = faixa.current;
+    if (!el) return;
+    setLados({ esq: el.scrollLeft > 4, dir: el.scrollLeft + el.clientWidth < el.scrollWidth - 4 });
+  }, []);
+  React.useEffect(() => {
+    medir();
+    window.addEventListener("resize", medir);
+    return () => window.removeEventListener("resize", medir);
+  }, [medir, stories.length]);
+  const rolar = (sentido: 1 | -1) =>
+    faixa.current?.scrollBy({ left: sentido * faixa.current.clientWidth * 0.8, behavior: "smooth" });
   const [salvos, setSalvos] = React.useState<string[]>(salvosIniciais);
   const [marcando, setMarcando] = React.useState<string | null>(null);
   /*
@@ -277,7 +296,28 @@ export function SavedStories({
         * como fotos espalhadas na mesa. Passar o mouse (ou tocar) endireita e
         * traz para a frente; a legenda embaixo diz o que aquele story tem.
         */}
-      <div className="sem-barra -mx-5 flex overflow-x-auto px-7 pb-3 pt-4">
+      <div className="relative -mx-5">
+      {lados.esq && (
+        <button
+          type="button"
+          onClick={() => rolar(-1)}
+          aria-label="Ver stories anteriores"
+          className="absolute left-2 top-1/2 z-30 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-ink shadow-lg transition hover:scale-105"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+      )}
+      {lados.dir && (
+        <button
+          type="button"
+          onClick={() => rolar(1)}
+          aria-label="Ver mais stories"
+          className="absolute right-2 top-1/2 z-30 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-ink shadow-lg transition hover:scale-105"
+        >
+          <ChevronRight className="h-5 w-5" />
+        </button>
+      )}
+      <div ref={faixa} onScroll={medir} className="sem-barra flex overflow-x-auto px-7 pb-3 pt-4">
         {mostrados.map((s, i) => {
           const h = horas(s.detectedAt);
           const expirou = h >= 24;
@@ -339,6 +379,7 @@ export function SavedStories({
             </div>
           );
         })}
+      </div>
       </div>
 
       <p className="mt-1 text-center text-[11px] text-muted-foreground">
