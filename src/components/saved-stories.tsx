@@ -286,17 +286,22 @@ export function SavedStories({
           return (
             <div
               key={s.id}
-              onMouseEnter={() => setFoco(i)}
+              // Só mouse de verdade seleciona ao passar: no celular o toque
+              // também dispara "entrou", e o 1º toque já abriria o story.
+              onPointerEnter={(e) => e.pointerType === "mouse" && setFoco(i)}
               onFocus={() => setFoco(i)}
               style={{ transform: emFoco ? "rotate(0deg) translateY(-6px) scale(1.04)" : `rotate(${giro}deg)` }}
               className={`relative w-28 shrink-0 transition duration-200 sm:w-32 ${i > 0 ? "-ml-5" : ""} ${
                 emFoco ? "z-20" : ""
               }`}
             >
+              {/* Dois passos no celular: o 1º toque seleciona (endireita e
+                  mostra a legenda), o 2º abre. No computador o mouse já
+                  seleciona ao passar, então um clique abre direto. */}
               <button
                 type="button"
-                onClick={() => setAberto(i)}
-                aria-label={`Ver story guardado de @${username}`}
+                onClick={() => (emFoco ? setAberto(i) : setFoco(i))}
+                aria-label={emFoco ? `Abrir story guardado de @${username}` : `Selecionar story de @${username}`}
                 className="relative block aspect-[9/16] w-full overflow-hidden rounded-[1.4rem] border-4 border-white bg-gradient-to-br from-pink/40 to-purple/40 shadow-[0_10px_24px_-8px_rgba(0,0,0,0.35)]"
               >
                 {s.thumbnailUrl && (
@@ -336,6 +341,10 @@ export function SavedStories({
         })}
       </div>
 
+      <p className="mt-1 text-center text-[11px] text-muted-foreground">
+        Toque num story para escolher · toque de novo para abrir
+      </p>
+
       {/* A legenda do story em foco: o que a IA leu e quem ele marca. */}
       {mostrados[foco] && (leituras[mostrados[foco].id] || mostrados[foco].mentions.length > 0) && (
         <div className="mt-1 rounded-2xl bg-muted/40 px-4 py-3">
@@ -346,16 +355,21 @@ export function SavedStories({
             </p>
           )}
           {mostrados[foco].mentions.length > 0 && (
-            <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
-              {mostrados[foco].mentions.map((m) => (
-                <Link
-                  key={m}
-                  href={`/p/${encodeURIComponent(m)}`}
-                  className="inline-flex items-center gap-1 text-[12px] font-semibold text-accent hover:underline"
-                >
-                  <Search className="h-3 w-3" /> Farejar @{m}
-                </Link>
-              ))}
+            <div className="mt-2.5">
+              <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-plum/50">
+                Marcado neste story
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {mostrados[foco].mentions.map((m) => (
+                  <Link
+                    key={m}
+                    href={`/p/${encodeURIComponent(m)}`}
+                    className="inline-flex min-h-[40px] items-center gap-1.5 rounded-2xl bg-pink px-3.5 text-sm font-bold text-ink shadow-sm transition hover:opacity-90"
+                  >
+                    <Search className="h-4 w-4" /> Farejar @{m}
+                  </Link>
+                ))}
+              </div>
             </div>
           )}
         </div>
