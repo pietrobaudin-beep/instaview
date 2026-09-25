@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { creditosAvulso } from "@/lib/avulso-credito";
 import { getProfileCached, peekProfileCached, peekProfileStale } from "@/lib/profile-cache";
 import { ProviderError, type ProfileData } from "@/lib/providers/types";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
@@ -69,6 +70,9 @@ export async function GET(req: Request) {
   // Conta grátis presa ao perfil da revelação: cartão novo de outro @ não.
   const foraDaRevelacao =
     !!user && !d.admin && d.plano === "FREE" && !!user.revelacaoUsername && user.revelacaoUsername !== username;
+  // Quem tem análise avulsa comprada (sem perfil) precisa abrir o perfil onde
+  // vai usá-la: 3 cartões a mais por crédito, para escolher.
+  const creditos = user && acesso.access === "free" ? await creditosAvulso(user.id) : 0;
   if (acesso.access === "free" && !d.admin) {
     const dono = user ? user.id : usageKey(null);
     const ciclo = user ? inicioDoCiclo(user) : new Date(0);
@@ -76,7 +80,7 @@ export async function GET(req: Request) {
       dono,
       "perfil_basico",
       ciclo,
-      foraDaRevelacao ? 0 : tetoDe(d.config, "perfil_basico"),
+      (foraDaRevelacao ? 0 : tetoDe(d.config, "perfil_basico")) + creditos * 3,
     );
     if (!reserva.ok) {
       const velho = await peekProfileStale(username);

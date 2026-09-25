@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { grantUnlock } from "@/lib/access";
+import { creditarAvulso, gastarCredito } from "@/lib/avulso-credito";
 import { fimDoCiclo } from "@/lib/direitos";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
 import { anotarFicha, avulsoAnotado, caktoConfigurado, lerCallback, lerFicha, planoDoProduto, produtoDaOferta, webhookValido } from "@/lib/billing/cakto";
@@ -59,7 +60,9 @@ export async function POST(req: Request) {
   }
   // Compra sem conta: o @ do avulso vem da ficha, se não vier no callback.
   const ficha = cb?.ficha ? await lerFicha(cb.ficha) : null;
-  const perfilDaCompra = cb?.username ?? ficha?.perfil ?? null;
+  // Com callback, ele manda: sem @ nele = compra sem perfil (crédito). A nota
+  // do último clique só vale quando o callback não veio.
+  const perfilDaCompra = cb ? (cb.username ?? ficha?.perfil ?? null) : await avulsoAnotado(userId ?? "");
 
   if (!produto || !userId) {
     // 200 mesmo assim: um 4xx faria a Cakto parar e o evento sumir do radar.
@@ -74,9 +77,11 @@ export async function POST(req: Request) {
       case "subscription_created":
       case "subscription_renewed": {
         if (produto === "SINGLE") {
-          const username = normalizeUsername(perfilDaCompra ?? (await avulsoAnotado(userId)) ?? "");
+          const username = normalizeUsername(perfilDaCompra ?? "");
           if (!isValidUsername(username)) {
-            log.error("avulso sem @ no callback", { pedido });
+            // Comprado sem escolher perfil: 1 crédito para usar depois.
+            await creditarAvulso(userId, pedido ?? `sem-id:${Date.now()}`);
+            log.info("crédito de análise avulsa", { userId });
             break;
           }
           await grantUnlock(userId, username, pedido);
@@ -123,9 +128,12 @@ export async function POST(req: Request) {
       case "chargeback": {
         // Dinheiro devolvido: o acesso acaba agora.
         if (produto === "SINGLE") {
-          const username = normalizeUsername(perfilDaCompra ?? (await avulsoAnotado(userId)) ?? "");
+          const username = normalizeUsername(perfilDaCompra ?? "");
           if (isValidUsername(username)) {
             await prisma.profileUnlock.updateMany({ where: { userId, username }, data: { expiresAt: new Date() } });
+          } else {
+            // Crédito ainda não usado: sai da conta.
+            await gastarCredito(userId);
           }
         } else {
           await prisma.user.updateMany({

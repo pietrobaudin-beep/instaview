@@ -7,6 +7,7 @@ import { SearchBlock } from "@/components/search-block";
 import { SearchHero } from "@/components/search-hero";
 import { Panel, StatusPill } from "@/components/ui/brand";
 import { getCurrentUser } from "@/lib/auth";
+import { creditosAvulso } from "@/lib/avulso-credito";
 import { direitosDe } from "@/lib/direitos";
 import { brazilHour, getProHome } from "@/lib/pro-home";
 import { env } from "@/lib/env";
@@ -33,6 +34,8 @@ export default async function Home() {
 
   // O Curioso com conta tem a revelação grátis; a home diz se ela está livre.
   const revelacao = user && !paid ? user.revelacaoUsername : null;
+  // Farejador comprado sem perfil: lembra que há análise para usar.
+  const creditos = user ? await creditosAvulso(user.id) : 0;
 
   if (user) {
     return (
@@ -67,6 +70,12 @@ export default async function Home() {
             </>
           ) : (
             <div className="max-w-2xl">
+              {creditos > 0 && (
+                <p className="mb-5 rounded-2xl bg-pink/30 px-4 py-3 text-sm">
+                  🐾 Você tem <b>{creditos} {creditos === 1 ? "análise completa" : "análises completas"}</b> para
+                  usar. Digite o @ de quem você quer farejar e toque em <b>Usar minha análise</b>.
+                </p>
+              )}
               <SearchHero />
               {!paid && (
                 <p className="mt-5 text-sm text-muted-foreground">

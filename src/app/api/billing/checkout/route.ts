@@ -35,28 +35,28 @@ export async function POST(req: Request) {
   // do próprio checkout). Sem Cakto, continua pedindo conta.
   if (!user) {
     const produto = parsed.data.plan as Produto;
-    const perfil = normalizeUsername(parsed.data.username ?? "");
-    if (produto === "SINGLE" && !isValidUsername(perfil)) {
-      return NextResponse.json({ error: "Perfil inválido." }, { status: 400 });
-    }
+    const lido = normalizeUsername(parsed.data.username ?? "");
+    const perfil = isValidUsername(lido) ? lido : null;
     if (linkDe(produto)) return NextResponse.json({ url: urlDoCheckout(produto, perfil) });
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
   // ——— "Uso único": a one-off payment that unlocks ONE profile. ———
   if (parsed.data.plan === "SINGLE") {
     const username = normalizeUsername(parsed.data.username ?? "");
+    // Sem @: compra 1 crédito para usar depois (só pela Cakto).
     if (!isValidUsername(username)) {
+      if (linkDe("SINGLE")) return NextResponse.json({ url: urlDoCheckout("SINGLE", null) });
       return NextResponse.json({ error: "Perfil inválido." }, { status: 400 });
     }
     const origin = new URL(req.url).origin;
     const back = safeNext(parsed.data.next) ?? `/p/${encodeURIComponent(username)}`;
     const singlePrice = process.env[SINGLE_UNLOCK.stripePriceEnv];
 
-    // Cakto primeiro (PIX/cartão); o desbloqueio chega pelo webhook.
-    // Cakto: o pagamento acontece dentro do Farejo, em /checkout.
+    // Cakto: o pagamento acontece dentro do Farejo, em /checkout; o
+    // desbloqueio chega pelo webhook.
     if (linkDeCheckout("SINGLE", { userId: user.id, username })) {
       await anotarAvulso(user.id, username);
-      return NextResponse.json({ url: `/checkout?plano=farejador&perfil=${encodeURIComponent(username)}` });
+      return NextResponse.json({ url: urlDoCheckout("SINGLE", username) });
     }
 
     if (isBillingConfigured() && singlePrice) {

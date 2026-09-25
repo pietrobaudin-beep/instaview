@@ -27,8 +27,9 @@ export default async function CheckoutPage({
   const chave = searchParams.plano ?? "";
   const produto = PRODUTO_DA_CHAVE[chave];
   if (!produto) redirect("/pricing");
-  const perfil = produto === "SINGLE" ? normalizeUsername(searchParams.perfil ?? "") : null;
-  if (produto === "SINGLE" && !isValidUsername(perfil ?? "")) redirect("/pricing");
+  // Farejador com @ libera aquele perfil; sem @, vira 1 crédito para usar depois.
+  const pedidoPerfil = produto === "SINGLE" ? normalizeUsername(searchParams.perfil ?? "") : "";
+  const perfil = isValidUsername(pedidoPerfil) ? pedidoPerfil : null;
 
   const user = await getCurrentUser();
   let link: string | null;
@@ -51,11 +52,13 @@ export default async function CheckoutPage({
       ? {
           produto,
           nome: SINGLE_UNLOCK.name,
-          detalhe: `Análise completa de @${perfil}`,
+          detalhe: perfil ? `Análise completa de @${perfil}` : "1 análise completa, do perfil que você escolher",
           preco: SINGLE_UNLOCK.price,
           periodo: "pagamento único",
-          itens: ["Tudo sobre o perfil, sem borrão", "Resultado aberto por 7 dias", "Sem assinatura"],
-          depois: `/p/${perfil}?unlocked=1`,
+          itens: perfil
+            ? ["Tudo sobre o perfil, sem borrão", "Resultado aberto por 7 dias", "Sem assinatura"]
+            : ["Escolha o perfil depois de pagar", "Tudo sobre ele, sem borrão, por 7 dias", "Sem assinatura"],
+          depois: perfil ? `/p/${perfil}?unlocked=1` : "/?credito=1",
         }
       : produto === "FAREJADOR_MAIS"
         ? {

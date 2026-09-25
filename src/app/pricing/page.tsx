@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { Check, Info, X } from "lucide-react";
 import { UpgradeButton } from "@/components/pricing-actions";
-import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
-import { PLANS, SINGLE_UNLOCK, VITRINE, type PlanConfig } from "@/lib/plans";
-import { SingleUnlockButton } from "@/components/single-unlock-button";
+import { PLANS, VITRINE, type PlanConfig } from "@/lib/plans";
+import { FarejadorCard } from "@/components/farejador-card";
 import { isBillingConfigured, isDemoBillingAllowed } from "@/lib/billing/stripe";
 import { getCurrentUser } from "@/lib/auth";
 import { direitosDe } from "@/lib/direitos";
@@ -98,7 +97,10 @@ export default async function PricingPage({ searchParams }: { searchParams: { ne
   const d = direitosDe(user);
   const meu = degrau(d.plano);
   const assina = d.plano !== "FREE";
-  const planos = VITRINE.filter((p) => p !== "FREE" && (!assina || degrau(p) >= meu));
+  // O Farejador + mora no cartão do Farejador, não na lista.
+  const planos = VITRINE.filter(
+    (p) => p !== "FREE" && p !== "FAREJADOR_MAIS" && (!assina || degrau(p) >= meu),
+  );
 
   return (
     <main className="mx-auto max-w-5xl px-5 py-10">
@@ -138,55 +140,19 @@ export default async function PricingPage({ searchParams }: { searchParams: { ne
       )}
 
       <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-        {!assina && !d.admin && (
-          <Cartao
-            plano={PLANS.FREE}
-            atual={!!user}
-            acao={
-              !user ? (
-                <Link href={withParam("/signup", "next", next ?? "/")}>
-                  <Button variant="outline" className="w-full">
-                    Criar conta grátis
-                  </Button>
-                </Link>
-              ) : undefined
-            }
+        {/* Farejador e Farejador +: o mesmo cartão, com a chave para o +.
+            O Curioso (conta grátis) não é plano de venda e não aparece aqui. */}
+        {!d.admin && (!assina || d.plano === "FAREJADOR_MAIS") && (
+          <FarejadorCard
+            perfil={fromProfile}
+            vendeMais={!!linkDe("FAREJADOR_MAIS")}
+            temMais={d.plano === "FAREJADOR_MAIS"}
           />
-        )}
-
-        {/* Farejador: avulso, só para quem não assina. */}
-        {!assina && !d.admin && (
-          <section className="flex flex-col rounded-3xl border border-border bg-card p-6">
-            <h2 className="text-lg font-extrabold">{SINGLE_UNLOCK.name}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{SINGLE_UNLOCK.para}</p>
-            <p className="mt-4 text-3xl font-extrabold tracking-tight">
-              {brl(SINGLE_UNLOCK.price)}
-              <span className="text-sm font-semibold text-muted-foreground"> por perfil</span>
-            </p>
-            <div className="mt-5 flex-1 space-y-4">
-              <Lista itens={SINGLE_UNLOCK.features} />
-              <Lista itens={SINGLE_UNLOCK.avisos} tom="aviso" />
-            </div>
-            <div className="mt-6">
-              {fromProfile ? (
-                <SingleUnlockButton username={fromProfile} variant="outline" />
-              ) : (
-                <Link
-                  href="/"
-                  className="block rounded-2xl border-2 border-vinho px-6 py-3 text-center font-bold text-vinho transition hover:bg-vinho hover:text-cream"
-                >
-                  Escolher um perfil
-                </Link>
-              )}
-            </div>
-          </section>
         )}
 
         {planos.map((p) => {
           const plano = PLANS[p];
           const atual = d.plano === p;
-          // Farejador +: passe de 7 dias; vende quando o link da Cakto existe.
-          const semanal = p === "FAREJADOR_MAIS" && !linkDe("FAREJADOR_MAIS");
           return (
             <Cartao
               key={p}
@@ -194,14 +160,9 @@ export default async function PricingPage({ searchParams }: { searchParams: { ne
               destaque={p === "DETETIVE"}
               atual={atual}
               acao={
-                d.admin || atual ? undefined : semanal ? (
-                  // Sem o link da Cakto do passe, não há como vender.
-                  <Button variant="outline" className="w-full" disabled>
-                    Em breve
-                  </Button>
-                ) : (
+                d.admin || atual ? undefined : (
                   <UpgradeButton
-                    plan={p as "CAO" | "DETETIVE" | "FAREJADOR_MAIS"}
+                    plan={p as "CAO" | "DETETIVE"}
                     label={`Assinar ${plano.name}`}
                     variant={p === "DETETIVE" ? "accent" : "outline"}
                     next={next}

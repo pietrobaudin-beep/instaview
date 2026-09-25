@@ -21,14 +21,44 @@ export function SingleUnlockButton({
   className,
   variant = "primary",
 }: {
-  username: string;
+  /** Sem @: compra 1 análise para usar depois, no perfil que quiser. */
+  username?: string | null;
   className?: string;
   variant?: "primary" | "outline";
 }) {
   const router = useRouter();
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const here = `/p/${encodeURIComponent(username)}`;
+  // Crédito já comprado: usa aqui em vez de pagar de novo.
+  const [creditos, setCreditos] = React.useState(0);
+  const here = username ? `/p/${encodeURIComponent(username)}` : "/";
+
+  React.useEffect(() => {
+    if (!username) return;
+    fetch("/api/avulso/usar")
+      .then((r) => r.json())
+      .then((b) => setCreditos(Number(b?.creditos) || 0))
+      .catch(() => {});
+  }, [username]);
+
+  async function usar() {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/avulso/usar", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ username }),
+      });
+      const data = await res.json();
+      if (!res.ok) setError(data.error ?? "Não deu para usar agora.");
+      else window.location.href = withParam(here, "unlocked", "1");
+    } catch {
+      setError("Falha de conexão. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function buy() {
     setLoading(true);
@@ -37,7 +67,7 @@ export function SingleUnlockButton({
       const res = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ plan: "SINGLE", username, next: here }),
+        body: JSON.stringify({ plan: "SINGLE", username: username ?? null, next: here }),
       });
       if (res.status === 401) {
         router.push(withParam("/signup", "next", here));
@@ -61,6 +91,26 @@ export function SingleUnlockButton({
     }
   }
 
+  if (username && creditos > 0) {
+    return (
+      <div className={className}>
+        <button
+          type="button"
+          onClick={usar}
+          disabled={loading}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-accent px-6 py-3.5 font-bold text-white transition hover:opacity-90 disabled:opacity-60"
+        >
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Unlock className="h-4 w-4" />}
+          Usar minha análise em @{username}
+        </button>
+        <p className="mt-1.5 text-center text-xs text-muted-foreground">
+          Você tem {creditos} {creditos === 1 ? "análise avulsa" : "análises avulsas"} · já paga
+        </p>
+        {error && <p className="mt-1 text-center text-xs text-destructive">{error}</p>}
+      </div>
+    );
+  }
+
   return (
     <div className={className}>
       <button
@@ -75,10 +125,10 @@ export function SingleUnlockButton({
         )}
       >
         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Unlock className="h-4 w-4" />}
-        Ver @{username} · {brl(SINGLE_UNLOCK.price)}
+        {username ? `Ver @${username}` : "Comprar 1 análise"} · {brl(SINGLE_UNLOCK.price)}
       </button>
       <p className="mt-1.5 text-center text-xs text-muted-foreground">
-        Uso único · sem assinatura
+        {username ? "Uso único · sem assinatura" : "Escolha o perfil depois · sem assinatura"}
       </p>
       {error && <p className="mt-1 text-center text-xs text-destructive">{error}</p>}
     </div>

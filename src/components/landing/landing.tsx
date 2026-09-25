@@ -37,7 +37,9 @@ import {
 import { FictionalNote } from "@/components/landing/people";
 import { Mascot } from "@/components/ui/mascot";
 import { SiteFooter } from "@/components/landing/site-footer";
-import { PLANS, SINGLE_UNLOCK } from "@/lib/plans";
+import { PLANS } from "@/lib/plans";
+import { FarejadorCard } from "@/components/farejador-card";
+import { linkDe } from "@/lib/billing/cakto";
 import { BRAND } from "@/lib/voice";
 
 /**
@@ -613,49 +615,9 @@ export function Landing({ demo }: { demo: boolean }) {
           </Reveal>
           {/* No celular: um cartão de cada vez, arrastando para o lado. */}
           <SwipeDeck className="mt-12" label="Planos do Farejo">
-            <Reveal className="relative flex h-full flex-col rounded-3xl border border-border bg-card p-8">
-              <h3 className="text-2xl font-bold">Curioso</h3>
-              <p className="mt-1 text-muted-foreground">A conta grátis.</p>
-              <p className="mt-6 text-4xl font-bold">R$ 0</p>
-              <ul className="mt-6 flex-1 space-y-3">
-                {FREE_INCLUDES.map((f) => (
-                  <li key={f} className="flex items-center gap-3">
-                    <Check className="h-5 w-5 shrink-0 text-accent" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href="/signup"
-                className="mt-8 rounded-full border-2 border-vinho px-6 py-3 text-center font-semibold text-vinho transition hover:bg-vinho hover:text-cream"
-              >
-                Criar conta grátis
-              </Link>
-            </Reveal>
-
-            {/* Uso único: a compra de quem só quer resolver uma curiosidade. */}
-            <Reveal delay={100} className="relative flex h-full flex-col rounded-3xl border-2 border-pink bg-card p-8">
-              <h3 className="text-2xl font-bold">{SINGLE_UNLOCK.name}</h3>
-              <p className="mt-1 text-muted-foreground">Uma pessoa, uma análise completa.</p>
-              <p className="mt-6 text-4xl font-bold">
-                {brl(SINGLE_UNLOCK.price)}
-                <span className="text-lg font-medium text-muted-foreground"> uma vez</span>
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">sem assinatura · aberto por 7 dias</p>
-              <ul className="mt-6 flex-1 space-y-3">
-                {SINGLE_UNLOCK.features.map((f) => (
-                  <li key={f} className="flex items-center gap-3">
-                    <Check className="h-5 w-5 shrink-0 text-accent" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <a
-                href="#buscar"
-                className="mt-8 rounded-full bg-pink px-6 py-3 text-center font-bold text-ink transition hover:opacity-90"
-              >
-                Liberar um perfil
-              </a>
+            {/* Farejador e Farejador +: um cartão, com a chave para o +. */}
+            <Reveal className="h-full">
+              <FarejadorCard className="h-full p-8" vendeMais={!!linkDe("FAREJADOR_MAIS")} />
             </Reveal>
 
             <Reveal delay={200} className="vinho-surface flex h-full flex-col rounded-3xl p-8">
@@ -691,7 +653,7 @@ export function Landing({ demo }: { demo: boolean }) {
             </Reveal>
           </SwipeDeck>
           <p className="mt-8 text-center text-sm text-muted-foreground">
-            O Farejador libera <b className="text-foreground">um perfil</b>; o Faro AI acompanha{" "}
+            O Farejador libera <b className="text-foreground">um perfil</b> (o + dá mais por 7 dias); o Faro AI acompanha{" "}
             <b className="text-foreground">um perfil</b> ao longo do tempo. Todas as funcionalidades valem
             dentro das franquias de cada plano.
           </p>

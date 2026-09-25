@@ -15,15 +15,15 @@ export async function GET(req: Request) {
   const chave = url.searchParams.get("plano") ?? "";
   const produto = PRODUTO_DA_CHAVE[chave];
   if (!produto) return NextResponse.redirect(new URL("/pricing", url));
-  const perfil = normalizeUsername(url.searchParams.get("perfil") ?? "");
-  if (produto === "SINGLE" && !isValidUsername(perfil)) return NextResponse.redirect(new URL("/pricing", url));
+  const lido = normalizeUsername(url.searchParams.get("perfil") ?? "");
+  const perfil = produto === "SINGLE" && isValidUsername(lido) ? lido : null;
 
   const ficha = randomBytes(16).toString("hex");
-  await anotarFicha(ficha, { produto, perfil: produto === "SINGLE" ? perfil : null });
+  await anotarFicha(ficha, { produto, perfil });
 
   const volta = new URL("/checkout", url);
   volta.searchParams.set("plano", chave);
-  if (produto === "SINGLE") volta.searchParams.set("perfil", perfil);
+  if (perfil) volta.searchParams.set("perfil", perfil);
   const res = NextResponse.redirect(volta);
   res.cookies.set(COOKIE_COMPRA, ficha, {
     httpOnly: true,
