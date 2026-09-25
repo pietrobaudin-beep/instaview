@@ -235,45 +235,6 @@ export function TrackingSettings({
         }
       />
 
-      {/*
-        * "Onde eu estou?" respondido antes de qualquer coisa.
-        *
-        * Esta tela e a da busca (`/p/<@>`) se pareciam: as duas abrem com a
-        * foto, o @ e números, e quem clicava para vir ao Faro AI achava que
-        * tinha voltado para a análise. O título pequeno no topo não dava
-        * conta. Aqui a diferença fica dita com todas as letras — e dita pelo
-        * que MUDA entre as duas: lá você olha, aqui o Farejo olha por você.
-        */}
-      <div className="mb-5 flex items-start gap-3 rounded-3xl border border-accent/30 bg-accent/5 p-4">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-accent/15 text-accent">
-          <PawPrint className="h-5 w-5" />
-        </span>
-        <div className="min-w-0">
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-accent">
-            Você está no Faro AI
-          </p>
-          <p className="mt-0.5 text-base font-bold leading-snug">
-            {active ? `O Faro AI está de olho em @${username}` : `O Faro AI de @${username} está pausado`}
-          </p>
-          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-            {active ? (
-              <>
-                Aqui o Farejo observa sozinho e guarda o que muda — você não precisa voltar para
-                conferir. Para a análise completa do perfil, use{" "}
-                <b className="font-semibold">Abrir o perfil completo</b>.
-              </>
-            ) : (
-              <>
-                Enquanto estiver pausado, o Farejo não procura nada novo. O que ele já encontrou
-                continua aqui.
-              </>
-            )}
-          </p>
-        </div>
-      </div>
-
-      {limites && <PlanLimits resumo={limites} className="mb-5" />}
-
       {/* 1. Quem é, desde quando, e o botão que muda o "última verificação". */}
       <Panel>
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
@@ -286,6 +247,11 @@ export function TrackingSettings({
               {displayName && (
                 <p className="truncate text-sm text-muted-foreground">{displayName}</p>
               )}
+              {/* O que era o banner grande do topo, numa linha: aqui o Farejo
+                  olha por você — na análise (/p) é você que olha. */}
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {active ? "O Faro AI está de olho neste perfil." : "O Faro AI está pausado neste perfil."}
+              </p>
               <Link
                 href={`/p/${encodeURIComponent(username)}`}
                 className="mt-0.5 inline-flex items-center gap-1 text-xs font-bold text-accent transition hover:opacity-80"
@@ -541,7 +507,7 @@ export function TrackingSettings({
       <div className="mt-5 grid items-start gap-5 lg:grid-cols-[1.4fr_1fr]">
         <div className="min-w-0 space-y-5">
           <section>
-            <h2 className="mb-3 text-lg font-bold tracking-tight">Pistas de @{username}</h2>
+            <h2 className="mb-3 text-lg font-bold tracking-tight">Quem entrou e quem saiu</h2>
             {pistas.length > 0 ? (
               <NotificationsFeed items={pistas} />
             ) : (
@@ -563,9 +529,12 @@ export function TrackingSettings({
 
         <div className="min-w-0 space-y-5">
           {/* O histórico deste perfil: só banco, nenhuma chamada paga. */}
-          <HistoryPanel username={username} loggedIn isPro />
+          <HistoryPanel username={username} loggedIn isPro enxuto />
         </div>
       </div>
+
+      {/* O plano por último: é consulta, não é o assunto da tela. */}
+      {limites && <PlanLimits resumo={limites} className="mt-8" />}
     </main>
   );
 }

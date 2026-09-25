@@ -206,10 +206,16 @@ export function HistoryPanel({
   className = "",
   loggedIn,
   isPro = false,
+  enxuto = false,
 }: {
   username: string;
   className?: string;
   loggedIn: boolean;
+  /**
+   * No painel do Faro AI: só Novidades e o gráfico. O cartão "Pistas" e o
+   * "Rastro recente" repetiam o feed de quem entrou e saiu, que já está ao lado.
+   */
+  enxuto?: boolean;
   /** Pro can pin; free sees the lock and is sent to the offer. */
   isPro?: boolean;
 }) {
@@ -277,6 +283,8 @@ export function HistoryPanel({
 
   return (
     <div className={`space-y-6 ${className}`}>
+      {!enxuto && (
+        <>
       <p className="text-lg font-bold">{BRAND.phrases.oQueMudou}</p>
       <Panel
         title="Pistas"
@@ -320,6 +328,9 @@ export function HistoryPanel({
           </ul>
         )}
       </Panel>
+
+        </>
+      )}
 
       {h?.saved && (
         <>
@@ -375,6 +386,7 @@ export function HistoryPanel({
             <VerMais total={h.news?.length ?? 0} aberto={!!abertos.news} onToggle={() => abrir("news")} />
           </Panel>
 
+          {!enxuto && (
           <Panel title="Rastro recente" icon={UserPlus}>
             {h.timeline.length === 0 ? (
               <p className="text-xs text-muted-foreground">
@@ -421,6 +433,7 @@ export function HistoryPanel({
               onToggle={() => abrir("timeline")}
             />
           </Panel>
+          )}
 
           <Panel title="Seguidores e seguindo ao longo do tempo" icon={TrendingUp}>
             <Sparkline series={h.series} />
