@@ -50,7 +50,7 @@ export async function POST(req: Request) {
     userId = u?.id ?? null;
     // Compra sem conta: a conta nasce do e-mail do checkout. Ninguém entra
     // nela sem o código mandado para esse e-mail (ver /api/checkout/entrar).
-    if (!userId && compra && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    if (!userId && compra && produto && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
       const nova = await prisma.user
         .upsert({ where: { email }, create: { email }, update: {}, select: { id: true } })
         .catch(() => null);
