@@ -188,7 +188,10 @@ export function StoryViewer({
       {/* O quadro deixa uma faixa livre dos dois lados, que é onde as setas
           ficam — dentro dele elas tapavam a imagem. No computador vira o
           retângulo 9:16, como o Instagram na web. */}
-      <div className="relative h-[94dvh] min-w-0 flex-1 overflow-hidden rounded-3xl bg-neutral-900 sm:h-[92dvh] sm:aspect-[9/16] sm:w-auto sm:max-w-[26rem] sm:flex-none">
+      {/* Largura calculada da altura (9:16), como no Instagram. Antes havia um
+          teto de 26rem: numa tela alta o quadro virava uma tira 1:3, fina e
+          cortada nas laterais. O teto agora é só não passar da tela. */}
+      <div className="relative h-[94dvh] min-w-0 flex-1 overflow-hidden rounded-3xl bg-neutral-900 sm:h-[92dvh] sm:w-[calc(92dvh*9/16)] sm:max-w-[calc(100vw-7rem)] sm:flex-none">
         {/* As barrinhas: uma por story, a do meio enchendo. */}
         <div
           className="absolute inset-x-0 top-0 z-20 flex gap-1 px-3 pb-2"
