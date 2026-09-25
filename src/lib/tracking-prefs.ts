@@ -5,6 +5,13 @@ export interface TrackingPrefs {
   unfollowed: boolean;
   postInteractions: boolean;
   stories: boolean;
+  /** O que aparece no painel do perfil (só tela; não muda a coleta). */
+  verVisita: boolean;
+  verSemana: boolean;
+  verStories: boolean;
+  verQuem: boolean;
+  verNovidades: boolean;
+  verGrafico: boolean;
 }
 
 export const DEFAULT_PREFS: TrackingPrefs = {
@@ -14,6 +21,12 @@ export const DEFAULT_PREFS: TrackingPrefs = {
   postInteractions: true,
   // O Faro AI coleta stories desde 22/09 — ligado por padrão.
   stories: true,
+  verVisita: true,
+  verSemana: true,
+  verStories: true,
+  verQuem: true,
+  verNovidades: true,
+  verGrafico: true,
 };
 
 /** Coerce whatever is in the JSON column into a complete, safe prefs object. */
@@ -31,6 +44,12 @@ export function readPrefs(raw: unknown): TrackingPrefs {
     // `stories: false` à força em toda configuração salva — não era escolha
     // de ninguém, e relê-lo pararia a coleta de stories desses perfis.
     stories: typeof v.guardarStories === "boolean" ? v.guardarStories : DEFAULT_PREFS.stories,
+    verVisita: bool("verVisita"),
+    verSemana: bool("verSemana"),
+    verStories: bool("verStories"),
+    verQuem: bool("verQuem"),
+    verNovidades: bool("verNovidades"),
+    verGrafico: bool("verGrafico"),
   };
 }
 

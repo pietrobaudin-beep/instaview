@@ -39,7 +39,8 @@ export default async function ChatPage() {
     <>
       <AppNav plan={d.admin ? "ADMIN" : d.plano} />
       <main className="mx-auto max-w-3xl px-5 py-8 md:pl-[15.5rem]">
-        <h1 className="text-3xl font-extrabold tracking-tight">Chat do Faro AI</h1>
+        <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-accent">Faro AI</p>
+        <h1 className="text-3xl font-extrabold tracking-tight">Chat</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Pergunte sobre quem o Faro AI acompanha. Ele responde do que guardou — e diz quando
           não sabe.

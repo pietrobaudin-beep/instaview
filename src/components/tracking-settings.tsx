@@ -19,6 +19,8 @@ import {
   UserMinus,
   UserPlus,
   X,
+  TrendingUp,
+  Sparkles,
 } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { RefreshButton, completa, quando } from "@/components/refresh-card";
@@ -58,6 +60,16 @@ const ROWS = [
     title: "Guardar stories",
     hint: "O Faro AI guarda os stories a cada coleta.",
   },
+];
+
+/** O que aparece nesta tela — só mostra ou esconde, não muda a coleta. */
+const SECOES = [
+  { key: "verVisita" as const, icon: Clock, title: "Desde a sua última visita" },
+  { key: "verSemana" as const, icon: TrendingUp, title: "Números da semana" },
+  { key: "verStories" as const, icon: Camera, title: "Stories guardados" },
+  { key: "verQuem" as const, icon: UserPlus, title: "Quem entrou e quem saiu" },
+  { key: "verNovidades" as const, icon: Sparkles, title: "Novidades do Faro AI" },
+  { key: "verGrafico" as const, icon: TrendingUp, title: "Gráfico de seguidores" },
 ];
 
 interface Status {
@@ -202,18 +214,24 @@ export function TrackingSettings({
     return () => window.removeEventListener("keydown", aoTeclar);
   }, [ajustesAbertos]);
 
+  /**
+   * Cada chave salva na hora. Com um "Salvar" separado, era fácil mudar,
+   * fechar a janela e perder a escolha sem perceber.
+   */
   function set<K extends keyof TrackingPrefs>(key: K, value: boolean) {
-    setPrefs((p) => ({ ...p, [key]: value }));
+    const novas = { ...prefs, [key]: value };
+    setPrefs(novas);
     setSaved(false);
+    void save(novas);
   }
 
-  async function save() {
+  async function save(atuais: TrackingPrefs = prefs) {
     setSaving(true);
     try {
       await fetch("/api/tracking-prefs", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ username, prefs }),
+        body: JSON.stringify({ username, prefs: atuais }),
       });
       setSaved(true);
       router.refresh();
@@ -230,7 +248,7 @@ export function TrackingSettings({
   return (
     <main className="mx-auto max-w-5xl px-5 py-6 md:pl-[15.5rem]">
       <AppHeader
-        title="No seu Faro AI"
+        title={`Rastros de @${username}`}
         backHref="/rastros"
         subtitle={
           active ? (
@@ -378,6 +396,22 @@ export function TrackingSettings({
                 ))}
               </ul>
 
+              {/* Mostrar e esconder partes do painel. Muda na hora; "Salvar" guarda. */}
+              <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.14em] text-plum/50">
+                O que aparece nesta tela
+              </p>
+              <ul className="divide-y divide-border">
+                {SECOES.map((r) => (
+                  <li key={r.key}>
+                    <SettingRow
+                      icon={r.icon}
+                      title={r.title}
+                      right={<Toggle label={r.title} checked={prefs[r.key]} onChange={(v) => set(r.key, v)} />}
+                    />
+                  </li>
+                ))}
+              </ul>
+
               {/* O alerta em texto livre. Fica junto das chaves fixas porque
                   responde a mesma pergunta: o que você quer que eu olhe aqui. */}
               {profileId && ferramentas.alerta && (
@@ -420,7 +454,7 @@ export function TrackingSettings({
 
               <button
                 type="button"
-                onClick={save}
+                onClick={() => save()}
                 disabled={saving}
                 className="my-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-pink px-6 py-3 text-sm font-bold text-ink transition hover:opacity-90 disabled:opacity-60"
               >
@@ -429,7 +463,7 @@ export function TrackingSettings({
                 ) : saved ? (
                   <Check className="h-4 w-4" />
                 ) : null}
-                {saved ? "Faro AI atualizado 🐶" : "Salvar"}
+                {saving ? "Salvando…" : saved ? "Salvo 🐶" : "Salvar"}
               </button>
 
               {profileId && (
@@ -446,7 +480,7 @@ export function TrackingSettings({
       {/* O que aconteceu enquanto você esteve fora.
           Cada linha é contagem de registro que está nesta mesma página — nada
           aqui é opinião, e nada vem de modelo. */}
-      {desdeAVisita && (
+      {desdeAVisita && prefs.verVisita && (
         <div className="mt-5 rounded-3xl border border-accent/30 bg-accent/5 p-5">
           <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-accent">
             Desde a sua última visita, {quando(desdeAVisita.desde)}
@@ -463,7 +497,7 @@ export function TrackingSettings({
       )}
 
       {/* 2. O que mudou na semana, em três números. */}
-      {semana && (
+      {semana && prefs.verSemana && (
         <>
           <p className="mb-2 mt-5 text-[11px] font-bold uppercase tracking-[0.14em] text-plum/50">
             Últimos 7 dias
@@ -483,6 +517,7 @@ export function TrackingSettings({
           lugar próprio para perguntar — já existe no Chat da barra lateral. */}
 
       {/* Stories primeiro: são o único conteúdo que some. */}
+      {prefs.verStories && (
       <div className="mt-5">
         {stories.length > 0 ? (
           <SavedStories
@@ -508,10 +543,12 @@ export function TrackingSettings({
           </Panel>
         )}
       </div>
+      )}
 
       {/* Quem entrou e saiu na largura toda; embaixo, Novidades e o gráfico
           lado a lado, da mesma altura. Duas colunas de alturas diferentes
           deixavam um buraco embaixo da mais curta. */}
+      {prefs.verQuem && (
       <section className="mt-5">
         <h2 className="mb-3 text-lg font-bold tracking-tight">Quem entrou e quem saiu</h2>
         {pistas.length > 0 ? (
@@ -529,9 +566,20 @@ export function TrackingSettings({
           </NoteBox>
         )}
       </section>
+      )}
 
       {/* O histórico deste perfil: só banco, nenhuma chamada paga. */}
-      <HistoryPanel username={username} loggedIn isPro enxuto className="mt-5" />
+      {(prefs.verNovidades || prefs.verGrafico) && (
+        <HistoryPanel
+          username={username}
+          loggedIn
+          isPro
+          enxuto
+          className="mt-5"
+          verNovidades={prefs.verNovidades}
+          verGrafico={prefs.verGrafico}
+        />
+      )}
 
       {/* O plano por último: é consulta, não é o assunto da tela. */}
       {limites && <PlanLimits resumo={limites} className="mt-8" />}

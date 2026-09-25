@@ -21,6 +21,11 @@ import type { EventData } from "@/lib/faro-watch";
 
 export const dynamic = "force-dynamic";
 
+export function generateMetadata({ params }: { params: { username: string } }) {
+  const username = normalizeUsername(decodeURIComponent(params.username));
+  return { title: `Rastros de @${username} · Faro AI · Farejo` };
+}
+
 const WEEK = 7 * 24 * 60 * 60 * 1000;
 
 export default async function TrackingPage({ params }: { params: { username: string } }) {

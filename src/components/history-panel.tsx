@@ -213,7 +213,11 @@ export function HistoryPanel({
   loggedIn,
   isPro = false,
   enxuto = false,
+  verNovidades = true,
+  verGrafico = true,
 }: {
+  verNovidades?: boolean;
+  verGrafico?: boolean;
   username: string;
   className?: string;
   loggedIn: boolean;
@@ -345,6 +349,7 @@ export function HistoryPanel({
 
       {h?.saved && (
         <>
+          {verNovidades && (
           <Panel title="Novidades do Faro AI" icon={Sparkles}>
             {!h.news || h.news.length === 0 ? (
               <p className="text-xs text-muted-foreground">
@@ -396,6 +401,7 @@ export function HistoryPanel({
             )}
             <VerMais total={h.news?.length ?? 0} aberto={!!abertos.news} onToggle={() => abrir("news")} />
           </Panel>
+          )}
 
           {!enxuto && (
           <Panel title="Rastro recente" icon={UserPlus}>
@@ -446,9 +452,11 @@ export function HistoryPanel({
           </Panel>
           )}
 
-          <Panel title="Seguidores e seguindo ao longo do tempo" icon={TrendingUp}>
-            <Sparkline series={h.series} />
-          </Panel>
+          {verGrafico && (
+            <Panel title="Seguidores e seguindo ao longo do tempo" icon={TrendingUp}>
+              <Sparkline series={h.series} />
+            </Panel>
+          )}
         </>
       )}
     </div>

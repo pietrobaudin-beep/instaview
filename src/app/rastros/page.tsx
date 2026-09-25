@@ -25,7 +25,7 @@ import { Mascot } from "@/components/ui/mascot";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Faro AI · Farejo",
+  title: "Rastros · Faro AI · Farejo",
   description: "Os perfis que estão no seu Faro AI.",
 };
 
@@ -180,7 +180,11 @@ export default async function RastrosPage() {
       <AppNav plan={selo} />
       <main className="mx-auto max-w-6xl px-6 py-8 md:pl-[15.5rem]">
         <div className="mb-2 flex flex-wrap items-center gap-3">
-          <h1 className="text-3xl font-bold tracking-tight">Faro AI</h1>
+          {/* Faro AI é o conjunto (Rastros + Chat); esta página é Rastros. */}
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-accent">Faro AI</p>
+            <h1 className="text-3xl font-bold tracking-tight">Rastros</h1>
+          </div>
           {/* Says how much room is left, so the limit never arrives as a surprise. */}
           <StatusPill tone={profiles.length >= d.config.maxProfiles ? "yellow" : "green"}>
             <span className="text-[8px]">●</span> {profiles.length}
