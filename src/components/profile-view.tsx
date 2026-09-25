@@ -683,6 +683,7 @@ export function ProfileView({
     semDados?: boolean;
     curtidas?: CurtidasNoPrimeiro | null;
     curtidasPedidas?: boolean;
+    podeCurtidas?: boolean;
   }>({
     locked: true,
     items: [],
@@ -989,6 +990,7 @@ export function ProfileView({
             semDados: !!b.semDados,
             curtidas: b.curtidas ?? null,
             curtidasPedidas: !!b.curtidasPedidas,
+            podeCurtidas: !!b.podeCurtidas,
           });
       } catch {
         /* stays locked */
@@ -1631,6 +1633,7 @@ export function ProfileView({
                           username={state.data.username}
                           alvo={interactions.curtidas?.alvo ?? interactions.items[0]}
                           inicial={interactions.curtidas ?? null}
+                          liberado={!!interactions.podeCurtidas}
                         />
                       )}
                       <ProDashboard

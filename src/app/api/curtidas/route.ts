@@ -32,6 +32,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "locked" }, { status: 403 });
   }
   if (salva.data.curtidas !== undefined) return NextResponse.json({ curtidas: salva.data.curtidas });
+  const d = direitosDe(user);
+  if (!d.admin && !d.config.verCurtidas) return NextResponse.json({ error: "plano" }, { status: 403 });
 
   const alvo = salva.data.interacoes?.[0];
   if (!alvo) return NextResponse.json({ curtidas: null, semAlvo: true });
@@ -43,7 +45,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ curtidas: atual.salva?.data.curtidas ?? null, emAndamento: true });
   }
 
-  const d = direitosDe(user);
   const curtidas = await comQuem({ userId: user.id, admin: d.admin, motivo: "curtidas" }, () =>
     coletarCurtidas(username, alvo),
   ).catch(() => null);

@@ -63,6 +63,11 @@ export interface PlanConfig {
   /** Consultas de outras redes, sob demanda. */
   redes: number;
   /**
+   * "Ver curtidas": o que a pessoa curtiu nos posts de quem ela mais
+   * interage (`/api/curtidas`). Só o Farejador + (semanal), por decisão do dono.
+   */
+  verCurtidas?: boolean;
+  /**
    * Cartões de perfil (foto, nome, números) que chegam ao provedor por ciclo.
    * É o que se paga para confirmar o perfil antes de gastar uma análise; o que
    * vem do cache compartilhado não conta. Igual ao número de análises: o
@@ -161,6 +166,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     sugestoes: 2,
     redes: 2,
     cartoes: 2,
+    verCurtidas: true,
     // 24 horas além da janela normal do Instagram.
     storiesHours: 48,
     minIntervalMinutes: 24 * 60,
@@ -171,6 +177,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
       "Resultados salvos: reabrir não faz nova coleta",
       "Stories capturados pelo Farejo visíveis por até 48 horas da publicação — 24 horas a mais",
       "Até 2 consultas de outras redes",
+      "Ver o que a pessoa curtiu nos posts de quem ela mais interage",
     ],
     avisos: [
       "Mostra só os stories que o Farejo capturou; não recupera stories nunca coletados",

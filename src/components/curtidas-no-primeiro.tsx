@@ -8,7 +8,9 @@ import type { CurtidasNoPrimeiro } from "@/lib/analise";
 
 // O CDN do Instagram bloqueia imagem embutida; passa pelo proxy.
 const viaProxy = (u: string) =>
-  /(?:\.fbcdn\.net|\.cdninstagram\.com)/i.test(u) ? `/api/img?url=${encodeURIComponent(u)}` : u;
+  /(?:\.fbcdn\.net|\.cdninstagram\.com)/i.test(u)
+    ? `/api/img?url=${encodeURIComponent(u)}`
+    : u;
 
 /**
  * "O que @x curtiu de @y": os posts mais recentes da conta com quem a pessoa
@@ -17,16 +19,28 @@ const viaProxy = (u: string) =>
  * "Não apareceu" não é "não curtiu": em post grande o Instagram entrega só
  * parte de quem curtiu.
  */
-export function CurtidasNoPrimeiroPanel({ username, dados }: { username: string; dados: CurtidasNoPrimeiro }) {
+export function CurtidasNoPrimeiroPanel({
+  username,
+  dados,
+}: {
+  username: string;
+  dados: CurtidasNoPrimeiro;
+}) {
   const { alvo, posts } = dados;
   const achou = posts.filter((p) => p.curtiu || p.comentou).length;
   return (
     <Panel
       title={
         <div className="flex min-w-0 items-center gap-3">
-          <Avatar src={alvo.avatarUrl} name={alvo.displayName ?? alvo.username} size={40} />
+          <Avatar
+            src={alvo.avatarUrl}
+            name={alvo.displayName ?? alvo.username}
+            size={40}
+          />
           <div className="min-w-0 text-left">
-            <h2 className="truncate text-base font-bold tracking-tight">❤️ O que @{username} curtiu</h2>
+            <h2 className="truncate text-base font-bold tracking-tight">
+              ❤️ O que @{username} curtiu
+            </h2>
             <p className="truncate text-xs text-muted-foreground">
               nos posts de{" "}
               <a
@@ -45,7 +59,9 @@ export function CurtidasNoPrimeiroPanel({ username, dados }: { username: string;
     >
       <div className="grid max-w-sm grid-cols-2 gap-2">
         {posts.map((p) => {
-          const link = p.code ? `https://instagram.com/p/${p.code}` : `https://instagram.com/${alvo.username}`;
+          const link = p.code
+            ? `https://instagram.com/p/${p.code}`
+            : `https://instagram.com/${alvo.username}`;
           return (
             <a
               key={p.id}
@@ -56,7 +72,11 @@ export function CurtidasNoPrimeiroPanel({ username, dados }: { username: string;
             >
               {p.thumbnailUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={viaProxy(p.thumbnailUrl)} alt="" className="h-full w-full object-cover" />
+                <img
+                  src={viaProxy(p.thumbnailUrl)}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
               ) : (
                 <span className="flex h-full w-full items-center justify-center text-muted-foreground">
                   <ImageIcon className="h-6 w-6" />
@@ -100,16 +120,24 @@ export function CurtidasSobDemanda({
   username,
   alvo,
   inicial,
+  liberado,
 }: {
   username: string;
-  alvo: { username: string; displayName: string | null; avatarUrl: string | null };
+  alvo: {
+    username: string;
+    displayName: string | null;
+    avatarUrl: string | null;
+  };
   inicial: CurtidasNoPrimeiro | null;
+  /** O plano tem "Ver curtidas" (Farejador +). Sem ele, o botão leva aos planos. */
+  liberado: boolean;
 }) {
   const [dados, setDados] = React.useState<CurtidasNoPrimeiro | null>(inicial);
   const [estado, setEstado] = React.useState<"idle" | "busy" | "erro">("idle");
   React.useEffect(() => setDados(inicial), [inicial]);
 
-  if (dados) return <CurtidasNoPrimeiroPanel username={username} dados={dados} />;
+  if (dados)
+    return <CurtidasNoPrimeiroPanel username={username} dados={dados} />;
 
   async function ver() {
     setEstado("busy");
@@ -131,31 +159,47 @@ export function CurtidasSobDemanda({
 
   return (
     <section className="flex flex-wrap items-center gap-4 rounded-3xl border border-border bg-card p-5">
-      <Avatar src={alvo.avatarUrl} name={alvo.displayName ?? alvo.username} size={48} />
+      <Avatar
+        src={alvo.avatarUrl}
+        name={alvo.displayName ?? alvo.username}
+        size={48}
+      />
       <div className="min-w-0 flex-1">
         <p className="font-bold">❤️ O que @{username} curtiu</p>
         <p className="text-sm text-muted-foreground">
-          nos posts recentes de <b className="font-semibold text-foreground">@{alvo.username}</b>, com quem mais
-          interage
+          nos posts recentes de{" "}
+          <b className="font-semibold text-foreground">@{alvo.username}</b>, com
+          quem mais interage
         </p>
         {estado === "erro" && (
-          <p className="mt-1 text-sm text-red-600">Não deu para conferir agora. Tente de novo mais tarde.</p>
+          <p className="mt-1 text-sm text-red-600">
+            Não deu para conferir agora. Tente de novo mais tarde.
+          </p>
         )}
       </div>
-      <button
-        type="button"
-        onClick={ver}
-        disabled={estado === "busy"}
-        className="flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:opacity-90 disabled:opacity-70 max-sm:w-full max-sm:justify-center"
-      >
-        {estado === "busy" ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" /> Farejando…
-          </>
-        ) : (
-          "Ver curtidas"
-        )}
-      </button>
+      {!liberado ? (
+        <a
+          href={`/pricing?next=${encodeURIComponent(`/p/${username}`)}`}
+          className="flex items-center gap-2 rounded-full border-2 border-accent px-5 py-2 text-sm font-bold text-accent transition hover:bg-accent hover:text-white max-sm:w-full max-sm:justify-center"
+        >
+          🔒 No Farejador +
+        </a>
+      ) : (
+        <button
+          type="button"
+          onClick={ver}
+          disabled={estado === "busy"}
+          className="flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:opacity-90 disabled:opacity-70 max-sm:w-full max-sm:justify-center"
+        >
+          {estado === "busy" ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" /> Farejando…
+            </>
+          ) : (
+            "Ver curtidas"
+          )}
+        </button>
+      )}
     </section>
   );
 }
