@@ -212,13 +212,20 @@ export function StoryViewer({
           teto de 26rem: numa tela alta o quadro virava uma tira 1:3, fina e
           cortada nas laterais. O teto agora é só não passar da tela. */}
       <div className="relative h-[94dvh] min-w-0 flex-1 overflow-hidden rounded-3xl bg-neutral-900 sm:h-[92dvh] sm:w-[calc(92dvh*9/16)] sm:max-w-[calc(100vw-7rem)] sm:flex-none">
+        {/* Sombra atrás das barrinhas e do cabeçalho: em story claro, o
+            branco sumia no fundo. Não recebe toque — só escurece. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 z-10 h-32 bg-gradient-to-b from-black/70 via-black/30 to-transparent"
+        />
+
         {/* As barrinhas: uma por story, a do meio enchendo. */}
         <div
           className="absolute inset-x-0 top-0 z-20 flex gap-1 px-3 pb-2"
           style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.75rem)" }}
         >
           {stories.map((s, n) => (
-            <span key={s.id} className="h-0.5 flex-1 overflow-hidden rounded-full bg-white/30">
+            <span key={s.id} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/40 shadow-[0_0_2px_rgba(0,0,0,0.6)]">
               <span
                 className="block h-full rounded-full bg-white"
                 style={{
@@ -235,7 +242,7 @@ export function StoryViewer({
           style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.5rem)" }}
         >
           <Avatar src={avatarUrl ?? null} name={username} size={32} />
-          <span className="truncate text-sm font-bold text-white">@{username}</span>
+          <span className="truncate text-sm font-bold text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.7)]">@{username}</span>
           <span className="shrink-0 text-xs text-white/70">{quando(atual.takenAt)}</span>
 
           {tocaVideo && (
