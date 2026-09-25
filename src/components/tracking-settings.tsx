@@ -24,7 +24,6 @@ import { Avatar } from "@/components/ui/avatar";
 import { RefreshButton, completa, quando } from "@/components/refresh-card";
 import { NotificationsFeed, type Notification } from "@/components/notifications-feed";
 import { SavedStories, type SavedStory } from "@/components/saved-stories";
-import { PergunteAoFaro } from "@/components/pergunte-ao-faro";
 import { PlanLimits } from "@/components/plan-limits";
 import { ProximaColeta } from "@/components/proxima-coleta";
 import type { ResumoFranquia } from "@/lib/franquia";
@@ -559,7 +558,7 @@ export function TrackingSettings({
             )}
           </section>
 
-          {ferramentas.perguntas && <PergunteAoFaro username={username} />}
+          {/* Perguntar mora só no Chat (barra lateral → Faro AI → Chat). */}
         </div>
 
         <div className="min-w-0 space-y-5">
