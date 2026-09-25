@@ -44,7 +44,7 @@ function CartaoGenero({
 }) {
   const extra = Math.max(0, quantos - rostos.length);
   return (
-    <div className="flex items-center gap-4 rounded-3xl bg-pink p-4 shadow-sm">
+    <div className="flex min-h-[100px] items-center gap-4 rounded-3xl bg-pink p-4 shadow-sm">
       {/* O mesmo desenho das pessoas da página inicial, no lugar de emoji. */}
       <span className="shrink-0 rounded-full bg-white p-1 ring-2 ring-white">
         <FakeAvatar person={genero === "f" ? PEOPLE.julia : PEOPLE.lucas} size={52} />

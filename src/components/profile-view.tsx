@@ -1486,15 +1486,22 @@ export function ProfileView({
                         username={state.data.username}
                       />
                     {locked && !interactions.revelado && (
-                      <Panel title="👀 Interage bastante com">
-                        <div className="flex items-center gap-3 blur-[5px]">
-                          <div className="h-12 w-12 shrink-0 rounded-full bg-muted" />
-                          <div className="min-w-0 flex-1 space-y-1.5">
-                            <div className="h-3.5 w-32 max-w-full rounded bg-muted" />
-                            <div className="h-3 w-20 max-w-full rounded bg-muted/70" />
+                      // Mesmo formato do cartão rosa ao lado: título, cartão, legenda.
+                      <section className="space-y-3">
+                        <p className="text-sm font-bold">👀 Interage bastante com</p>
+                        <div className="flex min-h-[100px] items-center gap-4 rounded-3xl border border-border bg-card p-4 shadow-sm">
+                          <div className="flex flex-1 items-center gap-4 blur-[5px]" aria-hidden>
+                            <div className="h-[60px] w-[60px] shrink-0 rounded-full bg-muted" />
+                            <div className="min-w-0 flex-1 space-y-2">
+                              <div className="h-4 w-32 max-w-full rounded bg-muted" />
+                              <div className="h-3 w-20 max-w-full rounded bg-muted/70" />
+                            </div>
                           </div>
                         </div>
-                      </Panel>
+                        <p className="text-[11px] text-muted-foreground">
+                          Pelas curtidas e comentários públicos nos posts · não é prova de relação.
+                        </p>
+                      </section>
                     )}
                     </div>
                     {locked ? (
