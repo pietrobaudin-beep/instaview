@@ -19,7 +19,6 @@ import { SearchBlock } from "@/components/search-block";
 import { SniffingDog } from "@/components/ui/dog";
 import { Handnote } from "@/components/ui/handnote";
 import { Reveal } from "@/components/ui/reveal";
-import { SwipeDeck } from "@/components/ui/swipe-deck";
 import { FaroWatching } from "@/components/landing/faro-watching";
 import { Logo } from "@/components/ui/logo";
 import { FloatingSearch } from "@/components/landing/floating-search";
@@ -38,9 +37,7 @@ import { FictionalNote } from "@/components/landing/people";
 import { Mascot } from "@/components/ui/mascot";
 import { SiteFooter } from "@/components/landing/site-footer";
 import { PLANS } from "@/lib/plans";
-import { FarejadorCard } from "@/components/farejador-card";
-import { UpgradeButton } from "@/components/pricing-actions";
-import { linkDe } from "@/lib/billing/cakto";
+import { PlanosCards } from "@/components/planos-cards";
 import { BRAND } from "@/lib/voice";
 
 /**
@@ -210,19 +207,7 @@ const FREE_INCLUDES = [
   "Busca de @ e prévia da análise",
 ];
 
-const CAO_INCLUDES = [
-  "1 perfil acompanhado, coleta a cada 3 dias",
-  "Quem começou e deixou de seguir",
-  "Stories capturados por 3 dias",
-  "5 perguntas e 5 resumos com o Faro AI",
-];
 
-const DETETIVE_INCLUDES = [
-  "1 perfil acompanhado todo dia",
-  "3 análises completas por mês",
-  "Stories por 7 dias e alerta \"Me avise quando…\"",
-  "30 perguntas e 30 resumos com o Faro AI",
-];
 
 export function Landing({ demo }: { demo: boolean }) {
 
@@ -614,60 +599,7 @@ export function Landing({ demo }: { demo: boolean }) {
             <Eyebrow>Planos</Eyebrow>
             <SectionTitle className="mt-4">Escolha como farejar.</SectionTitle>
           </Reveal>
-          {/* No celular: um cartão de cada vez, arrastando para o lado. */}
-          <SwipeDeck className="mt-12" label="Planos do Farejo">
-            {/* Farejador e Farejador +: um cartão, com a chave para o +. */}
-            <Reveal className="h-full">
-              <FarejadorCard className="h-full p-8" vendeMais={!!linkDe("FAREJADOR_MAIS")} />
-            </Reveal>
-
-            {/* Faro de Cão no meio, em destaque; cada plano compra direto
-                (vai ao /checkout), sem passar pela página de planos. */}
-            <Reveal delay={100} className="vinho-surface flex h-full flex-col rounded-3xl p-8">
-              <div className="flex items-center justify-between">
-                <h3 className="text-2xl font-bold">{PLANS.CAO.name}</h3>
-                <span className="rounded-full bg-yellow px-2.5 py-1 text-[11px] font-bold text-ink">
-                  Recomendado
-                </span>
-              </div>
-              <p className="mt-1 text-cream/70">Acompanhe um perfil a cada 3 dias.</p>
-              <p className="mt-6 text-4xl font-bold">
-                {brl(PLANS.CAO.priceMonthly)}
-                <span className="text-lg font-medium text-cream/60">/mês</span>
-              </p>
-              <ul className="mt-6 flex-1 space-y-3">
-                {CAO_INCLUDES.map((f) => (
-                  <li key={f} className="flex items-center gap-3">
-                    <Check className="h-5 w-5 shrink-0 text-pink" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-8">
-                <UpgradeButton plan="CAO" label={`Assinar ${PLANS.CAO.name}`} variant="accent" />
-              </div>
-            </Reveal>
-
-            <Reveal delay={200} className="relative flex h-full flex-col rounded-3xl border border-border bg-card p-8">
-              <h3 className="text-2xl font-bold">{PLANS.DETETIVE.name}</h3>
-              <p className="mt-1 text-muted-foreground">Acompanhamento diário e todo o Faro AI.</p>
-              <p className="mt-6 text-4xl font-bold">
-                {brl(PLANS.DETETIVE.priceMonthly)}
-                <span className="text-lg font-medium text-muted-foreground">/mês</span>
-              </p>
-              <ul className="mt-6 flex-1 space-y-3">
-                {DETETIVE_INCLUDES.map((f) => (
-                  <li key={f} className="flex items-center gap-3">
-                    <Check className="h-5 w-5 shrink-0 text-accent" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-8">
-                <UpgradeButton plan="DETETIVE" label={`Assinar ${PLANS.DETETIVE.name}`} variant="outline" />
-              </div>
-            </Reveal>
-          </SwipeDeck>
+          <PlanosCards className="mt-12" />
           <p className="mt-8 text-center text-sm text-muted-foreground">
             O Farejador libera <b className="text-foreground">um perfil</b> (o + dá mais por 7 dias); o Faro de Cão e o Detetive acompanham{" "}
             <b className="text-foreground">um perfil</b> ao longo do tempo. Todas as funcionalidades valem

@@ -2,8 +2,9 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Check, ExternalLink, Loader2, Lock, X } from "lucide-react";
+import { Check, ExternalLink, Loader2, Lock } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
+import { FecharVoltar } from "@/components/fechar-voltar";
 import type { Produto } from "@/lib/billing/cakto";
 
 export interface Pedido {
@@ -67,13 +68,7 @@ export function CheckoutView({
           <Link href="/" aria-label="Farejo">
             <Logo className="h-7" />
           </Link>
-          <Link
-            href="/pricing"
-            aria-label="Fechar"
-            className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
-          >
-            <X className="h-5 w-5" />
-          </Link>
+          <FecharVoltar />
         </header>
 
         <div className="grid overflow-hidden rounded-3xl border border-border bg-card shadow-sm md:grid-cols-[1fr_380px]">
