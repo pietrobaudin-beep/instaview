@@ -84,6 +84,10 @@ export async function previaSeguindo(user: User | null, username: string): Promi
     return { ...p, following: p.following.slice(0, AMOSTRA) };
   }
 
+  // Conta grátis que já usou a revelação num perfil: nada de leitura nova em
+  // outro. A experiência grátis é UM perfil — cartão, prévia e revelação.
+  if (user?.revelacaoUsername && user.revelacaoUsername !== username) return null;
+
   const dono = user ? user.id : usageKey(null);
   const reserva = await reservarBruto(dono, "previa", new Date(0), PREVIAS_GRATIS);
   if (!reserva.ok) return null;

@@ -66,15 +66,20 @@ export async function GET(req: Request) {
    * e o teto de 30 por dia podia custar R$ 99/mês numa conta só. Agora o
    * limite é a franquia de sugestões do plano — 1 na experiência grátis.
    */
+  const user = await getCurrentUser();
+  const d = direitosDe(user);
+  // Quem não paga não tem busca paga: sobra o @ exato (e o cache, acima).
+  const extrasAvulso = user ? await prisma.profileUnlock.count({ where: { userId: user.id } }) : 0;
+  if (!d.admin && tetoDe(d.config, "sugestao") + extrasAvulso <= 0) {
+    return NextResponse.json({ results: [], soExato: true });
+  }
   if (url.searchParams.get("buscar") !== "1") {
     return NextResponse.json({ results: [], precisaBuscar: true });
   }
-  const user = await getCurrentUser();
-  const d = direitosDe(user);
   let reserva: Reserva | null = null;
   if (!d.admin) {
     // Cada Farejador comprado traz uma busca a mais.
-    const extras = user ? await prisma.profileUnlock.count({ where: { userId: user.id } }) : 0;
+    const extras = extrasAvulso;
     const dono = user ? user.id : usageKey(null);
     const ciclo = user ? inicioDoCiclo(user) : new Date(0);
     reserva = await reservarBruto(dono, "sugestao", ciclo, tetoDe(d.config, "sugestao") + extras);

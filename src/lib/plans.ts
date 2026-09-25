@@ -129,7 +129,9 @@ export const PLANS: Record<Plan, PlanConfig> = {
     ...NADA_DE_FARO,
     // Não é análise: é a revelação do destaque, uma por conta, no mesmo perfil.
     maxConsults: 0,
-    sugestoes: 1,
+    // Sem busca paga: quem não paga digita o @ exato ou usa as sugestões
+    // já em cache. O gasto grátis é só cartão + prévia + revelação.
+    sugestoes: 0,
     redes: 0,
     cartoes: 1,
     storiesHours: 0,

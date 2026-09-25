@@ -66,10 +66,18 @@ export async function GET(req: Request) {
   // (Farejador, Faro AI, Admin) não gasta cartão — a coleta dele já está paga.
   const d = direitosDe(user);
   let reserva: Reserva | null = null;
+  // Conta grátis presa ao perfil da revelação: cartão novo de outro @ não.
+  const foraDaRevelacao =
+    !!user && !d.admin && d.plano === "FREE" && !!user.revelacaoUsername && user.revelacaoUsername !== username;
   if (acesso.access === "free" && !d.admin) {
     const dono = user ? user.id : usageKey(null);
     const ciclo = user ? inicioDoCiclo(user) : new Date(0);
-    reserva = await reservarBruto(dono, "perfil_basico", ciclo, tetoDe(d.config, "perfil_basico"));
+    reserva = await reservarBruto(
+      dono,
+      "perfil_basico",
+      ciclo,
+      foraDaRevelacao ? 0 : tetoDe(d.config, "perfil_basico"),
+    );
     if (!reserva.ok) {
       const velho = await peekProfileStale(username);
       if (velho) return NextResponse.json(cartao(velho.profile, velho.fetchedAt, true));

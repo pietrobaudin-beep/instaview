@@ -65,6 +65,8 @@ export function SearchBlock({
   const [precisaBuscar, setPrecisaBuscar] = React.useState(false);
   // A franquia de buscas do plano acabou.
   const [semBusca, setSemBusca] = React.useState(false);
+  // Sem busca paga no plano (quem não paga): só o @ exato.
+  const [soExato, setSoExato] = React.useState(false);
   // Só farejamos depois que a pessoa confirma QUEM é.
   const [escolhido, setEscolhido] = React.useState<string | null>(null);
   const [recent, setRecent] = React.useState<RecentSearch[]>([]);
@@ -89,6 +91,7 @@ export function SearchBlock({
     setExpandido(false);
     setPrecisaBuscar(false);
     setSemBusca(false);
+    setSoExato(false);
     if (termo.length < 3) {
       setHits([]);
       setBuscando(false);
@@ -116,6 +119,7 @@ export function SearchBlock({
       setHits(Array.isArray(data.results) ? data.results : []);
       setPrecisaBuscar(!!data.precisaBuscar);
       setSemBusca(!!data.teto);
+      setSoExato(!!data.soExato);
       setFalhou(false);
     } catch {
       if (id !== reqId.current) return;
@@ -319,7 +323,11 @@ export function SearchBlock({
         </div>
       )}
       {!buscando && !falhou && hits.length === 0 && isValidUsername(termo) && termo.length >= 3 && (
-        precisaBuscar ? (
+        soExato ? (
+          <p className="mt-3 text-sm text-muted-foreground">
+            Digite o @ exato e toque em <b className="text-foreground">Abrir</b>.
+          </p>
+        ) : precisaBuscar ? (
           <div className="mt-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm">
             <p className="text-muted-foreground">
               Sabe o @ exato? Toque em <b className="text-foreground">Abrir</b>. Se não, procure contas
