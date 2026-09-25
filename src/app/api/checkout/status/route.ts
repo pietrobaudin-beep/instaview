@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { COOKIE_COMPRA, lerFicha } from "@/lib/billing/cakto";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
@@ -11,7 +13,11 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(req: Request) {
   const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ pago: false }, { status: 401 });
+  if (!user) {
+    // Compra sem conta: a ficha diz se o webhook já confirmou.
+    const f = await lerFicha(cookies().get(COOKIE_COMPRA)?.value ?? "");
+    return NextResponse.json({ pago: !!f?.pago, convidado: true });
+  }
   const q = new URL(req.url).searchParams;
   const produto = q.get("produto");
   const agora = new Date();

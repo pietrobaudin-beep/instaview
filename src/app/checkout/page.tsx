@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { getCurrentUser } from "@/lib/auth";
-import { anotarAvulso, linkDeCheckout, type Produto } from "@/lib/billing/cakto";
+import { COOKIE_COMPRA, anotarAvulso, lerFicha, linkDeCheckout } from "@/lib/billing/cakto";
+import { PRODUTO_DA_CHAVE } from "@/lib/billing/checkout-planos";
 import { PLANS, SINGLE_UNLOCK } from "@/lib/plans";
 import { isValidUsername, normalizeUsername, withParam } from "@/lib/utils";
 import { CheckoutView, type Pedido } from "@/components/checkout-view";
@@ -8,17 +10,14 @@ import { CheckoutView, type Pedido } from "@/components/checkout-view";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Pagamento · Farejo" };
 
-const PRODUTOS: Record<string, Produto> = {
-  farejador: "SINGLE",
-  "farejador-mais": "FAREJADOR_MAIS",
-  cao: "CAO",
-  detetive: "DETETIVE",
-};
-
 /**
  * O pagamento dentro do Farejo: o resumo do pedido do nosso lado e o
  * formulário da Cakto (PIX/cartão) embutido. Quem libera o acesso é o webhook;
  * a tela só espera por ele (`/api/checkout/status`).
+ *
+ * **Sem conta também compra:** a pessoa ganha uma ficha (cookie), digita o
+ * e-mail no checkout da Cakto e, depois de pagar, entra com o código mandado
+ * para esse e-mail.
  */
 export default async function CheckoutPage({
   searchParams,
@@ -26,22 +25,26 @@ export default async function CheckoutPage({
   searchParams: { plano?: string; perfil?: string };
 }) {
   const chave = searchParams.plano ?? "";
-  const produto = PRODUTOS[chave];
-  const aqui = withParam(
-    withParam("/checkout", "plano", chave),
-    "perfil",
-    searchParams.perfil ?? "",
-  );
-  const user = await getCurrentUser();
-  if (!user) redirect(withParam("/signup", "next", aqui));
+  const produto = PRODUTO_DA_CHAVE[chave];
   if (!produto) redirect("/pricing");
-
   const perfil = produto === "SINGLE" ? normalizeUsername(searchParams.perfil ?? "") : null;
   if (produto === "SINGLE" && !isValidUsername(perfil ?? "")) redirect("/pricing");
 
-  const link = linkDeCheckout(produto, { userId: user.id, email: user.email, username: perfil ?? undefined });
+  const user = await getCurrentUser();
+  let link: string | null;
+  if (user) {
+    link = linkDeCheckout(produto, { userId: user.id, email: user.email, username: perfil ?? undefined });
+    if (link && perfil) await anotarAvulso(user.id, perfil);
+  } else {
+    // Sem conta: precisa de uma ficha desta compra (nova se a anterior já foi
+    // paga, ou era de outro produto).
+    const ficha = cookies().get(COOKIE_COMPRA)?.value ?? "";
+    const f = await lerFicha(ficha);
+    const iniciar = withParam(withParam("/api/checkout/iniciar", "plano", chave), "perfil", perfil ?? "");
+    if (!f || f.pago || f.produto !== produto || (f.perfil ?? null) !== perfil) redirect(iniciar);
+    link = linkDeCheckout(produto, { ficha, username: perfil ?? undefined });
+  }
   if (!link) redirect("/pricing");
-  if (perfil) await anotarAvulso(user.id, perfil);
 
   const pedido: Pedido =
     produto === "SINGLE"
@@ -77,5 +80,5 @@ export default async function CheckoutPage({
             depois: "/rastros?upgraded=1",
           };
 
-  return <CheckoutView pedido={pedido} link={link} perfil={perfil} />;
+  return <CheckoutView pedido={pedido} link={link} perfil={perfil} convidado={!user} />;
 }

@@ -7,7 +7,8 @@ import { grantUnlock } from "@/lib/access";
 import { PLANS, SINGLE_UNLOCK } from "@/lib/plans";
 import { createCheckoutSession, isBillingConfigured, isDemoBillingAllowed } from "@/lib/billing/stripe";
 import type { Plan } from "@prisma/client";
-import { anotarAvulso, linkDeCheckout } from "@/lib/billing/cakto";
+import { anotarAvulso, linkDe, linkDeCheckout, type Produto } from "@/lib/billing/cakto";
+import { urlDoCheckout } from "@/lib/billing/checkout-planos";
 
 const bodySchema = z.object({
   plan: z.enum(["CAO", "DETETIVE", "FAREJADOR_MAIS", "SINGLE"]),
@@ -27,10 +28,20 @@ const bodySchema = z.object({
 const NOT_YET = "Os pagamentos ainda não estão ativos. Volte em breve! 🐶";
 export async function POST(req: Request) {
   const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-
   const parsed = bodySchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
+
+  // Sem conta: com a Cakto ligada, compra direto no /checkout (o e-mail vem
+  // do próprio checkout). Sem Cakto, continua pedindo conta.
+  if (!user) {
+    const produto = parsed.data.plan as Produto;
+    const perfil = normalizeUsername(parsed.data.username ?? "");
+    if (produto === "SINGLE" && !isValidUsername(perfil)) {
+      return NextResponse.json({ error: "Perfil inválido." }, { status: 400 });
+    }
+    if (linkDe(produto)) return NextResponse.json({ url: urlDoCheckout(produto, perfil) });
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
   // ——— "Uso único": a one-off payment that unlocks ONE profile. ———
   if (parsed.data.plan === "SINGLE") {
     const username = normalizeUsername(parsed.data.username ?? "");

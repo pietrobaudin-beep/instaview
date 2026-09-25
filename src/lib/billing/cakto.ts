@@ -63,29 +63,42 @@ export function caktoConfigurado(): boolean {
 }
 
 /**
- * `u|<userId>` para plano, `s|<userId>|<@>` para o Farejador avulso.
+ * Quem está comprando, no `callback`/`sck` do link:
+ * - `u|<conta>` / `s|<conta>|<@>`: logado (plano / avulso);
+ * - `g|<ficha>` / `g|<ficha>|<@>`: sem conta — a ficha é o cookie da compra, e
+ *   a conta sai do e-mail digitado no checkout da Cakto.
  * Não é segredo: forjar só faria alguém pagar por outra pessoa.
  */
-export function callbackDe(userId: string, username?: string): string {
-  return username ? `s|${userId}|${username}` : `u|${userId}`;
+export function callbackDe(dono: { userId?: string; ficha?: string }, username?: string): string {
+  if (dono.ficha) return username ? `g|${dono.ficha}|${username}` : `g|${dono.ficha}`;
+  return username ? `s|${dono.userId}|${username}` : `u|${dono.userId}`;
 }
 
-export function lerCallback(v: unknown): { userId: string; username: string | null } | null {
+export type Callback =
+  | { userId: string; ficha?: undefined; username: string | null }
+  | { ficha: string; userId?: undefined; username: string | null };
+
+export function lerCallback(v: unknown): Callback | null {
   if (typeof v !== "string") return null;
-  const [tipo, userId, username] = v.split("|");
-  if (!userId) return null;
-  if (tipo === "u") return { userId, username: null };
-  if (tipo === "s" && username) return { userId, username };
+  const [tipo, id, username] = v.split("|");
+  if (!id) return null;
+  if (tipo === "u") return { userId: id, username: null };
+  if (tipo === "s" && username) return { userId: id, username };
+  if (tipo === "g") return { ficha: id, username: username || null };
   return null;
 }
 
-export function linkDeCheckout(p: Produto, opts: { userId: string; email?: string | null; username?: string }): string | null {
+export function linkDeCheckout(
+  p: Produto,
+  opts: { userId?: string; ficha?: string; email?: string | null; username?: string },
+): string | null {
   const link = linkDe(p);
   if (!link) return null;
+  if (!opts.userId && !opts.ficha) return link;
   const url = new URL(link);
   // `callback` pela documentação; `sck` é o que aparece no modelo do webhook
   // do painel. Os dois levam o mesmo valor, e o webhook lê o que vier.
-  const cb = callbackDe(opts.userId, opts.username);
+  const cb = callbackDe(opts, opts.username);
   url.searchParams.set("callback", cb);
   url.searchParams.set("sck", cb);
   if (opts.email) url.searchParams.set("email", opts.email);
@@ -144,4 +157,39 @@ export async function avulsoAnotado(userId: string): Promise<string | null> {
     .catch(() => null);
   if (!row || Date.now() - row.fetchedAt.getTime() > 48 * 60 * 60 * 1000) return null;
   return row.username;
+}
+
+/**
+ * Compra sem conta: a ficha (cookie `farejo_compra`) guarda o que está sendo
+ * comprado e, quando o webhook confirma, o e-mail de quem pagou — para a tela
+ * mandar o código de entrada para ele.
+ */
+export const COOKIE_COMPRA = "farejo_compra";
+const FICHA = "cakto-convidado";
+
+export interface Ficha {
+  produto: Produto;
+  perfil: string | null;
+  email?: string;
+  pago?: boolean;
+}
+
+export async function anotarFicha(ficha: string, f: Ficha): Promise<void> {
+  const data = f as unknown as object;
+  await prisma.sectionCache
+    .upsert({
+      where: { username_section: { username: ficha, section: FICHA } },
+      create: { username: ficha, section: FICHA, data },
+      update: { data, fetchedAt: new Date() },
+    })
+    .catch(() => null);
+}
+
+export async function lerFicha(ficha: string): Promise<Ficha | null> {
+  if (!/^[a-f0-9]{32}$/.test(ficha)) return null;
+  const row = await prisma.sectionCache
+    .findUnique({ where: { username_section: { username: ficha, section: FICHA } } })
+    .catch(() => null);
+  if (!row || Date.now() - row.fetchedAt.getTime() > 7 * 24 * 60 * 60 * 1000) return null;
+  return row.data as unknown as Ficha;
 }

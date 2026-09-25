@@ -4,7 +4,7 @@ import { logger } from "@/lib/logger";
 import { grantUnlock } from "@/lib/access";
 import { fimDoCiclo } from "@/lib/direitos";
 import { isValidUsername, normalizeUsername } from "@/lib/utils";
-import { avulsoAnotado, caktoConfigurado, lerCallback, planoDoProduto, produtoDaOferta, webhookValido } from "@/lib/billing/cakto";
+import { anotarFicha, avulsoAnotado, caktoConfigurado, lerCallback, lerFicha, planoDoProduto, produtoDaOferta, webhookValido } from "@/lib/billing/cakto";
 
 const log = logger.scope("cakto:webhook");
 
@@ -40,15 +40,26 @@ export async function POST(req: Request) {
 
   // Quem pagou: o callback do link; senão o e-mail do comprador.
   const cb = lerCallback(d?.callback) ?? lerCallback(d?.sck);
+  const email = typeof d?.customer?.email === "string" ? d.customer.email.trim().toLowerCase() : null;
+  const compra = ["purchase_approved", "subscription_created", "subscription_renewed"].includes(evento);
   let userId = cb?.userId ?? null;
   if (userId && !(await prisma.user.findUnique({ where: { id: userId }, select: { id: true } }))) userId = null;
-  if (!userId && d?.customer?.email) {
-    const u = await prisma.user.findUnique({
-      where: { email: String(d.customer.email).toLowerCase() },
-      select: { id: true },
-    });
+  if (!userId && email) {
+    const u = await prisma.user.findUnique({ where: { email }, select: { id: true } });
     userId = u?.id ?? null;
+    // Compra sem conta: a conta nasce do e-mail do checkout. Ninguém entra
+    // nela sem o código mandado para esse e-mail (ver /api/checkout/entrar).
+    if (!userId && compra && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      const nova = await prisma.user
+        .upsert({ where: { email }, create: { email }, update: {}, select: { id: true } })
+        .catch(() => null);
+      userId = nova?.id ?? null;
+      if (userId) log.info("conta criada pela compra", { pedido });
+    }
   }
+  // Compra sem conta: o @ do avulso vem da ficha, se não vier no callback.
+  const ficha = cb?.ficha ? await lerFicha(cb.ficha) : null;
+  const perfilDaCompra = cb?.username ?? ficha?.perfil ?? null;
 
   if (!produto || !userId) {
     // 200 mesmo assim: um 4xx faria a Cakto parar e o evento sumir do radar.
@@ -63,7 +74,7 @@ export async function POST(req: Request) {
       case "subscription_created":
       case "subscription_renewed": {
         if (produto === "SINGLE") {
-          const username = normalizeUsername(cb?.username ?? (await avulsoAnotado(userId)) ?? "");
+          const username = normalizeUsername(perfilDaCompra ?? (await avulsoAnotado(userId)) ?? "");
           if (!isValidUsername(username)) {
             log.error("avulso sem @ no callback", { pedido });
             break;
@@ -112,7 +123,7 @@ export async function POST(req: Request) {
       case "chargeback": {
         // Dinheiro devolvido: o acesso acaba agora.
         if (produto === "SINGLE") {
-          const username = normalizeUsername(cb?.username ?? (await avulsoAnotado(userId)) ?? "");
+          const username = normalizeUsername(perfilDaCompra ?? (await avulsoAnotado(userId)) ?? "");
           if (isValidUsername(username)) {
             await prisma.profileUnlock.updateMany({ where: { userId, username }, data: { expiresAt: new Date() } });
           }
@@ -131,6 +142,10 @@ export async function POST(req: Request) {
   } catch (e) {
     log.error("falha ao tratar", { evento, error: e });
     return NextResponse.json({ error: "handler" }, { status: 500 });
+  }
+  // A tela da compra sem conta espera por isto para mandar o código.
+  if (compra && cb?.ficha && ficha && email) {
+    await anotarFicha(cb.ficha, { ...ficha, email, pago: true });
   }
   return NextResponse.json({ received: true });
 }
