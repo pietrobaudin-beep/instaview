@@ -23,12 +23,69 @@ export interface Person {
 }
 
 /** "Quem ela segue?" — the mulheres / homens / marcas split. */
+// O CDN do Instagram bloqueia imagem embutida; passa pelo proxy.
+const viaProxy = (u: string) =>
+  /(?:\.fbcdn\.net|\.cdninstagram\.com)/i.test(u) ? `/api/img?url=${encodeURIComponent(u)}` : u;
+
+/**
+ * "24 garotas" — o cartão rosa da prévia grátis: o número grande, um ícone e
+ * as fotinhas empilhadas com "+N". Mostra só o gênero oposto ao do dono do
+ * perfil (estimado pelo nome); sem estimativa, a tela mostra os dois.
+ */
+function CartaoGenero({
+  genero,
+  quantos,
+  rostos,
+}: {
+  genero: "f" | "m";
+  quantos: number;
+  rostos: string[];
+}) {
+  const extra = Math.max(0, quantos - rostos.length);
+  return (
+    <div className="flex items-center gap-4 rounded-3xl bg-pink p-4 shadow-sm">
+      <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white text-3xl">
+        {genero === "f" ? "👩" : "👨"}
+      </span>
+      <p className="min-w-0 flex-1 leading-none">
+        <span className="block text-3xl font-extrabold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.15)]">
+          {quantos}
+        </span>
+        <span className="mt-1 block text-lg font-bold text-white/90">
+          {genero === "f" ? (quantos === 1 ? "garota" : "garotas") : quantos === 1 ? "garoto" : "garotos"}
+        </span>
+      </p>
+      {quantos > 0 && (
+        <div className="flex shrink-0 items-center -space-x-3">
+          {rostos.map((r, i) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={i}
+              src={viaProxy(r)}
+              alt=""
+              className="h-11 w-11 rounded-full object-cover ring-2 ring-white blur-[2px]"
+            />
+          ))}
+          {extra > 0 && (
+            <span className="relative flex h-11 w-11 items-center justify-center rounded-full bg-accent text-sm font-bold text-white ring-2 ring-white">
+              +{extra}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function FollowsBreakdown({
   counts,
   locked,
   username,
   generoDoPerfil,
+  rostos,
 }: {
+  /** Fotos de amostra por gênero, para o cartão da prévia grátis. */
+  rostos?: { f: string[]; m: string[] } | null;
   counts?: Breakdown;
   locked: boolean;
   username: string;
@@ -42,6 +99,28 @@ export function FollowsBreakdown({
   // product entirely, so the two bars are relative to each other.
   const people = (counts?.girls ?? 0) + (counts?.boys ?? 0);
   if (!counts || people === 0) return null;
+
+  // Prévia grátis: o cartão rosa, só com o gênero oposto ao do perfil.
+  if (locked) {
+    const mostrar: ("f" | "m")[] =
+      generoDoPerfil === "m" ? ["f"] : generoDoPerfil === "f" ? ["m"] : ["f", "m"];
+    return (
+      <section className="space-y-3">
+        <p className="text-sm font-bold">O que @{username} seguiu recentemente</p>
+        {mostrar.map((g) => (
+          <CartaoGenero
+            key={g}
+            genero={g}
+            quantos={g === "f" ? counts.girls : counts.boys}
+            rostos={rostos?.[g] ?? []}
+          />
+        ))}
+        <p className="text-[11px] text-muted-foreground">
+          Entre as {counts.total} contas mais recentes que @{username} segue · estimativa pelo nome.
+        </p>
+      </section>
+    );
+  }
   const share = (n: number) => Math.round((n / people) * 100);
   return (
     <Panel

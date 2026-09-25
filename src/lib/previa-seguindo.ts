@@ -42,6 +42,8 @@ export interface Previa {
   } | null;
   seguindoOculto: boolean;
   private: boolean;
+  /** Algumas fotos de cada gênero, para o cartão com as fotinhas empilhadas. */
+  rostos?: { f: string[]; m: string[] };
 }
 
 const mascarar = (u: FollowerEntry): FollowerEntry => ({
@@ -61,7 +63,10 @@ function montar(lista: FollowerEntry[], marcas: number): Previa {
   });
   const total = lista.length + marcas;
   const pct = (n: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
+  const fotos = (g: "f" | "m") =>
+    pessoas.filter((p) => p.gender === g && p.avatarUrl).slice(0, 3).map((p) => p.avatarUrl as string);
   return {
+    rostos: { f: fotos("f"), m: fotos("m") },
     // Só uma amostra na tela (5 pessoas, borradas). A contagem de mulheres e
     // homens usa a página inteira.
     following: pessoas.slice(0, AMOSTRA),
@@ -75,7 +80,7 @@ function montar(lista: FollowerEntry[], marcas: number): Previa {
 
 /** A prévia, do cache ou de uma leitura nova (se a franquia deixar). */
 export async function previaSeguindo(user: User | null, username: string): Promise<Previa | null> {
-  const secao = cacheSectionKey("previa-seguindo-10");
+  const secao = cacheSectionKey("previa-seguindo-10b");
   const guardada = await prisma.sectionCache
     .findUnique({ where: { username_section: { username, section: secao } } })
     .catch(() => null);

@@ -106,6 +106,7 @@ export async function GET(req: Request) {
     access: "free",
     following: previa?.following ?? [],
     counts: previa?.counts ?? null,
+    rostos: previa?.rostos ?? null,
     seguindoOculto: previa?.seguindoOculto ?? false,
     recent: { started: [], stopped: [] },
     real: !!previa?.following.length,

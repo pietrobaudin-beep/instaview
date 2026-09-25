@@ -658,6 +658,7 @@ export function ProfileView({
         users: Person[];
         real: boolean;
         counts?: Breakdown;
+        rostos?: { f: string[]; m: string[] } | null;
         recent?: { started: RecentItem[]; stopped: RecentItem[] };
         /** Quem assina e ainda não gastou análise NESTE perfil: perguntar antes. */
         precisaConfirmar?: boolean;
@@ -1035,6 +1036,7 @@ export function ProfileView({
           users: body.following ?? [],
           real: !!body.real,
           counts: body.counts ?? undefined,
+          rostos: body.rostos ?? null,
           recent: body.recent,
           precisaConfirmar: !!body.precisaConfirmar,
           analises: body.analises ?? null,
@@ -1475,6 +1477,7 @@ export function ProfileView({
                         locked={locked}
                         username={state.data.username}
                         generoDoPerfil={guessGender(state.data.displayName, state.data.username)}
+                        rostos={ready?.rostos}
                       />
                       <TopInteraction
                         person={topInteraction}
