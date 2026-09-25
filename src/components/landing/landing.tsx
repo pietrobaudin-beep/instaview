@@ -39,6 +39,7 @@ import { Mascot } from "@/components/ui/mascot";
 import { SiteFooter } from "@/components/landing/site-footer";
 import { PLANS } from "@/lib/plans";
 import { FarejadorCard } from "@/components/farejador-card";
+import { UpgradeButton } from "@/components/pricing-actions";
 import { linkDe } from "@/lib/billing/cakto";
 import { BRAND } from "@/lib/voice";
 
@@ -209,16 +210,21 @@ const FREE_INCLUDES = [
   "Busca de @ e prévia da análise",
 ];
 
-const PRO_INCLUDES = [
-  "1 perfil acompanhado: a cada 3 dias (Cão) ou todo dia (Detetive)",
-  "Análises completas novas todo mês",
-  "Pistas, histórico e \"Desde a sua última visita\"",
-  "Perguntas e resumos de stories com o Faro AI",
-  "Detetive: busca nos stories e o alerta \"Me avise quando…\"",
+const CAO_INCLUDES = [
+  "1 perfil acompanhado, coleta a cada 3 dias",
+  "Quem começou e deixou de seguir",
+  "Stories capturados por 3 dias",
+  "5 perguntas e 5 resumos com o Faro AI",
+];
+
+const DETETIVE_INCLUDES = [
+  "1 perfil acompanhado todo dia",
+  "3 análises completas por mês",
+  "Stories por 7 dias e alerta \"Me avise quando…\"",
+  "30 perguntas e 30 resumos com o Faro AI",
 ];
 
 export function Landing({ demo }: { demo: boolean }) {
-  const pro = PLANS.CAO;
 
   return (
     <main className="relative overflow-x-clip">
@@ -476,7 +482,7 @@ export function Landing({ demo }: { demo: boolean }) {
               <hr className="mt-8 border-cream/12" />
               <p className="mt-6 flex flex-wrap items-baseline gap-x-2 gap-y-1">
                 <span className="text-cream/60">a partir de</span>
-                <span className="text-3xl font-bold tracking-tight">{brl(pro.priceMonthly)}</span>
+                <span className="text-3xl font-bold tracking-tight">{brl(PLANS.CAO.priceMonthly)}</span>
                 <span className="text-cream/60">por mês</span>
                 <span className="text-cream/40">·</span>
                 <span className="text-sm text-cream/60">cancele quando quiser</span>
@@ -484,17 +490,12 @@ export function Landing({ demo }: { demo: boolean }) {
 
               {/* No celular os botões ocupam a linha inteira, um sob o outro. */}
               <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-                <Link
-                  href="/pricing"
+                {/* Os planos ficam aqui mesmo, mais abaixo — sem trocar de página. */}
+                <a
+                  href="#planos"
                   className="inline-flex items-center justify-center gap-2 rounded-full bg-pink px-6 py-3 font-bold text-ink transition hover:opacity-90"
                 >
                   Ver os planos <ArrowRight className="h-4 w-4" />
-                </Link>
-                <a
-                  href="#planos"
-                  className="inline-flex items-center justify-center gap-2 rounded-full border border-cream/25 px-6 py-3 font-semibold text-cream transition hover:border-cream/50"
-                >
-                  Ver todos os planos
                 </a>
               </div>
               <TrustLine dark className="mt-4" />
@@ -620,40 +621,55 @@ export function Landing({ demo }: { demo: boolean }) {
               <FarejadorCard className="h-full p-8" vendeMais={!!linkDe("FAREJADOR_MAIS")} />
             </Reveal>
 
-            <Reveal delay={200} className="vinho-surface flex h-full flex-col rounded-3xl p-8">
+            {/* Faro de Cão no meio, em destaque; cada plano compra direto
+                (vai ao /checkout), sem passar pela página de planos. */}
+            <Reveal delay={100} className="vinho-surface flex h-full flex-col rounded-3xl p-8">
               <div className="flex items-center justify-between">
-                <h3 className="text-2xl font-bold">Faro AI</h3>
+                <h3 className="text-2xl font-bold">{PLANS.CAO.name}</h3>
                 <span className="rounded-full bg-yellow px-2.5 py-1 text-[11px] font-bold text-ink">
                   Recomendado
                 </span>
               </div>
-              <p className="mt-1 text-cream/70">Para quem quer acompanhar.</p>
+              <p className="mt-1 text-cream/70">Acompanhe um perfil a cada 3 dias.</p>
               <p className="mt-6 text-4xl font-bold">
-                {brl(pro.priceMonthly)}
+                {brl(PLANS.CAO.priceMonthly)}
                 <span className="text-lg font-medium text-cream/60">/mês</span>
               </p>
-              <p className="mt-1 text-sm text-cream/60">
-                no {pro.name}, ou {brl(PLANS.DETETIVE.priceMonthly)}/mês no{" "}
-                <b className="font-semibold text-cream/80">{PLANS.DETETIVE.name}</b>
-              </p>
               <ul className="mt-6 flex-1 space-y-3">
-                {PRO_INCLUDES.map((f) => (
+                {CAO_INCLUDES.map((f) => (
                   <li key={f} className="flex items-center gap-3">
                     <Check className="h-5 w-5 shrink-0 text-pink" />
                     {f}
                   </li>
                 ))}
               </ul>
-              <Link
-                href="/pricing"
-                className="mt-8 rounded-full bg-pink px-6 py-3 text-center font-bold text-ink transition hover:opacity-90"
-              >
-                Ver os planos
-              </Link>
+              <div className="mt-8">
+                <UpgradeButton plan="CAO" label={`Assinar ${PLANS.CAO.name}`} variant="accent" />
+              </div>
+            </Reveal>
+
+            <Reveal delay={200} className="relative flex h-full flex-col rounded-3xl border border-border bg-card p-8">
+              <h3 className="text-2xl font-bold">{PLANS.DETETIVE.name}</h3>
+              <p className="mt-1 text-muted-foreground">Acompanhamento diário e todo o Faro AI.</p>
+              <p className="mt-6 text-4xl font-bold">
+                {brl(PLANS.DETETIVE.priceMonthly)}
+                <span className="text-lg font-medium text-muted-foreground">/mês</span>
+              </p>
+              <ul className="mt-6 flex-1 space-y-3">
+                {DETETIVE_INCLUDES.map((f) => (
+                  <li key={f} className="flex items-center gap-3">
+                    <Check className="h-5 w-5 shrink-0 text-accent" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-8">
+                <UpgradeButton plan="DETETIVE" label={`Assinar ${PLANS.DETETIVE.name}`} variant="outline" />
+              </div>
             </Reveal>
           </SwipeDeck>
           <p className="mt-8 text-center text-sm text-muted-foreground">
-            O Farejador libera <b className="text-foreground">um perfil</b> (o + dá mais por 7 dias); o Faro AI acompanha{" "}
+            O Farejador libera <b className="text-foreground">um perfil</b> (o + dá mais por 7 dias); o Faro de Cão e o Detetive acompanham{" "}
             <b className="text-foreground">um perfil</b> ao longo do tempo. Todas as funcionalidades valem
             dentro das franquias de cada plano.
           </p>
