@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
  * App navigation.
  *
  * Two groups, not one row of four: on the left the places you go to *work*
- * (farejar, os perfis no Faro AI, as pistas); on the right the account. Separating
+ * (farejar, os perfis no FarejAI, as pistas); on the right the account. Separating
  * them means "Perfil" stops competing with the daily destinations, and the bar
  * reads left to right like the app is used.
  *
@@ -20,16 +20,16 @@ import { cn } from "@/lib/utils";
  */
 const TABS = [
   { href: "/", label: "Farejar", icon: Search },
-  // O Faro AI é onde ficam os perfis acompanhados — por isso leva a cara do cão.
-  { href: "/rastros", label: "Faro AI", icon: FaroIcon },
+  // O FarejAI é onde ficam os perfis acompanhados — por isso leva a cara do cão.
+  { href: "/rastros", label: "FarejAI", icon: FaroIcon },
   { href: "/pesquisados", label: "Pesquisados", icon: History },
   { href: "/pistas", label: "Pistas", icon: Bell },
 ] as const;
 
 /**
- * O que abre por dentro do Faro AI, quando ele está aberto.
+ * O que abre por dentro do FarejAI, quando ele está aberto.
  *
- * Não são seções novas na barra: são o miolo do Faro AI, e só aparecem quando
+ * Não são seções novas na barra: são o miolo do FarejAI, e só aparecem quando
  * a pessoa já está lá dentro. Uma barra com sete itens fixos vira um menu de
  * restaurante — estes dois só existem quando fazem sentido.
  */
@@ -39,7 +39,7 @@ const DENTRO_DO_FARO = [
 ] as const;
 
 /**
- * O ícone do Faro AI: o quadradinho rosa com a carinha, como no app.
+ * O ícone do FarejAI: o quadradinho rosa com a carinha, como no app.
  *
  * É colorido, então entra como imagem — máscara CSS só serve para desenho de
  * uma cor. O arquivo vem de public/mascote, nunca redesenhado em código.
@@ -47,12 +47,15 @@ const DENTRO_DO_FARO = [
 function FaroIcon({ className }: { className?: string }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src="/mascote/faro-app.svg"
-      alt=""
+    <span
       aria-hidden
-      className={cn("shrink-0 rounded-xl", className)}
-    />
+      className={cn(
+        "inline-flex shrink-0 items-center justify-center overflow-hidden rounded-[30%] bg-[#e79fc8] ring-1 ring-plum/15",
+        className,
+      )}
+    >
+      <img src="/mascote/poses/faro-normal.svg" alt="" className="h-[82%] w-[82%] object-contain" />
+    </span>
   );
 }
 
@@ -80,14 +83,14 @@ const PLAN_LABEL: Record<Plan | "ADMIN", string> = {
 /**
  * A ordem da barra de baixo, no celular — diferente da lateral de propósito.
  *
- * No computador a barra se lê de cima para baixo e o Faro AI fica em segundo,
+ * No computador a barra se lê de cima para baixo e o FarejAI fica em segundo,
  * logo depois de farejar. No celular o dedo mora no meio da tela: o item
- * central é o mais fácil de alcançar, e é onde o Faro AI deve estar.
+ * central é o mais fácil de alcançar, e é onde o FarejAI deve estar.
  */
 const ALL = [
   TABS[0], // Farejar
   TABS[2], // Pesquisados
-  TABS[1], // Faro AI — no centro
+  TABS[1], // FarejAI — no centro
   TABS[3], // Pistas
   ACCOUNT,
 ];
@@ -125,11 +128,9 @@ export function AppNav({ plan }: { plan?: Plan | "ADMIN" }) {
               >
                 <t.icon
                   className={cn(
-                    "h-[18px] w-[18px]",
+                    t.href === "/rastros" ? "h-6 w-6" : "h-[18px] w-[18px]",
                     t.href === "/rastros"
-                      ? active
-                        ? ""
-                        : "opacity-80"
+                      ? ""
                       : active
                         ? "text-blush"
                         : "opacity-70",
@@ -143,7 +144,7 @@ export function AppNav({ plan }: { plan?: Plan | "ADMIN" }) {
                 )}
               </Link>
 
-              {/* O miolo do Faro AI, recuado logo abaixo DELE — e não no fim
+              {/* O miolo do FarejAI, recuado logo abaixo DELE — e não no fim
                   da barra. A linha à esquerda é o que diz "isto é por dentro
                   daquilo" sem precisar de texto. */}
               {t.href === "/rastros" && active && (
@@ -212,12 +213,12 @@ export function AppNav({ plan }: { plan?: Plan | "ADMIN" }) {
           a soma real das duas, e o espaçador de baixo não depende de número
           mágico nenhum. */}
       <div className="fixed inset-x-0 bottom-0 z-40 bg-white/95 backdrop-blur md:hidden">
-        {/* O miolo do Faro AI, no celular, logo acima da barra — o mesmo lugar
+        {/* O miolo do FarejAI, no celular, logo acima da barra — o mesmo lugar
             onde a pessoa já está com o dedo. Na lateral do computador ele é
             recuado sob o item; aqui não há recuo possível, e empilhar itens na
             barra de baixo a deixaria ilegível. */}
         {isActive(pathname, "/rastros") && (
-          <nav aria-label="Dentro do Faro AI" className="border-t border-plum/10 px-4 py-2">
+          <nav aria-label="Dentro do FarejAI" className="border-t border-plum/10 px-4 py-2">
             <div className="mx-auto flex max-w-lg gap-2">
               {DENTRO_DO_FARO.map((sub) => {
                 const aqui = sub.exato
@@ -261,11 +262,9 @@ export function AppNav({ plan }: { plan?: Plan | "ADMIN" }) {
                   >
                     <t.icon
                       className={cn(
-                        "h-[18px] w-[18px]",
+                        t.href === "/rastros" ? "h-8 w-8" : "h-[18px] w-[18px]",
                         t.href === "/rastros"
-                          ? active
-                            ? ""
-                            : "opacity-80"
+                          ? ""
                           : active
                             ? "text-magenta"
                             : "text-plum/45",
@@ -295,7 +294,7 @@ export function AppNav({ plan }: { plan?: Plan | "ADMIN" }) {
 /**
  * O respiro no fim da página, do tamanho da barra de baixo.
  *
- * Dentro do Faro AI há duas faixas empilhadas, então o respiro cresce junto —
+ * Dentro do FarejAI há duas faixas empilhadas, então o respiro cresce junto —
  * senão a última linha da página fica escondida atrás delas.
  */
 export function NavSpacer() {

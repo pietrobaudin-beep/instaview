@@ -23,7 +23,7 @@ export const dynamic = "force-dynamic";
 
 export function generateMetadata({ params }: { params: { username: string } }) {
   const username = normalizeUsername(decodeURIComponent(params.username));
-  return { title: `Rastros de @${username} · Faro AI · Farejo` };
+  return { title: `Rastros de @${username} · FarejAI · Farejo` };
 }
 
 const WEEK = 7 * 24 * 60 * 60 * 1000;
@@ -46,7 +46,7 @@ export default async function TrackingPage({ params }: { params: { username: str
   /*
    * "O que mudou desde a SUA última visita."
    *
-   * O painel já sabia dizer o que mudou desde a última leitura do Faro AI —
+   * O painel já sabia dizer o que mudou desde a última leitura do FarejAI —
    * mas esse é o relógio do robô. Quem passou uma semana fora quer a semana,
    * não as últimas 24 horas.
    *
@@ -71,7 +71,7 @@ export default async function TrackingPage({ params }: { params: { username: str
       orderBy: { detectedAt: "desc" },
       take: 40,
     }),
-    // Stories que o Faro AI guardou deste perfil.
+    // Stories que o FarejAI guardou deste perfil.
     //
     // Duas coisas escondiam o que já estava guardado:
     // 1. o teto de 24, que com vários stories por dia dava uns dois dias só;

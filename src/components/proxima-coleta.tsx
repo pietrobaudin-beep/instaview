@@ -7,7 +7,7 @@ import { Clock, Loader2 } from "lucide-react";
 /**
  * "As primeiras mudanças aparecem em 17h 42min."
  *
- * Um perfil recém-colocado no Faro AI não tem quem-entrou-quem-saiu: a
+ * Um perfil recém-colocado no FarejAI não tem quem-entrou-quem-saiu: a
  * primeira coleta é a base, e só a segunda tem com o que comparar. Em vez de
  * um "nada por aqui" que parece defeito, a tela diz quando vem — e, quando o
  * relógio chega a zero, se atualiza sozinha até os dados chegarem.

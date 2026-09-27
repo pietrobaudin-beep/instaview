@@ -6,11 +6,11 @@ import { Logo } from "@/components/ui/logo";
 import { cn } from "@/lib/utils";
 
 /**
- * O Faro AI passeando no topo das telas de entrada.
+ * O FarejAI passeando no topo das telas de entrada.
  *
  * Ele **anda de um lado para o outro** — parado ele não era um personagem, era
  * um adesivo. A cada parada faz um gesto curto (cheira, procura com a lupa) e
- * segue. **Clicar nele** faz o Faro AI correr até o lugar do clique e comemorar.
+ * segue. **Clicar nele** faz o FarejAI correr até o lugar do clique e comemorar.
  *
  * No celular, a faixa mostra a marca Farejo no meio e ele passa **na frente**
  * dela — o que dá ao topo da tela um dono, em vez de um bicho solto.
@@ -48,12 +48,13 @@ const BEATS: Beat[] = [
   { pose: "feliz", move: "bob", ms: 3400, x: 0.46 },
 ];
 
-const SIZE = 44; // px, altura padrão
+const SIZE = 64; // px, altura padrão
 /** O "?" leria ao contrário espelhado. */
 const NO_FLIP: Pose[] = ["duvida"];
 const GESTURE: Record<Move, string> = {
-  run: "scene-run",
-  sniff: "scene-sniff",
+  // Andar e cavar vêm do próprio Faro (patas se mexendo), não da cena.
+  run: "",
+  sniff: "",
   scan: "scene-scan",
   perk: "scene-perk",
   found: "scene-found",
@@ -176,14 +177,14 @@ export function HeaderStroll({
         className,
         ground && "border-b border-dashed border-ink/15",
       )}
-      title="Chame o Faro AI"
+      title="Chame o FarejAI"
     >
       {marca && (
         <span
           aria-hidden
           className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center"
         >
-          {/* A marca na cor dela mesma; o Faro AI passa por cima. */}
+          {/* A marca na cor dela mesma; o FarejAI passa por cima. */}
           <Logo className="h-7" />
         </span>
       )}
@@ -207,7 +208,7 @@ export function HeaderStroll({
             <div className={`relative h-full ${gesture}`}>
               {/* Uma mancha creme por baixo dele.
                   A primeira tentativa foi uma cópia branca do próprio desenho,
-                  mas o Faro AI é feito de traços: a cópia saía como traço branco,
+                  mas o FarejAI é feito de traços: a cópia saía como traço branco,
                   e a marca continuava aparecendo entre as linhas. A mancha é
                   cheia, então o que passa atrás dele some de verdade. */}
               {marca && (
@@ -216,7 +217,12 @@ export function HeaderStroll({
                   className="absolute inset-x-[6%] bottom-[2%] top-[10%] rounded-[45%] bg-cream blur-[3px]"
                 />
               )}
-              <Mascot pose={pose} className="relative h-full text-ink" decorative />
+              <Mascot
+                pose={pose}
+                className="relative h-full text-ink"
+                decorative
+                acao={reduced ? undefined : beat.move === "run" && !festa ? "andar" : beat.move === "sniff" && !festa ? "cavar" : undefined}
+              />
             </div>
           </div>
         </div>

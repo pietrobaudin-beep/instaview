@@ -1,8 +1,6 @@
 import Link from "next/link";
 import {
-  ArrowDownLeft,
   ArrowRight,
-  ArrowUpRight,
   Bell,
   Check,
   ChevronDown,
@@ -16,19 +14,15 @@ import {
 } from "lucide-react";
 import { HeaderStroll } from "@/components/header-stroll";
 import { SearchBlock } from "@/components/search-block";
-import { SniffingDog } from "@/components/ui/dog";
 import { Handnote } from "@/components/ui/handnote";
 import { Reveal } from "@/components/ui/reveal";
-import { FaroWatching } from "@/components/landing/faro-watching";
+import { FaroAIShowcase } from "@/components/landing/faro-ai-showcase";
 import { Logo } from "@/components/ui/logo";
 import { FloatingSearch } from "@/components/landing/floating-search";
 import { GuideCards } from "@/components/landing/guide-cards";
 import {
-  AccountMockup,
   AppMockup,
-  FaroMockup,
   HeroResult,
-  ProNarrative,
   StepAlert,
   StepFollows,
   StepSearch,
@@ -36,7 +30,7 @@ import {
 import { FictionalNote } from "@/components/landing/people";
 import { Mascot } from "@/components/ui/mascot";
 import { SiteFooter } from "@/components/landing/site-footer";
-import { PLANS } from "@/lib/plans";
+import { PLANS, SINGLE_UNLOCK } from "@/lib/plans";
 import { PlanosCards } from "@/components/planos-cards";
 import { BRAND } from "@/lib/voice";
 
@@ -74,45 +68,50 @@ const WHAT = [
   {
     icon: Users,
     title: "Conexões",
-    body: "Entenda melhor quem faz parte das conexões de um perfil.",
+    body: "Quem o perfil segue, com a estimativa de garotas e garotos.",
   },
   {
     icon: Heart,
     title: "Interações",
-    body: "Veja quais contas aparecem com mais frequência.",
+    body: "Com quem ele interage bastante — e, no Farejador +, as curtidas nos posts dessa pessoa.",
+  },
+  {
+    icon: CircleDot,
+    title: "Stories e outras redes",
+    body: "Os stories como no Instagram, e o mesmo @ no TikTok, X, Telegram e VSCO.",
   },
   {
     icon: History,
     title: "Mudanças",
-    body: "Acompanhe como essas conexões evoluem.",
+    body: "No FarejAI: o que mudou, nos Rastros, e perguntas no Chat.",
   },
 ];
 
-/** O que a assinatura entrega, dito como a pessoa entenderia. */
-const PRO_PROMISES = [
-  "Faro de Cão: uma coleta a cada 3 dias; Faro de Detetive: uma por dia",
-  "Quem entrou e quem saiu da lista de seguidos, entre uma coleta e outra",
-  "Stories capturados guardados pelo prazo do plano, e os favoritos que você marcar",
-  "Perguntas e resumos com o Faro AI, dentro da franquia do mês",
-];
-
-const PRO_FEATURES = [
-  { icon: PawPrint, label: "Colocar no Faro AI" },
-  { icon: Bell, label: "Alertas de mudanças" },
-  { icon: PawPrint, label: "Histórico" },
-  { icon: Heart, label: "Interações" },
-  { icon: ArrowUpRight, label: "Novos follows" },
-  { icon: ArrowDownLeft, label: "Unfollows" },
-  { icon: CircleDot, label: "Análises adicionais" },
+/** O que o FarejAI faz, curto — o "app" ao lado mostra cada um. */
+const PRO_FUNCOES = [
+  { icon: PawPrint, title: "Rastros", body: "Quem entrou e quem saiu, a cada coleta." },
+  { icon: Sparkles, title: "Chat", body: "Pergunte e o FarejAI responde." },
+  { icon: Bell, title: "Pistas", body: "Avisos e \"Me avise quando…\"." },
+  { icon: CircleDot, title: "Stories", body: "Guardados 3 dias (Cão) ou 7 (Detetive)." },
 ];
 
 const STEPS = [
-  { n: "01", title: "Busque", body: "Encontre o perfil que deseja analisar.", Mock: StepSearch },
-  { n: "02", title: "Descubra", body: "Explore as informações disponíveis.", Mock: StepFollows },
+  {
+    n: "01",
+    title: "Busque",
+    body: "Digite o @, marque o perfil certo nas sugestões e toque em Farejar.",
+    Mock: StepSearch,
+  },
+  {
+    n: "02",
+    title: "Descubra",
+    body: "Garotas que segue, com quem interage bastante e o que começou a seguir.",
+    Mock: StepFollows,
+  },
   {
     n: "03",
     title: "Acompanhe",
-    body: "Com o Faro de Cão ou de Detetive, coloque um perfil no Faro AI.",
+    body: "No FarejAI, os Rastros avisam o que mudou e o Chat responde suas perguntas.",
     Mock: StepAlert,
   },
 ];
@@ -123,7 +122,6 @@ const TRUST = ["Resultado em segundos", "Sem login no Instagram", "A pessoa não
 // Real facts about the product, in place of vanity numbers we don't have.
 const FACTS = [
   { value: "0", label: "senhas pedidas" },
-  { value: "100%", label: "dados públicos" },
   { value: "R$ 0", label: "para começar" },
   { value: "0", label: "avisos para quem é pesquisado" },
 ];
@@ -135,8 +133,8 @@ const COMPARE: { row: string; farejo: string; manual: string; manualOk?: boolean
   { row: "Só pessoas (sem marcas e verificados)", farejo: "Automático", manual: "Separar um por um" },
   { row: "Mulheres e homens", farejo: "Contagem pronta", manual: "Contar na mão" },
   { row: "Quem mais interage", farejo: "Ranking pronto", manual: "Abrir post por post" },
-  { row: "Histórico de mudanças", farejo: "Com o Faro AI", manual: "Só se você anotar" },
-  { row: "Aviso quando algo muda", farejo: "Com o Faro AI", manual: "Não existe" },
+  { row: "Histórico de mudanças", farejo: "Com o FarejAI", manual: "Só se você anotar" },
+  { row: "Aviso quando algo muda", farejo: "Com o FarejAI", manual: "Não existe" },
   { row: "A pessoa fica sabendo", farejo: "Não", manual: "Não", manualOk: true },
 ];
 
@@ -171,7 +169,7 @@ const FAQ = [
   },
   {
     q: "Posso ver quem alguém começou a seguir?",
-    a: "A análise mostra uma amostra de quem o perfil segue hoje, na ordem que o Instagram entrega. Com o Faro AI, cada coleta é comparada com a anterior: o que mudou vira uma pista.",
+    a: "A análise mostra uma amostra de quem o perfil segue hoje, na ordem que o Instagram entrega. Com o FarejAI, cada coleta é comparada com a anterior: o que mudou vira uma pista.",
   },
 ];
 
@@ -199,16 +197,6 @@ function TrustChecks({ className = "" }: { className?: string }) {
   );
 }
 
-// What the free plan really delivers: one analysis, with names blurred.
-// A conta grátis: sem conta não há plano — só a busca e a prévia.
-const FREE_INCLUDES = [
-  "Crie a conta só com o seu e-mail",
-  "Desbloqueie 1 informação de um perfil",
-  "Busca de @ e prévia da análise",
-];
-
-
-
 export function Landing({ demo }: { demo: boolean }) {
 
   return (
@@ -228,7 +216,7 @@ export function Landing({ demo }: { demo: boolean }) {
               href="#pro"
               className="hidden font-medium text-muted-foreground hover:text-foreground md:inline"
             >
-              Faro AI
+              FarejAI
             </a>
             <a
               href="#planos"
@@ -272,10 +260,15 @@ export function Landing({ demo }: { demo: boolean }) {
             Pesquise um perfil e visualize informações e mudanças de forma simples e organizada.
           </p>
 
-          <div className="relative mt-14 w-full max-w-xl sm:mt-20">
-            {/* Faro AI strolling along the top of the search field. */}
-            {/* Menor e discreto: quem tem que chamar atenção aqui é o campo. */}
-            <HeaderStroll ground={false} size={40} className="absolute inset-x-0 bottom-full h-12 sm:h-14" />
+          <div className="relative mt-20 w-full max-w-xl sm:mt-24">
+            {/* FarejAI strolling along the top of the search field. */}
+            <HeaderStroll ground={false} size={64} className="absolute inset-x-0 bottom-full h-16 sm:h-20" />
+            {/* Recado à mão apontando o campo — só onde há espaço ao lado. */}
+            <Handnote tone="accent" tilt={-8} className="pointer-events-none absolute -left-44 top-1 hidden text-right text-[1.7rem] leading-none lg:block">
+              fareja aí
+              <br />
+              <span className="text-xl">digita um @ →</span>
+            </Handnote>
             <SearchBlock
               buttonLabel="Farejar perfil"
               placeholder="usuário do Instagram"
@@ -289,7 +282,7 @@ export function Landing({ demo }: { demo: boolean }) {
           <span aria-hidden className="mt-3 block h-5 w-px bg-border" />
           <Reveal delay={200} className="relative mt-3 w-full max-w-md">
             <HeroResult />
-            {/* O Faro AI cheirando a pista que acabou de achar. No celular ele fica
+            {/* O FarejAI cheirando a pista que acabou de achar. No celular ele fica
                 encostado na borda do cartão, para não sair da tela. */}
             <Mascot
               pose="cheirando"
@@ -306,10 +299,24 @@ export function Landing({ demo }: { demo: boolean }) {
         </div>
       </section>
 
+      {/* ——— Confiança, logo abaixo do topo: sem senha, grátis para começar, ninguém é avisado ——— */}
+      <section className="bg-white">
+        {/* Uma faixa só, com divisores: os quatro números lidos como um bloco. */}
+        <dl className="mx-auto grid max-w-6xl grid-cols-3 divide-x divide-border px-2 py-4 sm:px-6">
+          {FACTS.map((f, i) => (
+            <Reveal key={f.label} delay={i * 120} className="px-2 py-8 text-center sm:px-4">
+              <dt className="sr-only">{f.label}</dt>
+              <dd className="text-4xl font-bold tracking-tight text-vinho">{f.value}</dd>
+              <dd className="mt-1 text-sm text-foreground/60">{f.label}</dd>
+            </Reveal>
+          ))}
+        </dl>
+      </section>
+
       {/* ——— 02 · O produto, em uma seção só ———
           Antes eram duas ("Tudo em um só lugar" e "Um @ pode contar muita
           coisa") dizendo a mesma coisa em momentos diferentes. */}
-      <section id="produto" className="scroll-mt-10">
+      <section id="produto" className="scroll-mt-10 bg-background">
         <div className="mx-auto grid max-w-6xl items-center gap-14 px-6 py-24 md:grid-cols-2">
           <Reveal>
             <AppMockup />
@@ -339,29 +346,24 @@ export function Landing({ demo }: { demo: boolean }) {
                 </li>
               ))}
             </ul>
+            <Handnote underline tilt={-3} className="mt-8 block">
+              tudo numa tela só
+            </Handnote>
           </Reveal>
         </div>
       </section>
 
-      {/* ——— Fatos ——— */}
-      <section className="border-y border-border">
-        {/* Uma faixa só, com divisores: os quatro números lidos como um bloco. */}
-        <dl className="mx-auto grid max-w-6xl grid-cols-2 divide-x divide-y divide-border px-6 py-4 md:grid-cols-4 md:divide-y-0">
-          {FACTS.map((f, i) => (
-            <Reveal key={f.label} delay={i * 120} className="px-4 py-8 text-center">
-              <dt className="sr-only">{f.label}</dt>
-              <dd className="text-4xl font-bold tracking-tight text-vinho">{f.value}</dd>
-              <dd className="mt-1 text-sm text-foreground/60">{f.label}</dd>
-            </Reveal>
-          ))}
-        </dl>
-      </section>
-
       {/* ——— 04 · Como funciona ——— */}
-      <section className="mx-auto max-w-6xl px-6 py-24">
+      <section className="bg-white">
+        <div className="mx-auto max-w-6xl px-6 py-24">
         <Reveal>
           <Eyebrow>Como funciona</Eyebrow>
-          <SectionTitle className="mt-4">Comece pelo @.</SectionTitle>
+          <div className="mt-4 flex flex-wrap items-end gap-x-6 gap-y-2">
+            <SectionTitle>Comece pelo @.</SectionTitle>
+            <Handnote tone="accent" tilt={-6} className="pb-1">
+              leva segundos!
+            </Handnote>
+          </div>
         </Reveal>
         <ol className="mt-12 grid gap-5 md:grid-cols-3">
           {STEPS.map((s, i) => (
@@ -378,175 +380,23 @@ export function Landing({ demo }: { demo: boolean }) {
             </Reveal>
           ))}
         </ol>
-      </section>
-
-      {/* ——— 05 · Gratuito ——— */}
-      <section className="border-y border-border bg-card/40">
-        <div className="mx-auto grid max-w-6xl gap-10 px-6 py-24 md:grid-cols-2 md:items-center">
-          <Reveal>
-            <Eyebrow>Farejo gratuito</Eyebrow>
-            <SectionTitle className="mt-4">Comece com uma busca.</SectionTitle>
-            <p className="mt-5 text-lg text-muted-foreground">
-              No Farejo, você pode pesquisar um @ e conhecer melhor as conexões daquele perfil.
-            </p>
-            <a
-              href="#buscar"
-              className="mt-8 inline-flex items-center gap-2 rounded-full bg-vinho px-6 py-3 font-semibold text-cream transition hover:opacity-90"
-            >
-              Experimentar Farejo <ArrowRight className="h-4 w-4" />
-            </a>
-          </Reveal>
-          <Reveal delay={150} className="relative rounded-3xl border border-border bg-card p-8">
-            <p className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-              No plano gratuito
-            </p>
-            <ul className="mt-5 space-y-3">
-              {FREE_INCLUDES.map((f) => (
-                <li key={f} className="flex items-center gap-3 text-lg">
-                  <Check className="h-5 w-5 shrink-0 text-accent" />
-                  {f}
-                </li>
-              ))}
-            </ul>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* ——— 06 · Colocar no Faro AI ——— */}
-      <section className="mx-auto grid max-w-6xl items-center gap-14 px-6 py-24 md:grid-cols-2">
-        <Reveal delay={150} className="md:order-2">
-          <Eyebrow>O diferencial</Eyebrow>
-          <SectionTitle className="mt-4">Coloque no Faro AI.</SectionTitle>
-          <p className="mt-5 text-lg text-muted-foreground">
-            Você escolhe o perfil. O Farejo acompanha as mudanças disponíveis e organiza tudo para você.
+        {/* O que antes era a seção "Comece com uma busca": uma linha basta. */}
+        <Reveal className="mt-8 flex flex-col items-center gap-3 text-center sm:flex-row sm:justify-center">
+          <p className="text-muted-foreground">
+            <b className="font-semibold text-foreground">Buscar e ver a prévia é grátis</b> — sem cartão, sem senha.
           </p>
+          <a
+            href="#buscar"
+            className="inline-flex items-center gap-2 rounded-full bg-vinho px-5 py-2.5 text-sm font-semibold text-cream transition hover:opacity-90"
+          >
+            Experimentar grátis <ArrowRight className="h-4 w-4" />
+          </a>
         </Reveal>
-        <Reveal className="md:order-1">
-          <FaroMockup />
-          <FictionalNote className="mt-6" />
-        </Reveal>
-      </section>
-
-      {/* ——— 07 · PRO ——— */}
-      <section id="pro" className="scroll-mt-10 px-6 py-24">
-        <Reveal className="vinho-surface relative mx-auto max-w-6xl overflow-hidden rounded-3xl px-6 py-12 sm:rounded-3xl sm:px-14 sm:py-20">
-          {/* min-w-0 nas colunas: sem isso o conteúdo mais largo estica a coluna
-              e o texto vaza para fora do painel no celular. */}
-          {/* Colunas alinhadas pelo topo: centralizadas, o texto "flutuava" em
-              relação ao cartão sempre que uma das duas crescia. */}
-          <div className="relative grid gap-12 md:grid-cols-2 md:items-start md:gap-16">
-            <div className="min-w-0">
-              {/* No celular já existe o Faro AI espiando o cartão: um só basta. */}
-              <SniffingDog className="mb-6 hidden h-12 text-pink sm:mb-8 sm:block" />
-              <Eyebrow dark>Faro AI</Eyebrow>
-              <h2 className="mt-4 text-balance text-[1.9rem] font-bold leading-[1.08] tracking-tight sm:text-5xl">
-                Você não precisa voltar todo dia. O Faro AI volta.
-              </h2>
-              <p className="mt-4 max-w-md text-[15px] leading-relaxed text-cream/75 sm:text-lg">
-                Coloque a pessoa que importa no Faro AI. Ele relê o perfil — a cada 3 dias no Faro de
-                Cão, todo dia no Faro de Detetive — e mostra{" "}
-                <b className="font-semibold text-cream">só o que mudou</b> entre uma coleta e outra.
-              </p>
-
-              {/* O que a assinatura entrega, em frases — não em rótulos soltos. */}
-              <ul className="mt-8 space-y-3">
-                {PRO_PROMISES.map((t, i) => (
-                  <li
-                    key={t}
-                    className="rise flex items-start gap-3 text-sm leading-relaxed text-cream/85 sm:text-[15px]"
-                    style={{ "--d": `${250 + i * 110}ms` } as React.CSSProperties}
-                  >
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-pink" />
-                    <span>{t}</span>
-                  </li>
-                ))}
-              </ul>
-
-              {/* Preço na cara, separado por um fio de quem chega aqui já quer
-                  saber quanto é. */}
-              <hr className="mt-8 border-cream/12" />
-              <p className="mt-6 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                <span className="text-cream/60">a partir de</span>
-                <span className="text-3xl font-bold tracking-tight">{brl(PLANS.CAO.priceMonthly)}</span>
-                <span className="text-cream/60">por mês</span>
-                <span className="text-cream/40">·</span>
-                <span className="text-sm text-cream/60">cancele quando quiser</span>
-              </p>
-
-              {/* No celular os botões ocupam a linha inteira, um sob o outro. */}
-              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-                {/* Os planos ficam aqui mesmo, mais abaixo — sem trocar de página. */}
-                <a
-                  href="#planos"
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-pink px-6 py-3 font-bold text-ink transition hover:opacity-90"
-                >
-                  Ver os planos <ArrowRight className="h-4 w-4" />
-                </a>
-              </div>
-              <TrustLine dark className="mt-4" />
-              <p className="mt-3 text-[13px] leading-relaxed text-cream/55 sm:text-sm">
-                Só quer ver um perfil? O <b className="font-semibold text-cream/80">uso único</b> libera um @
-                sem assinatura.
-              </p>
-              <Handnote tone="pink" heart className="mt-7 block">
-                deixe o Farejo acompanhar por você
-              </Handnote>
-            </div>
-
-            {/* O benefício visto em segundos: a linha do tempo e o aviso. */}
-            <div className="relative min-w-0 pb-16 pt-12 md:pt-6">
-              {/* O Faro AI trabalhando atrás do cartão: espia, se liga, avisa, comemora. */}
-              <FaroWatching className="absolute right-4 top-0 z-0 h-20 w-28 sm:right-6 sm:h-24 sm:w-32" />
-              <div className="relative z-10">
-                <ProNarrative />
-              </div>
-            </div>
-          </div>
-
-          {/* As pílulas repetem o que as promessas já dizem: só do tablet para cima. */}
-          <hr className="relative mt-16 hidden border-cream/12 sm:block" />
-          <ul className="relative mt-8 hidden gap-3 sm:grid sm:grid-cols-2 lg:grid-cols-4">
-            {PRO_FEATURES.map((f, i) => (
-              <li
-                key={f.label}
-                className="rise flex items-center gap-2.5 rounded-2xl border border-cream/10 bg-cream/[0.04] px-4 py-3.5 text-sm"
-                style={{ "--d": `${300 + i * 90}ms` } as React.CSSProperties}
-              >
-                <f.icon className="h-4 w-4 shrink-0 text-pink" />
-                <span className="font-medium">{f.label}</span>
-              </li>
-            ))}
-          </ul>
-          <FictionalNote dark className="mt-10 hidden sm:block" />
-        </Reveal>
-      </section>
-
-      {/* ——— 08 · Sua própria conta ——— */}
-      <section className="border-y border-border bg-card/40">
-        <div className="mx-auto grid max-w-6xl items-center gap-14 px-6 py-24 md:grid-cols-2">
-          <Reveal>
-            <Eyebrow>Sua conta</Eyebrow>
-            <SectionTitle className="mt-4">O Farejo também olha para você.</SectionTitle>
-            <p className="mt-5 text-lg text-muted-foreground">
-              Conecte sua própria conta e tenha uma visão mais completa da sua audiência e das suas conexões.
-            </p>
-            <Link
-              href="/connect"
-              className="mt-8 inline-flex items-center gap-2 font-semibold text-vinho underline-offset-4 hover:underline"
-            >
-              Conectar minha conta <ArrowRight className="h-4 w-4" />
-            </Link>
-          </Reveal>
-          <Reveal delay={150}>
-            <AccountMockup />
-          </Reveal>
         </div>
       </section>
 
       {/* ——— 09 · Comparação ——— */}
-      {/* Sem fundo: entre "sua conta" e "planos", três seções claras seguidas
-          achatavam a página. */}
-      <section className="border-t border-border">
+      <section className="bg-background">
         <div className="mx-auto max-w-6xl px-6 py-24">
           <div className="mx-auto max-w-4xl">
             <Reveal className="text-center">
@@ -555,6 +405,9 @@ export function Landing({ demo }: { demo: boolean }) {
               <p className="mx-auto mt-5 max-w-xl text-lg text-muted-foreground">
                 Dá para descobrir quase tudo na mão, abrindo o Instagram. Só que leva horas.
               </p>
+              <Handnote tone="accent" tilt={-4} className="mt-4">
+                horas → segundos
+              </Handnote>
             </Reveal>
             <Reveal className="relative mt-12">
               <div className="overflow-hidden rounded-3xl border border-border bg-card">
@@ -592,14 +445,97 @@ export function Landing({ demo }: { demo: boolean }) {
         </div>
       </section>
 
+      {/* ——— 07 · PRO ——— */}
+      <section id="pro" className="scroll-mt-10 px-6 py-24 bg-white">
+        <Reveal className="vinho-surface relative mx-auto max-w-6xl overflow-hidden rounded-3xl px-6 py-12 sm:px-12 sm:py-14">
+          {/* min-w-0 nas colunas: sem isso o conteúdo mais largo estica a coluna
+              e o texto vaza para fora do painel no celular. */}
+          {/* No celular: título → demonstração → funções e planos.
+              No computador: texto à esquerda, demonstração à direita. */}
+          <div className="relative grid gap-8 md:grid-cols-2 md:grid-rows-[auto_1fr] md:gap-x-14 md:gap-y-0">
+            <div className="min-w-0 md:col-start-1 md:row-start-1">
+              <Eyebrow dark>FarejAI</Eyebrow>
+              <h2 className="mt-3 text-balance text-[1.9rem] font-bold leading-[1.08] tracking-tight sm:text-[2.6rem]">
+                Você não volta todo dia. O FarejAI volta.
+              </h2>
+              <p className="mt-3 max-w-md text-[15px] leading-relaxed text-cream/75">
+                Coloque um perfil no FarejAI e veja <b className="font-semibold text-cream">só o que mudou</b>{" "}
+                entre uma coleta e outra.
+              </p>
+            </div>
+
+            {/* O FarejAI de verdade: Rastros, Chat, Pistas e Stories, trocando sozinhos. */}
+            <div className="relative min-w-0 md:col-start-2 md:row-span-2 md:row-start-1 md:self-center">
+              <Handnote tone="pink" tilt={-5} className="mb-3 block text-center text-[1.6rem]">
+                toque nas abas ↓
+              </Handnote>
+              <FaroAIShowcase />
+              <FictionalNote dark className="mt-5" />
+            </div>
+
+            <div className="min-w-0 md:col-start-1 md:row-start-2">
+              {/* As quatro coisas que ele faz, em uma grade curta. */}
+              <ul className="grid grid-cols-2 gap-2.5 md:mt-6">
+                {PRO_FUNCOES.map((f, i) => (
+                  <li
+                    key={f.title}
+                    className="rise rounded-2xl bg-cream/[0.06] p-3"
+                    style={{ "--d": `${200 + i * 90}ms` } as React.CSSProperties}
+                  >
+                    <p className="flex items-center gap-1.5 text-sm font-bold">
+                      <f.icon className="h-4 w-4 text-pink" /> {f.title}
+                    </p>
+                    <p className="mt-0.5 text-[12.5px] leading-snug text-cream/65">{f.body}</p>
+                  </li>
+                ))}
+              </ul>
+
+              {/* Os dois planos do FarejAI, lado a lado. */}
+              <div className="mt-5 grid grid-cols-2 gap-2.5">
+                {[
+                  { nome: PLANS.CAO.name, preco: PLANS.CAO.priceMonthly, quando: "coleta a cada 3 dias" },
+                  { nome: PLANS.DETETIVE.name, preco: PLANS.DETETIVE.priceMonthly, quando: "coleta todo dia" },
+                ].map((p) => (
+                  <div key={p.nome} className="rounded-2xl border border-cream/15 p-3">
+                    <p className="text-[12px] font-semibold text-cream/70">{p.nome}</p>
+                    <p className="mt-0.5 text-xl font-bold tracking-tight">
+                      {brl(p.preco)}
+                      <span className="text-xs font-medium text-cream/55">/mês</span>
+                    </p>
+                    <p className="text-[11.5px] text-cream/55">{p.quando}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+                {/* Os planos ficam aqui mesmo, mais abaixo — sem trocar de página. */}
+                <a
+                  href="#planos"
+                  className="inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full bg-pink px-6 py-3 font-bold text-ink transition hover:opacity-90"
+                >
+                  Ver os planos <ArrowRight className="h-4 w-4" />
+                </a>
+                <p className="text-[13px] leading-snug text-cream/55">
+                  Cancele quando quiser. Só um perfil?{" "}
+                  <b className="font-semibold text-cream/80">{SINGLE_UNLOCK.name}, {brl(SINGLE_UNLOCK.price)}</b>.
+                </p>
+              </div>
+            </div>
+          </div>
+        </Reveal>
+      </section>
+
       {/* ——— 10 · Planos ——— */}
-      <section id="planos" className="scroll-mt-10 border-t border-border bg-card/40">
+      <section id="planos" className="scroll-mt-10 bg-background">
         <div className="mx-auto max-w-6xl px-6 py-24">
           <Reveal className="text-center">
             <Eyebrow>Planos</Eyebrow>
             <SectionTitle className="mt-4">Escolha como farejar.</SectionTitle>
+            <Handnote tilt={-3} heart className="mt-3">
+              sem fidelidade, cancele quando quiser
+            </Handnote>
           </Reveal>
-          <PlanosCards className="mt-12" />
+          <PlanosCards className="mt-10" />
           <p className="mt-8 text-center text-sm text-muted-foreground">
             O Farejador libera <b className="text-foreground">um perfil</b> (o + dá mais por 7 dias); o Faro de Cão e o Detetive acompanham{" "}
             <b className="text-foreground">um perfil</b> ao longo do tempo. Todas as funcionalidades valem
@@ -610,10 +546,14 @@ export function Landing({ demo }: { demo: boolean }) {
       </section>
 
       {/* ——— Perguntas frequentes ——— */}
-      <section id="perguntas" className="mx-auto max-w-3xl scroll-mt-10 px-6 py-24">
+      <section id="perguntas" className="bg-white scroll-mt-10">
+        <div className="mx-auto max-w-3xl px-6 py-24">
         <Reveal className="text-center">
           <Eyebrow>Dúvidas</Eyebrow>
           <SectionTitle className="mt-4">Perguntas frequentes</SectionTitle>
+          <Handnote tone="accent" tilt={-4} className="mt-3">
+            a gente responde ♥
+          </Handnote>
         </Reveal>
         <Reveal className="mt-12 divide-y divide-border overflow-hidden rounded-3xl border border-border bg-card">
           {FAQ.map((f) => (
@@ -626,15 +566,19 @@ export function Landing({ demo }: { demo: boolean }) {
             </details>
           ))}
         </Reveal>
+        </div>
       </section>
 
       {/* ——— Guias ——— */}
-      <section className="border-t border-border bg-card/40">
+      <section className="bg-background">
         <div className="mx-auto max-w-6xl px-6 py-24">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <Reveal>
               <Eyebrow>Guias</Eyebrow>
               <SectionTitle className="mt-4">Entenda os rastros.</SectionTitle>
+              <Handnote tilt={-3} className="mt-2">
+                leituras rapidinhas
+              </Handnote>
             </Reveal>
             <Link
               href="/guias"
@@ -647,39 +591,6 @@ export function Landing({ demo }: { demo: boolean }) {
             <GuideCards />
           </Reveal>
         </div>
-      </section>
-
-      {/* ——— 13 · CTA final ——— */}
-      <section id="comecar" className="px-6 py-24">
-        <Reveal className="brand-panel relative mx-auto flex max-w-4xl flex-col items-center rounded-3xl px-6 py-16 text-center sm:px-12">
-          <Handnote
-            tone="ink"
-            underline
-            tilt={-8}
-            className="absolute left-6 top-8 hidden text-left sm:block"
-          >
-            seu faro
-            <br />
-            estava certo
-          </Handnote>
-          <SniffingDog className="h-20 text-vinho" animated />
-          <h2 className="mt-8 text-balance text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl">
-            Ficou curioso?
-            <br />
-            Comece com um @.
-          </h2>
-          <div className="mt-10 w-full max-w-lg">
-            <SearchBlock
-              onPink
-              buttonLabel="Farejar perfil"
-              placeholder="usuário"
-              showRecent={false}
-              autoFocus={false}
-            />
-          </div>
-          <TrustChecks className="mt-6" />
-          <p className="mt-4 text-sm font-semibold tracking-wide opacity-70">{BRAND.signature}</p>
-        </Reveal>
       </section>
 
       <SiteFooter />

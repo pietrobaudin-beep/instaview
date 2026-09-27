@@ -39,7 +39,7 @@ export const GUIDES: Guide[] = [
         heading: "Com o Farejo",
         paragraphs: [
           "Você digita o @ e o Farejo lê a lista pública de seguidos, separa pessoas de marcas e contas verificadas e mostra quantas são mulheres e quantos são homens (uma estimativa pelo primeiro nome).",
-          "Com o Faro de Cão ou o Faro de Detetive, você coloca o perfil no Faro AI. A partir daí, cada nova coleta é comparada com a anterior, e o que mudou vira uma pista: quem entrou, quem saiu e quando o Farejo percebeu.",
+          "Com o Faro de Cão ou o Faro de Detetive, você coloca o perfil no FarejAI. A partir daí, cada nova coleta é comparada com a anterior, e o que mudou vira uma pista: quem entrou, quem saiu e quando o Farejo percebeu.",
         ],
       },
       {
@@ -68,7 +68,7 @@ export const GUIDES: Guide[] = [
         heading: "Então como saber o que é novo?",
         paragraphs: [
           "O jeito confiável é comparar duas fotografias da lista em momentos diferentes. O que aparece na segunda e não estava na primeira é novo, independentemente da posição.",
-          "É exatamente isso que o Farejo faz quando um perfil está no seu Faro AI: guarda cada leitura e compara com a anterior.",
+          "É exatamente isso que o Farejo faz quando um perfil está no seu FarejAI: guarda cada leitura e compara com a anterior.",
         ],
       },
     ],

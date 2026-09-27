@@ -30,7 +30,7 @@ function quando(d: Date): string {
 /**
  * Os perfis já pesquisados — só para reabrir.
  *
- * Nada aqui está sendo acompanhado: quem o Faro AI observa fica em "Faro AI". Esta
+ * Nada aqui está sendo acompanhado: quem o FarejAI observa fica em "FarejAI". Esta
  * lista existe para voltar a um @ sem digitar de novo, e reabrir um perfil já
  * consultado nunca gasta uma nova consulta do plano.
  */
@@ -73,7 +73,7 @@ export default async function PesquisadosPage() {
         <h1 className="text-3xl font-bold tracking-tight">Pesquisados</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Perfis que você já farejou. Eles <b className="text-foreground">não</b> estão sendo
-          acompanhados — para isso, coloque no Faro AI.
+          acompanhados — para isso, coloque no FarejAI.
         </p>
 
         {perfis.length === 0 ? (

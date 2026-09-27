@@ -102,7 +102,7 @@ function Panel({
         <span className="ml-auto">{action}</span>
       </header>
       {/* Altura mínima só onde os cartões ficam em coluna, para alinhar; no
-          painel do Faro AI, lado a lado, eles se esticam juntos e o mínimo
+          painel do FarejAI, lado a lado, eles se esticam juntos e o mínimo
           fixo só deixava cartão oco. */}
       <div className={`flex flex-1 flex-col p-5 ${justo ? "" : "min-h-[13.5rem]"}`}>{children}</div>
     </section>
@@ -222,7 +222,7 @@ export function HistoryPanel({
   className?: string;
   loggedIn: boolean;
   /**
-   * No painel do Faro AI: só Novidades e o gráfico. O cartão "Pistas" e o
+   * No painel do FarejAI: só Novidades e o gráfico. O cartão "Pistas" e o
    * "Rastro recente" repetiam o feed de quem entrou e saiu, que já está ao lado.
    */
   enxuto?: boolean;
@@ -271,7 +271,7 @@ export function HistoryPanel({
         router.push(`/login?next=${encodeURIComponent(`/p/${username}`)}`);
         return;
       }
-      // Putting a profile no Faro AI is a Pro feature.
+      // Putting a profile no FarejAI is a Pro feature.
       if (r.status === 402) {
         router.push(`/pricing?next=${encodeURIComponent(`/p/${username}`)}`);
         return;
@@ -314,11 +314,11 @@ export function HistoryPanel({
               ) : (
                 <Lock className="h-4 w-4" />
               )}
-              Colocar no Faro AI
+              Colocar no FarejAI
             </Button>
           ) : h?.saved ? (
             <span className="inline-flex items-center gap-1 text-xs text-emerald-700">
-              <Check className="h-3.5 w-3.5" /> No seu Faro AI
+              <Check className="h-3.5 w-3.5" /> No seu FarejAI
             </span>
           ) : null
         }
@@ -328,7 +328,7 @@ export function HistoryPanel({
         ) : !h.saved ? (
           <div>
             <p className="text-sm text-muted-foreground">
-              Coloque este perfil no Faro AI e o Farejo observa por você: quem começou a seguir,
+              Coloque este perfil no FarejAI e o Farejo observa por você: quem começou a seguir,
               quem deixou de seguir e o que mudou no perfil.
             </p>
             {saveError && <p className="mt-2 text-xs text-destructive">{saveError}</p>}
@@ -350,10 +350,10 @@ export function HistoryPanel({
       {h?.saved && (
         <>
           {verNovidades && (
-          <Panel title="Novidades do Faro AI" icon={Sparkles}>
+          <Panel title="Novidades do FarejAI" icon={Sparkles}>
             {!h.news || h.news.length === 0 ? (
               <p className="text-xs text-muted-foreground">
-                🐾 O Faro AI olha este perfil todo dia e mostra aqui só o que for novo: posts, stories e
+                🐾 O FarejAI olha este perfil todo dia e mostra aqui só o que for novo: posts, stories e
                 marcações que aparecerem daqui pra frente.
               </p>
             ) : (
@@ -407,7 +407,7 @@ export function HistoryPanel({
           <Panel title="Rastro recente" icon={UserPlus}>
             {h.timeline.length === 0 ? (
               <p className="text-xs text-muted-foreground">
-                😴 Nada passou pelo Faro AI ainda. Cada nova análise compara com a anterior.
+                😴 Nada passou pelo FarejAI ainda. Cada nova análise compara com a anterior.
               </p>
             ) : (
               <ol

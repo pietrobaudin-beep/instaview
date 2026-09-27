@@ -12,12 +12,12 @@ import { Mascot } from "@/components/ui/mascot";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Chat · Faro AI · Farejo",
-  description: "Pergunte ao Faro AI sobre os perfis que ele acompanha.",
+  title: "Chat · FarejAI · Farejo",
+  description: "Pergunte ao FarejAI sobre os perfis que ele acompanha.",
 };
 
 /**
- * O chat do Faro AI, com todos os perfis acompanhados num lugar só.
+ * O chat do FarejAI, com todos os perfis acompanhados num lugar só.
  *
  * A mesma caixa existe dentro de cada perfil, mas ali ela já sabe de quem se
  * fala. Aqui a pessoa escolhe — é a porta para quem chega com a pergunta na
@@ -39,21 +39,21 @@ export default async function ChatPage() {
     <>
       <AppNav plan={d.admin ? "ADMIN" : d.plano} />
       <main className="mx-auto max-w-3xl px-5 py-8 md:pl-[15.5rem]">
-        <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-accent">Faro AI</p>
+        <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-accent">FarejAI</p>
         <h1 className="text-3xl font-extrabold tracking-tight">Chat</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Pergunte sobre quem o Faro AI acompanha. Ele responde do que guardou — e diz quando
+          Pergunte sobre quem o FarejAI acompanha. Ele responde do que guardou — e diz quando
           não sabe.
         </p>
 
         {semChat ? (
           <Panel className="mt-6">
             <div className="flex flex-col items-center gap-3 py-8 text-center">
-              <Mascot pose="duvida" className="h-20 text-vinho" bob />
+              <Mascot pose="detetive" className="h-20 text-vinho" bob />
               <h2 className="text-xl font-bold">O chat é do Faro de Cão e do Faro de Detetive.</h2>
               <p className="max-w-sm text-sm text-muted-foreground">
-                Ele responde sobre os perfis que o Faro AI acompanha todo dia — e para isso é
-                preciso ter perfis no Faro AI.
+                Ele responde sobre os perfis que o FarejAI acompanha todo dia — e para isso é
+                preciso ter perfis no FarejAI.
               </p>
               <Link href="/pricing" className="mt-1">
                 <Button variant="accent">Conhecer os planos</Button>
@@ -64,10 +64,10 @@ export default async function ChatPage() {
           <Panel className="mt-6">
             <div className="flex flex-col items-center gap-3 py-8 text-center">
               <Mascot pose="dormindo" className="h-20 text-vinho" bob />
-              <h2 className="text-xl font-bold">Nenhum perfil no Faro AI ainda.</h2>
+              <h2 className="text-xl font-bold">Nenhum perfil no FarejAI ainda.</h2>
               <p className="max-w-sm text-sm text-muted-foreground">
-                O chat responde do que o Faro AI observou ao longo do tempo. Coloque alguém no
-                Faro AI e volte aqui.
+                O chat responde do que o FarejAI observou ao longo do tempo. Coloque alguém no
+                FarejAI e volte aqui.
               </p>
               <Link href="/" className="mt-1">
                 <Button variant="accent">Farejar um @</Button>

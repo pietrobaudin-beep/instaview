@@ -63,8 +63,8 @@ export async function GET(req: Request) {
   const data = acesso.salva.data.secoes?.[section as DaAnalise];
   if (!data) return NextResponse.json({ status: "error", access: acesso.access, locked: false });
 
-  // Stories da análise, de um perfil que está no Faro AI de quem olha, vão
-  // para o acervo do Faro AI. A leitura já foi paga.
+  // Stories da análise, de um perfil que está no FarejAI de quem olha, vão
+  // para o acervo do FarejAI. A leitura já foi paga.
   if (user && acesso.noFaro && data.section === "stories") {
     const noFaro = await prisma.trackedProfile
       .findUnique({ where: { userId_username: { userId: user.id, username } }, select: { id: true } })

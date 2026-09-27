@@ -1,5 +1,5 @@
 /**
- * Farejo's voice. Faro AI — the dog — narrates the product, so status messages,
+ * Farejo's voice. FarejAI — the dog — narrates the product, so status messages,
  * alerts and empty states read like a curious friend rather than a dashboard.
  *
  * Copy lives here so every screen speaks the same way. Positioning rule: this
@@ -47,7 +47,7 @@ export const LOADING_LINES = [
   "Procurando pistas…",
   "Seguindo o rastro…",
   "Cheirando os cantinhos do @…",
-  "Faro AI está investigando…",
+  "FarejAI está investigando…",
   "Quase encontramos…",
   "Organizando as pistas…",
 ] as const;
@@ -83,7 +83,7 @@ export type PistaKind = "follow" | "unfollow" | "interaction";
 
 /** Headline for a single detected change. */
 export function pistaHeadline(kind: PistaKind): { emoji: string; title: string } {
-  if (kind === "follow") return { emoji: "🐶", title: "Faro AI encontrou alguém novo." };
+  if (kind === "follow") return { emoji: "🐶", title: "FarejAI encontrou alguém novo." };
   if (kind === "unfollow") return { emoji: "👀", title: "Esse rastro sumiu." };
   return { emoji: "❤️", title: "Rolou interação." };
 }
@@ -103,18 +103,18 @@ export function greeting(hour: number): string {
 export const BLOQUEIOS = {
   pista: {
     titulo: "Esta pista está guardada.",
-    corpo: "Desbloqueie este perfil com o Farejador e veja tudo o que o Faro AI encontrou.",
+    corpo: "Desbloqueie este perfil com o Farejador e veja tudo o que o FarejAI encontrou.",
     acao: "Desbloquear perfil completo",
   },
   foraDoFaro: {
-    titulo: "Este perfil ainda não está no Faro AI.",
-    corpo: "Coloque-o no Faro AI para receber as mudanças e os alertas todo dia.",
-    acao: "Ver planos com Faro AI",
+    titulo: "Este perfil ainda não está no FarejAI.",
+    corpo: "Coloque-o no FarejAI para receber as mudanças e os alertas todo dia.",
+    acao: "Ver planos com FarejAI",
   },
   faroCheio: {
-    titulo: "Seu Faro AI está cheio.",
+    titulo: "Seu FarejAI está cheio.",
     corpo: "Troque um perfil acompanhado ou passe para um plano com mais vagas.",
-    acao: "Gerenciar meu Faro AI",
+    acao: "Gerenciar meu FarejAI",
   },
   semConta: {
     titulo: "Não deixe essa pista escapar.",

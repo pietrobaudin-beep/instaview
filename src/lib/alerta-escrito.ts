@@ -10,7 +10,7 @@
  *
  * Na coleta, nunca na tela. Duas razões: a publicação só existe uma vez (não
  * adianta avaliar de novo a cada visita), e a pessoa não está olhando quando
- * o Faro AI passa — é justamente esse o ponto do produto.
+ * o FarejAI passa — é justamente esse o ponto do produto.
  *
  * ## O que o modelo decide, e o que ele não decide
  *

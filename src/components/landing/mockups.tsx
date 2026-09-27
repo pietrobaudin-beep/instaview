@@ -1,6 +1,7 @@
-import { Bell, Heart, PawPrint, UserPlus } from "lucide-react";
+import { Bell, Heart, MessageCircle, PawPrint, Sparkles, UserPlus } from "lucide-react";
 import { FakeAvatar, PEOPLE, type Person } from "@/components/landing/people";
 export { StepSearch } from "@/components/landing/step-search";
+export { AppMockup } from "@/components/landing/app-mockup";
 import { cn } from "@/lib/utils";
 
 /**
@@ -55,71 +56,7 @@ function PersonRow({ person, tag, d = 0 }: { person: Person; tag?: string; d?: n
   );
 }
 
-/** 03 — the analysis screen, as the product shows it. */
-export function AppMockup() {
-  const j = PEOPLE.julia;
-  return (
-    <Frame className="mx-auto w-full max-w-sm">
-      <div className="flex items-center gap-4">
-        <span className="rounded-full p-0.5 ring-2 ring-pink">
-          <FakeAvatar person={j} size={60} />
-        </span>
-        <div>
-          <p className="font-bold">@{j.handle}</p>
-          <p className="text-xs text-muted-foreground">{j.name} · perfil público</p>
-        </div>
-      </div>
-      <div className="mt-5 grid grid-cols-3 text-center">
-        {[
-          ["432", "publicações"],
-          ["12,4 mil", "seguidores"],
-          ["893", "seguindo"],
-        ].map(([v, l]) => (
-          <div key={l}>
-            <div className="font-bold tabular-nums">{v}</div>
-            <div className="text-[11px] text-muted-foreground">{l}</div>
-          </div>
-        ))}
-      </div>
-      <div className="mt-5 flex gap-1.5">
-        {["Visão geral", "Seguindo", "Interações"].map((t, i) => (
-          <span
-            key={t}
-            className={cn(
-              "rounded-full px-3 py-1 text-[11px] font-semibold",
-              i === 0 ? "bg-pink text-ink" : "bg-muted text-muted-foreground",
-            )}
-          >
-            {t}
-          </span>
-        ))}
-      </div>
-      <div className="mt-4 rounded-2xl border border-border p-4">
-        <p className="mb-3 text-sm font-bold">Quem essa pessoa segue</p>
-        <div className="space-y-2.5">
-          <Bar label="Mulheres" value={28} pct={56} fill="bg-pink" />
-          <Bar label="Homens" value={22} pct={44} fill="bg-purple" />
-        </div>
-      </div>
-      <div className="mt-3 space-y-3 rounded-2xl border border-border p-4">
-        <p className="text-sm font-bold">Começou a seguir</p>
-        <PersonRow person={PEOPLE.lucas} tag="novo" d={700} />
-        <PersonRow person={PEOPLE.bia} tag="novo" d={900} />
-        <PersonRow person={PEOPLE.rafa} d={1100} />
-      </div>
-      <div className="mt-3 flex items-center gap-3 rounded-2xl border border-border p-4">
-        <FakeAvatar person={PEOPLE.marina} size={36} />
-        <div className="min-w-0 flex-1">
-          <p className="text-xs text-muted-foreground">Mais interação com</p>
-          <p className="truncate text-sm font-semibold">@{PEOPLE.marina.handle}</p>
-        </div>
-        <Heart className="h-4 w-4 shrink-0 fill-pink text-pink" />
-      </div>
-    </Frame>
-  );
-}
-
-/** A small notification, as it appears around the Faro AI mockup. */
+/** A small notification, as it appears around the FarejAI mockup. */
 function Notice({
   icon: Icon,
   title,
@@ -162,9 +99,9 @@ function Notice({
 }
 
 /**
- * 06 — a profile placed "no Faro AI", with the notifications it produces. The
+ * 06 — a profile placed "no FarejAI", with the notifications it produces. The
  * notifications sit beside the card, gently staggered, so they never cover the
- * profile and the "No seu Faro AI" badge the section is about.
+ * profile and the "No seu FarejAI" badge the section is about.
  */
 export function FaroMockup() {
   return (
@@ -180,7 +117,7 @@ export function FaroMockup() {
         </span>
         <p className="mt-3 font-bold">@{PEOPLE.julia.handle}</p>
         <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-pink px-3.5 py-1.5 text-xs font-bold text-ink">
-          <PawPrint className="h-3.5 w-3.5" /> No seu Faro AI
+          <PawPrint className="h-3.5 w-3.5" /> No seu FarejAI
         </span>
       </Frame>
 
@@ -189,7 +126,7 @@ export function FaroMockup() {
           <Notice
             icon={UserPlus}
             person={PEOPLE.theo}
-            title="Faro AI encontrou alguém novo."
+            title="FarejAI encontrou alguém novo."
             body={`@${PEOPLE.julia.handle} começou a seguir @${PEOPLE.theo.handle}.`}
             className="sm:translate-x-3"
           />
@@ -252,54 +189,83 @@ function Mini({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Step 2 — who the profile follows. */
+/** Passo 2 — a análise aparecendo: garotas, quem interage, o que mudou. */
 export function StepFollows() {
   return (
     <Mini>
-      {[PEOPLE.lucas, PEOPLE.bia, PEOPLE.rafa].map((p, i) => (
-        <div
-          key={p.handle}
-          className="loop-in flex items-center gap-2 rounded-xl bg-card px-2 py-1.5"
-          style={{ "--d": `${i * 450}ms` } as React.CSSProperties}
-        >
-          <FakeAvatar person={p} size={24} />
-          <span className="truncate text-xs font-semibold">@{p.handle}</span>
-          {i < 2 && (
-            <span className="ml-auto rounded-full bg-pink/60 px-1.5 text-[9px] font-bold text-vinho">
-              novo
+      <div
+        className="loop-in flex items-center gap-2 rounded-xl bg-pink/70 px-2.5 py-1.5"
+        style={{ "--d": "0ms" } as React.CSSProperties}
+      >
+        <div className="flex -space-x-1.5">
+          {[PEOPLE.bia, PEOPLE.marina, PEOPLE.duda].map((p) => (
+            <span key={p.handle} className="rounded-full ring-2 ring-pink/70">
+              <FakeAvatar person={p} size={20} />
             </span>
-          )}
+          ))}
         </div>
-      ))}
+        <span className="text-xs font-bold text-vinho">28 garotas</span>
+      </div>
+      <div
+        className="loop-in flex items-center gap-2 rounded-xl bg-card px-2.5 py-1.5"
+        style={{ "--d": "450ms" } as React.CSSProperties}
+      >
+        <FakeAvatar person={PEOPLE.marina} size={22} />
+        <span className="min-w-0 flex-1 truncate text-[11px] font-semibold">
+          Interage bastante com @{PEOPLE.marina.handle}
+        </span>
+        <Heart className="lp-heart h-3 w-3 shrink-0 fill-accent text-accent" />
+      </div>
+      <div
+        className="loop-in flex items-center gap-2 rounded-xl bg-card px-2.5 py-1.5"
+        style={{ "--d": "900ms" } as React.CSSProperties}
+      >
+        <FakeAvatar person={PEOPLE.lucas} size={22} />
+        <span className="min-w-0 flex-1 truncate text-[11px] font-semibold">
+          começou a seguir @{PEOPLE.lucas.handle}
+        </span>
+        <span className="shrink-0 rounded-full bg-yellow px-1.5 text-[9px] font-bold text-ink">novo</span>
+      </div>
     </Mini>
   );
 }
 
-/** Step 3 — the Faro AI telling you something changed. */
+/** Passo 3 — o FarejAI: Rastros avisa, o Chat responde. */
 export function StepAlert() {
   return (
     <Mini>
       <div
-        className="loop-in flex items-start gap-2 rounded-xl bg-card p-2.5 shadow-sm"
-        style={{ "--d": "300ms" } as React.CSSProperties}
+        className="loop-in flex items-start gap-2 rounded-xl bg-card p-2 shadow-sm"
+        style={{ "--d": "200ms" } as React.CSSProperties}
       >
-        <FakeAvatar person={PEOPLE.theo} size={28} />
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-pink">
+          <PawPrint className="h-3 w-3 text-vinho" />
+        </span>
         <div className="min-w-0">
-          <p className="text-xs font-bold">🐶 Faro AI encontrou alguém novo.</p>
+          <p className="text-[11px] font-bold">Rastros · FarejAI achou algo novo</p>
           <p className="truncate text-[10px] text-muted-foreground">
             @{PEOPLE.julia.handle} seguiu @{PEOPLE.theo.handle}
           </p>
         </div>
       </div>
       <div
-        className="loop-in flex items-start gap-2 rounded-xl bg-card/70 p-2.5"
-        style={{ "--d": "1100ms" } as React.CSSProperties}
+        className="loop-in ml-auto flex max-w-[85%] items-center gap-1.5 rounded-2xl rounded-br-md bg-vinho px-2.5 py-1.5 text-cream"
+        style={{ "--d": "1000ms" } as React.CSSProperties}
       >
-        <FakeAvatar person={PEOPLE.duda} size={28} />
-        <div className="min-w-0">
-          <p className="text-xs font-bold">❤️ Rolou interação.</p>
-          <p className="truncate text-[10px] text-muted-foreground">@{PEOPLE.duda.handle} curtiu 3 posts</p>
-        </div>
+        <MessageCircle className="h-3 w-3 shrink-0" />
+        <span className="truncate text-[11px] font-semibold">O que mudou essa semana?</span>
+      </div>
+      <div
+        className="loop-in flex max-w-[85%] items-center gap-1.5 rounded-2xl rounded-bl-md bg-card px-2.5 py-1.5"
+        style={{ "--d": "1700ms" } as React.CSSProperties}
+      >
+        <Sparkles className="h-3 w-3 shrink-0 text-accent" />
+        <span className="lp-dots text-[11px] font-bold text-muted-foreground">
+          <i>•</i>
+          <i>•</i>
+          <i>•</i>
+        </span>
+        <span className="truncate text-[11px]">2 novos seguidos e 1 story</span>
       </div>
     </Mini>
   );
@@ -308,7 +274,7 @@ export function StepAlert() {
 /**
  * Hero — o resultado, logo abaixo do campo de busca.
  *
- * A pessoa entende o produto antes de ler: um perfil, a pista que o Faro AI achou
+ * A pessoa entende o produto antes de ler: um perfil, a pista que o FarejAI achou
  * e quando. Gente fictícia e desenhada, como em todos os mockups.
  */
 export function HeroResult() {
@@ -358,7 +324,7 @@ export function HeroResult() {
 
 /**
  * PRO — a narrativa visual do bloco vinho: a linha do tempo do que mudou e o
- * aviso que chega, um em cima do outro, com o Faro AI espiando por trás.
+ * aviso que chega, um em cima do outro, com o FarejAI espiando por trás.
  */
 export function ProNarrative() {
   const events = [
@@ -405,7 +371,7 @@ export function ProNarrative() {
         style={{ "--d": "1500ms" } as React.CSSProperties}
       >
         <p className="flex items-center gap-2 text-[13px] font-bold">
-          <Bell className="h-3.5 w-3.5 text-accent" /> Faro AI encontrou algo novo
+          <Bell className="h-3.5 w-3.5 text-accent" /> FarejAI encontrou algo novo
         </p>
         <p className="mt-0.5 text-[11px] text-muted-foreground">
           @{PEOPLE.julia.handle} começou a seguir alguém.

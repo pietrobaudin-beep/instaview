@@ -56,7 +56,7 @@ export default async function PerfilPage() {
           </div>
 
           <div className="mt-5 grid grid-cols-2 gap-3">
-            <StatBox value={tracked} label="perfis no Faro AI" />
+            <StatBox value={tracked} label="perfis no FarejAI" />
             <StatBox value={detected} label="pistas encontradas" />
           </div>
         </Panel>

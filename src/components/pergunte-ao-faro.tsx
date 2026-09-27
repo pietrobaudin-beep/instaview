@@ -5,7 +5,7 @@ import { Loader2, Sparkles } from "lucide-react";
 import { Panel } from "@/components/ui/brand";
 
 /**
- * "Pergunte ao Faro AI": a caixa onde se escreve em português.
+ * "Pergunte ao FarejAI": a caixa onde se escreve em português.
  *
  * Três decisões de tela que são de produto, não de estética:
  *
@@ -50,11 +50,11 @@ export function PergunteAoFaro({ username }: { username: string }) {
       if (!r.ok) {
         setErro(
           b?.error === "plano"
-            ? "Perguntar ao Faro AI é do Faro de Cão e do Faro de Detetive."
+            ? "Perguntar ao FarejAI é do Faro de Cão e do Faro de Detetive."
             : b?.error === "franquia"
               ? `As perguntas deste ciclo acabaram (${b.usados} de ${b.limite}). Elas renovam no próximo ciclo.`
               : b?.error === "desligada"
-              ? "O Faro AI está sem a chave da IA agora."
+              ? "O FarejAI está sem a chave da IA agora."
               : "Não consegui responder agora.",
         );
         return;
@@ -68,7 +68,7 @@ export function PergunteAoFaro({ username }: { username: string }) {
   }
 
   return (
-    <Panel title="Pergunte ao Faro AI">
+    <Panel title="Pergunte ao FarejAI">
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -126,7 +126,7 @@ export function PergunteAoFaro({ username }: { username: string }) {
       )}
 
       <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
-        A resposta é uma leitura do que o Farejo guardou — não é o Instagram falando. O Faro AI não
+        A resposta é uma leitura do que o Farejo guardou — não é o Instagram falando. O FarejAI não
         sabe por que as coisas aconteceram, só que aconteceram.
       </p>
     </Panel>

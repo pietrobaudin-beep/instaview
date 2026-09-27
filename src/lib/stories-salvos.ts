@@ -1,7 +1,7 @@
 /**
  * Os stories que a pessoa marcou com a estrela — os favoritos.
  *
- * O Faro AI guarda os stories que encontra por um prazo que depende do plano
+ * O FarejAI guarda os stories que encontra por um prazo que depende do plano
  * (3 dias no Cão, 7 no Detetive). Favoritar tira um story desse prazo: ele
  * fica guardado enquanto o plano estiver ativo.
  *

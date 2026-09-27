@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 /**
  * Proxy do vídeo de um story — **só passa, não guarda**.
  *
- * O link do vídeo vem na mesma leitura de stories que o Faro AI já faz, então
+ * O link do vídeo vem na mesma leitura de stories que o FarejAI já faz, então
  * tocar não custa crédito nenhum. O CDN do Instagram não deixa outro site
  * embutir o arquivo direto; aqui o servidor busca e repassa, em pedaços
  * (Range), como um vídeo normal.

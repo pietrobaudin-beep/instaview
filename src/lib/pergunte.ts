@@ -1,5 +1,5 @@
 /**
- * "Pergunte ao Faro AI."
+ * "Pergunte ao FarejAI."
  *
  * A pessoa escreve em português — "o que mudou esta semana?", "quem parou de
  * seguir?", "teve story sobre viagem?" — e a resposta vem do que o Farejo
@@ -139,7 +139,7 @@ export async function montarDossie(profileId: string, username: string): Promise
   return { texto, cortado };
 }
 
-const INSTRUCAO = `Você é o Faro AI, do Farejo. Responde sobre UM perfil do Instagram, usando SÓ o dossiê abaixo.
+const INSTRUCAO = `Você é o FarejAI, do Farejo. Responde sobre UM perfil do Instagram, usando SÓ o dossiê abaixo.
 
 Regras, sem exceção:
 - Se a resposta não estiver no dossiê, diga que o Farejo não tem esse dado. Não complete com conhecimento próprio nem com suposição.

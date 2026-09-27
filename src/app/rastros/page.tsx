@@ -25,8 +25,8 @@ import { Mascot } from "@/components/ui/mascot";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Rastros · Faro AI · Farejo",
-  description: "Os perfis que estão no seu Faro AI.",
+  title: "Rastros · FarejAI · Farejo",
+  description: "Os perfis que estão no seu FarejAI.",
 };
 
 const WEEK = 7 * 24 * 60 * 60 * 1000;
@@ -35,7 +35,7 @@ export default async function RastrosPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login?next=/rastros");
 
-  // The Faro AI is the Pro feature. Free accounts may still have rows created by
+  // The FarejAI is the Pro feature. Free accounts may still have rows created by
   // the old "track on view" behaviour; they are not shown as pinned profiles.
   const d = direitosDe(user);
   const semFaro = !d.admin && d.config.maxProfiles <= 0;
@@ -48,7 +48,7 @@ export default async function RastrosPage() {
       <>
         <AppNav plan={selo} />
         <main className="mx-auto max-w-3xl px-6 py-8 md:pl-[15.5rem]">
-          <h1 className="mb-6 text-3xl font-bold tracking-tight">Faro AI</h1>
+          <h1 className="mb-6 text-3xl font-bold tracking-tight">FarejAI</h1>
           <Panel>
             <div className="flex flex-col items-center gap-3 py-10 text-center">
               <Mascot pose="feliz" className="h-24 text-vinho" bob />
@@ -103,7 +103,7 @@ export default async function RastrosPage() {
 
   const resumos: PerfilResumo[] = await Promise.all(
     profiles.map(async (p) => {
-      // Só o que aconteceu desde que o perfil entrou no Faro AI. Stories são a
+      // Só o que aconteceu desde que o perfil entrou no FarejAI. Stories são a
       // exceção: todos os capturados valem (dentro da janela do plano).
       const seguindo = (type: "FOLLOW" | "UNFOLLOW") => ({
         profileId: p.id,
@@ -184,15 +184,15 @@ export default async function RastrosPage() {
       <AppNav plan={selo} />
       <main className="mx-auto max-w-6xl px-6 py-8 md:pl-[15.5rem]">
         <div className="mb-2 flex flex-wrap items-center gap-3">
-          {/* Faro AI é o conjunto (Rastros + Chat); esta página é Rastros. */}
+          {/* FarejAI é o conjunto (Rastros + Chat); esta página é Rastros. */}
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-accent">Faro AI</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-accent">FarejAI</p>
             <h1 className="text-3xl font-bold tracking-tight">Rastros</h1>
           </div>
           {/* Says how much room is left, so the limit never arrives as a surprise. */}
           <StatusPill tone={profiles.length >= d.config.maxProfiles ? "yellow" : "green"}>
             <span className="text-[8px]">●</span> {profiles.length}
-            {Number.isFinite(d.config.maxProfiles) ? ` de ${d.config.maxProfiles}` : ""} no Faro AI
+            {Number.isFinite(d.config.maxProfiles) ? ` de ${d.config.maxProfiles}` : ""} no FarejAI
           </StatusPill>
         </div>
         <PlanLimits resumo={resumoPlano} className="mb-6 mt-4" />
@@ -203,7 +203,7 @@ export default async function RastrosPage() {
                 <b className="text-foreground">{pistas(totalWeek)}</b> encontradas esta semana.
               </>
             ) : (
-              <>Nada passou pelo Faro AI esta semana.</>
+              <>Nada passou pelo FarejAI esta semana.</>
             )}
           </p>
         )}
@@ -212,9 +212,9 @@ export default async function RastrosPage() {
           <Panel>
             <div className="flex flex-col items-center gap-3 py-10 text-center">
               <Mascot pose="feliz" className="h-24 text-vinho" bob />
-              <p className="text-lg font-bold">O Faro AI ainda não está farejando ninguém.</p>
+              <p className="text-lg font-bold">O FarejAI ainda não está farejando ninguém.</p>
               <p className="max-w-sm text-sm text-muted-foreground">
-                Fareje um @ e toque em <b>Colocar no Faro AI</b>. A partir daí o Farejo observa por
+                Fareje um @ e toque em <b>Colocar no FarejAI</b>. A partir daí o Farejo observa por
                 você e avisa quando algo mudar.
               </p>
               <Link href="/" className="mt-2">

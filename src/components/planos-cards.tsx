@@ -5,6 +5,7 @@ import { SwipeDeck } from "@/components/ui/swipe-deck";
 import { FarejadorCard } from "@/components/farejador-card";
 import { UpgradeButton } from "@/components/pricing-actions";
 import { PLANS } from "@/lib/plans";
+import { Mascot } from "@/components/ui/mascot";
 import { linkDe } from "@/lib/billing/cakto";
 
 const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -13,14 +14,14 @@ const CAO_INCLUDES = [
   "1 perfil acompanhado, coleta a cada 3 dias",
   "Quem começou e deixou de seguir",
   "Stories capturados por 3 dias",
-  "5 perguntas e 5 resumos com o Faro AI",
+  "5 perguntas e 5 resumos com o FarejAI",
 ];
 
 const DETETIVE_INCLUDES = [
   "1 perfil acompanhado todo dia",
   "3 análises completas por mês",
   "Stories por 7 dias e alerta \"Me avise quando…\"",
-  "30 perguntas e 30 resumos com o Faro AI",
+  "30 perguntas e 30 resumos com o FarejAI",
 ];
 
 /**
@@ -85,9 +86,10 @@ export function PlanosCards({
               </div>
             </Reveal>
 
-            <Reveal delay={200} className="relative flex h-full flex-col rounded-3xl border border-border bg-card p-8">
-              <h3 className="text-2xl font-bold">{PLANS.DETETIVE.name}</h3>
-              <p className="mt-1 text-muted-foreground">Acompanhamento diário e todo o Faro AI.</p>
+            <Reveal delay={200} className="relative flex h-full flex-col rounded-3xl border border-border bg-card p-8 shadow-[0_20px_50px_-30px_hsl(var(--vinho)/0.35)]">
+              <Mascot pose="detetive" className="absolute right-6 top-6 h-14" decorative />
+              <h3 className="pr-16 text-2xl font-bold">{PLANS.DETETIVE.name}</h3>
+              <p className="mt-1 pr-16 text-muted-foreground">Acompanhamento diário e todo o FarejAI.</p>
               <p className="mt-6 text-4xl font-bold">
                 {brl(PLANS.DETETIVE.priceMonthly)}
                 <span className="text-lg font-medium text-muted-foreground">/mês</span>

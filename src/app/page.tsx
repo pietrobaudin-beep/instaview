@@ -29,7 +29,7 @@ export default async function Home() {
   const d = direitosDe(user);
   const paid = !!user && (d.admin || d.plano !== "FREE");
 
-  // Pro with profiles in the Faro AI: the daily home, not a search box.
+  // Pro with profiles in the FarejAI: the daily home, not a search box.
   const proHome = paid && user ? await getProHome(user.id) : null;
 
   // O Curioso com conta tem a revelação grátis; a home diz se ela está livre.
@@ -41,14 +41,14 @@ export default async function Home() {
     return (
       <>
         <AppNav plan={d.admin ? "ADMIN" : d.plano} />
-        {/* O Faro AI passeando no topo — e, no celular, passando na frente da
+        {/* O FarejAI passeando no topo — e, no celular, passando na frente da
             marca. Só na home PRO: na tela de busca ele já aparece ao lado do
             título, e dois cachorros animados na mesma dobra brigavam entre si
             e com o campo. */}
         {proHome && (
           <div className="mx-auto max-w-6xl px-6 md:pl-[15.5rem]">
-            <HeaderStroll marca className="relative h-16 md:hidden" />
-            <HeaderStroll className="relative hidden h-16 md:block" />
+            <HeaderStroll marca className="relative h-20 md:hidden" />
+            <HeaderStroll className="relative hidden h-20 md:block" />
           </div>
         )}
         <main className="mx-auto max-w-5xl px-6 pb-10 pt-8 md:pl-[15.5rem]">

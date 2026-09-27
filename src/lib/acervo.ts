@@ -92,7 +92,7 @@ export interface Limpeza {
 }
 
 /**
- * A limpeza diária. Roda no cron do Faro AI.
+ * A limpeza diária. Roda no cron do FarejAI.
  *
  * Idempotente e conservadora: na dúvida sobre uma imagem (outro evento ainda
  * aponta para ela), a imagem fica.

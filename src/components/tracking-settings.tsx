@@ -42,7 +42,7 @@ import type { TrackingPrefs } from "@/lib/tracking-prefs";
  * - Pistas na página Pistas: se as mudanças deste perfil entram no feed geral.
  * - Começou a seguir / Deixou de seguir: se aparecem no painel, em Rastros e
  *   em Pistas. A coleta é a mesma (uma página de seguindo traz os dois).
- * - Stories: se o Faro AI coleta stories deste perfil. Desligado, é uma
+ * - Stories: se o FarejAI coleta stories deste perfil. Desligado, é uma
  *   leitura a menos por coleta.
  */
 const ROWS = [
@@ -58,7 +58,7 @@ const ROWS = [
     key: "stories" as const,
     icon: Camera,
     title: "Guardar stories",
-    hint: "O Faro AI guarda os stories a cada coleta.",
+    hint: "O FarejAI guarda os stories a cada coleta.",
   },
 ];
 
@@ -68,7 +68,7 @@ const SECOES = [
   { key: "verSemana" as const, icon: TrendingUp, title: "Números da semana" },
   { key: "verStories" as const, icon: Camera, title: "Stories guardados" },
   { key: "verQuem" as const, icon: UserPlus, title: "Quem entrou e quem saiu" },
-  { key: "verNovidades" as const, icon: Sparkles, title: "Novidades do Faro AI" },
+  { key: "verNovidades" as const, icon: Sparkles, title: "Novidades do FarejAI" },
   { key: "verGrafico" as const, icon: TrendingUp, title: "Gráfico de seguidores" },
 ];
 
@@ -90,10 +90,10 @@ function dia(iso: string | null): string {
 }
 
 /**
- * "No seu Faro AI": a tela de um perfil acompanhado.
+ * "No seu FarejAI": a tela de um perfil acompanhado.
  *
  * A ordem segue o que se quer saber, nesta sequência: **quem** é o perfil,
- * **quando** o Faro AI olhou pela última vez (com o botão de atualizar ao lado,
+ * **quando** o FarejAI olhou pela última vez (com o botão de atualizar ao lado,
  * não num cartão perdido), **o que mudou** na semana, os **stories guardados**,
  * as **pistas** e, por último, os **ajustes**. Os limites do plano ficam no
  * topo, porque limite que só aparece quando estoura vira surpresa ruim.
@@ -127,12 +127,12 @@ export function TrackingSettings({
   profileId?: string;
   /** As pistas deste perfil — nunca as de outros. */
   pistas?: Notification[];
-  /** Stories que o Faro AI guardou deste perfil. */
+  /** Stories que o FarejAI guardou deste perfil. */
   stories?: SavedStory[];
   plan?: Plan;
-  /** Quando este perfil entrou no Faro AI. */
+  /** Quando este perfil entrou no FarejAI. */
   desde?: string;
-  /** Quando o Faro AI encontrou a última mudança. */
+  /** Quando o FarejAI encontrou a última mudança. */
   ultimaMudanca?: string | null;
   /** O movimento dos últimos 7 dias. */
   semana?: { follows: number; unfollows: number; interacoes: number };
@@ -167,7 +167,7 @@ export function TrackingSettings({
 
   /*
    * O alerta que a pessoa escreve. Vive junto das outras chaves, porque é do
-   * mesmo assunto: o que ela quer que o Faro AI olhe neste perfil.
+   * mesmo assunto: o que ela quer que o FarejAI olhe neste perfil.
    */
   const [pedido, setPedido] = React.useState("");
   const [pedidoSalvo, setPedidoSalvo] = React.useState("");
@@ -274,7 +274,7 @@ export function TrackingSettings({
               {/* O que era o banner grande do topo, numa linha: aqui o Farejo
                   olha por você — na análise (/p) é você que olha. */}
               <p className="mt-0.5 text-xs text-muted-foreground">
-                {active ? "O Faro AI está de olho neste perfil." : "O Faro AI está pausado neste perfil."}
+                {active ? "O FarejAI está de olho neste perfil." : "O FarejAI está pausado neste perfil."}
               </p>
               <Link
                 href={`/p/${encodeURIComponent(username)}`}
@@ -308,10 +308,10 @@ export function TrackingSettings({
           </div>
         </div>
 
-        {/* As três datas que respondem "o Faro AI está trabalhando?". */}
+        {/* As três datas que respondem "o FarejAI está trabalhando?". */}
         <dl className="mt-5 grid grid-cols-3 gap-3 border-t border-border pt-4">
           <div>
-            <dt className="text-[11px] text-muted-foreground">No Faro AI desde</dt>
+            <dt className="text-[11px] text-muted-foreground">No FarejAI desde</dt>
             <dd className="text-sm font-bold" title={completa(desde ?? null)}>
               {dia(desde ?? null)}
             </dd>
@@ -420,7 +420,7 @@ export function TrackingSettings({
                     Me avise quando…
                   </label>
                   <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
-                    Escreva com suas palavras. O Faro AI compara cada publicação nova com o
+                    Escreva com suas palavras. O FarejAI compara cada publicação nova com o
                     que você pediu — e só avisa quando bate.
                   </p>
                   <textarea
@@ -535,9 +535,9 @@ export function TrackingSettings({
             <p className="text-sm text-muted-foreground">
               Nenhum story guardado ainda.{" "}
               {janela == null
-                ? "Quando o Faro AI encontrar um, ele fica guardado enquanto o perfil estiver no Faro AI."
+                ? "Quando o FarejAI encontrar um, ele fica guardado enquanto o perfil estiver no FarejAI."
                 : janela > 0
-                  ? `Quando o Faro AI capturar um, ele fica visível por ${janela >= 48 ? `${janela / 24} dias` : `${janela} horas`} contados da publicação. Stories publicados e apagados entre duas coletas podem não ser capturados.`
+                  ? `Quando o FarejAI capturar um, ele fica visível por ${janela >= 48 ? `${janela / 24} dias` : `${janela} horas`} contados da publicação. Stories publicados e apagados entre duas coletas podem não ser capturados.`
                   : "Seu plano não guarda stories."}
             </p>
           </Panel>
@@ -559,7 +559,7 @@ export function TrackingSettings({
               <span className="hand text-lg">
                 {totalSemana === 0 && active
                   ? "Ainda não achei nada por aqui. Eu aviso!"
-                  : "O Faro AI te avisa quando encontrar algo novo!"}
+                  : "O FarejAI te avisa quando encontrar algo novo!"}
               </span>
               {active && <ProximaColeta alvo={status?.proxima ?? null} />}
             </span>
@@ -614,7 +614,7 @@ function Numero({
 }
 
 /**
- * Tirar o perfil do Faro AI — pausando, não apagando.
+ * Tirar o perfil do FarejAI — pausando, não apagando.
  *
  * Pausar interrompe as leituras diárias e **guarda** as pistas já encontradas;
  * é reversível com um clique. Apagar de verdade (com o histórico junto) ainda
@@ -656,19 +656,19 @@ function PausarFaro({
         className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border px-6 py-2.5 text-sm font-bold transition hover:bg-muted/50 disabled:opacity-60"
       >
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pause className="h-4 w-4" />}
-        {ativo ? "Pausar o Faro AI neste perfil" : "Voltar a farejar"}
+        {ativo ? "Pausar o FarejAI neste perfil" : "Voltar a farejar"}
       </button>
       <p className="mt-2 text-center text-[11px] text-muted-foreground">
         {ativo
-          ? `Pausado, o Faro AI para de olhar @${username} todo dia. As pistas já encontradas ficam guardadas.`
-          : `O Faro AI não está olhando @${username} no momento.`}
+          ? `Pausado, o FarejAI para de olhar @${username} todo dia. As pistas já encontradas ficam guardadas.`
+          : `O FarejAI não está olhando @${username} no momento.`}
       </p>
     </>
   );
 }
 
 /**
- * As duas ações sem volta: limpar o histórico e tirar do Faro AI.
+ * As duas ações sem volta: limpar o histórico e tirar do FarejAI.
  *
  * Ficam no fim, dentro dos ajustes, e cada uma pergunta duas vezes — o
  * primeiro clique só arma o botão. As rotas ainda exigem `confirm=1`, para
@@ -705,7 +705,7 @@ function Perigo({ profileId, username }: { profileId: string; username: string }
     <div className="space-y-2">
       {armado === "limpar" ? (
         <Confirma
-          texto={`Apagar todas as pistas, stories e o histórico de @${username}? O perfil continua no Faro AI, e a próxima leitura vira a nova base.`}
+          texto={`Apagar todas as pistas, stories e o histórico de @${username}? O perfil continua no FarejAI, e a próxima leitura vira a nova base.`}
           rotulo="Limpar mesmo"
           busy={busy}
           onSim={limpar}
@@ -723,8 +723,8 @@ function Perigo({ profileId, username }: { profileId: string; username: string }
 
       {armado === "tirar" ? (
         <Confirma
-          texto={`Tirar @${username} do Faro AI apaga tudo o que o Faro AI já encontrou dele. Não tem desfazer.`}
-          rotulo="Tirar do Faro AI"
+          texto={`Tirar @${username} do FarejAI apaga tudo o que o FarejAI já encontrou dele. Não tem desfazer.`}
+          rotulo="Tirar do FarejAI"
           busy={busy}
           onSim={tirar}
           onNao={() => setArmado(null)}
@@ -735,7 +735,7 @@ function Perigo({ profileId, username }: { profileId: string; username: string }
           onClick={() => setArmado("tirar")}
           className="flex w-full items-center justify-center gap-2 rounded-2xl border border-destructive/30 px-6 py-2.5 text-sm font-semibold text-destructive transition hover:bg-destructive/5"
         >
-          <Trash2 className="h-4 w-4" /> Tirar do Faro AI
+          <Trash2 className="h-4 w-4" /> Tirar do FarejAI
         </button>
       )}
     </div>

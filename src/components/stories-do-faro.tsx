@@ -15,10 +15,10 @@ export interface PerfilComStories {
 }
 
 /**
- * Os stories do Faro AI no topo de Rastros, como no Instagram: uma bolinha
+ * Os stories do FarejAI no topo de Rastros, como no Instagram: uma bolinha
  * por perfil, com anel rosa, e tocar abre em tela cheia.
  *
- * Só aparecem os stories que o Faro AI capturou e que o plano ainda deixa ver
+ * Só aparecem os stories que o FarejAI capturou e que o plano ainda deixa ver
  * (a janela é aplicada no servidor). Perfil sem story no prazo não entra — uma
  * bolinha que abre vazia seria promessa sem entrega.
  */
@@ -62,7 +62,7 @@ export function StoriesDoFaro({ perfis }: { perfis: PerfilComStories[] }) {
   if (!comStories.length) return null;
 
   return (
-    <section aria-label="Stories do Faro AI" className="mb-6">
+    <section aria-label="Stories do FarejAI" className="mb-6">
       <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-plum/50">Stories</p>
       <ul className="sem-barra -mx-6 flex gap-4 overflow-x-auto px-6 pb-1">
         {comStories.map((p) => (

@@ -1,6 +1,6 @@
 # Farejo — regras fixas para a IA
 
-Farejo (farejoapp.com): a pessoa digita um @ do Instagram e vê dados **públicos** — quem segue, com quem interage, o que mudou. O **Faro AI** (= **Rastros** + **Chat**) acompanha um perfil no tempo. Next.js 14 (App Router) + Prisma/Supabase (projeto **instaview**) + Vercel (push em `main` = produção) + HikerAPI + OpenAI + Cakto (pagamento).
+Farejo (farejoapp.com): a pessoa digita um @ do Instagram e vê dados **públicos** — quem segue, com quem interage, o que mudou. O **FarejAI** (= **Rastros** + **Chat**) acompanha um perfil no tempo. Next.js 14 (App Router) + Prisma/Supabase (projeto **instaview**) + Vercel (push em `main` = produção) + HikerAPI + OpenAI + Cakto (pagamento).
 
 Estas regras só mudam quando o dono (Pietro) pedir. A cópia legível fica no Obsidian: `Regras para a IA`.
 
@@ -22,6 +22,7 @@ Estas regras só mudam quando o dono (Pietro) pedir. A cópia legível fica no O
   - **Perfil sem pagamento:** sem pop-up; oferta **embaixo**; partes pagas **borradas**, não escondidas.
   - **Vitrine:** 3 cartões — Farejador ↔ Farejador + (mesmo cartão, com chave) · **Faro de Cão no meio** · Faro de Detetive. **Curioso não aparece** como plano. Botões compram direto (`/checkout`).
   - **Checkout:** `/checkout` dentro do site, **sem conta**; depois de pagar entra com **código no e-mail**; o X volta de onde veio.
+  - **Nomes:** o produto de acompanhamento é o **FarejAI** (trocadilho "fareja aí"; antes "Faro AI") = Rastros + Chat. O cachorro/mascote continua **Faro**.
   - **Preços:** Farejador R$ 9,90 · Farejador + R$ 19,90 (passe de 7 dias, sem renovação) · Cão R$ 39,90/mês · Detetive R$ 59,90/mês. Só mudam com OK.
 
 ## 3. Ética (inegociável)

@@ -10,7 +10,7 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
     links: [
       { href: "/#buscar", label: "Farejar um @" },
       { href: "/#produto", label: "O que é o Farejo" },
-      { href: "/#pro", label: "Faro AI" },
+      { href: "/#pro", label: "FarejAI" },
       { href: "/#planos", label: "Planos" },
       { href: "/#perguntas", label: "Perguntas frequentes" },
     ],

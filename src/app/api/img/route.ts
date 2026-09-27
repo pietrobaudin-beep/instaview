@@ -41,7 +41,7 @@ export async function GET(req: Request) {
   /*
    * A cópia guardada primeiro. Antes o proxy tentava o Instagram antes — e o
    * endereço de story e de foto antiga já venceu: cada imagem esperava até 10s
-   * de erro para só então cair na cópia, e o painel do Faro AI ficava com os
+   * de erro para só então cair na cópia, e o painel do FarejAI ficava com os
    * quadrinhos em branco. Com cópia, a resposta sai do banco, na hora.
    */
   const guardada = await readStored(key);

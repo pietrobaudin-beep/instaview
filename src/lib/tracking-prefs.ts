@@ -19,7 +19,7 @@ export const DEFAULT_PREFS: TrackingPrefs = {
   newFollowing: true,
   unfollowed: true,
   postInteractions: true,
-  // O Faro AI coleta stories desde 22/09 — ligado por padrão.
+  // O FarejAI coleta stories desde 22/09 — ligado por padrão.
   stories: true,
   verVisita: true,
   verSemana: true,

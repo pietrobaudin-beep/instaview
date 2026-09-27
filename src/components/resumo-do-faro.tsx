@@ -21,7 +21,7 @@ export interface PerfilResumo {
   displayName: string | null;
   avatarUrl: string | null;
   pistasSemana: number;
-  /** Quando o perfil entrou no Faro AI (ISO). */
+  /** Quando o perfil entrou no FarejAI (ISO). */
   desde: string;
   /** `null` = desligado nas configurações do perfil. */
   seguiu: { total: number; pessoas: PessoaResumo[] } | null;
@@ -92,10 +92,10 @@ function Midias({ itens, href, formato }: { itens: MidiaResumo[]; href: string; 
 }
 
 /**
- * O resumo de um perfil do Faro AI, com o conteúdo à vista.
+ * O resumo de um perfil do FarejAI, com o conteúdo à vista.
  *
  * Antes cada perfil era um cartão com um número ("25 pistas esta semana") e
- * era preciso entrar para ver quem eram. Aqui aparece o que o Faro AI guardou:
+ * era preciso entrar para ver quem eram. Aqui aparece o que o FarejAI guardou:
  * as pessoas, os stories e as marcações. Tudo vem do banco — abrir esta tela
  * não faz nenhuma leitura paga.
  */
@@ -105,7 +105,7 @@ export function ResumoDoFaro({ perfil }: { perfil: PerfilResumo }) {
   // Nada de quem-entrou-quem-saiu ainda: é a base da primeira coleta. O
   // contador diz quando as mudanças começam a aparecer.
   const semHistorico = (perfil.seguiu?.total ?? 0) === 0 && (perfil.deixou?.total ?? 0) === 0;
-  const desde = `desde ${new Date(perfil.desde).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}, no Faro AI`;
+  const desde = `desde ${new Date(perfil.desde).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}, no FarejAI`;
 
   return (
     <section className="relative min-w-0 rounded-3xl border border-border bg-card">
@@ -157,7 +157,7 @@ export function ResumoDoFaro({ perfil }: { perfil: PerfilResumo }) {
           ) : semHistorico ? (
             <ProximaColeta alvo={perfil.proximaColeta} />
           ) : (
-            <Vazio>Ninguém novo desde a entrada no Faro AI.</Vazio>
+            <Vazio>Ninguém novo desde a entrada no FarejAI.</Vazio>
           )}
         </div>
         )}
@@ -170,7 +170,7 @@ export function ResumoDoFaro({ perfil }: { perfil: PerfilResumo }) {
           ) : semHistorico ? (
             <ProximaColeta alvo={perfil.proximaColeta} texto="Quem sair da lista aparece aqui depois da próxima coleta" />
           ) : (
-            <Vazio>Ninguém saiu da lista desde a entrada no Faro AI.</Vazio>
+            <Vazio>Ninguém saiu da lista desde a entrada no FarejAI.</Vazio>
           )}
         </div>
         )}

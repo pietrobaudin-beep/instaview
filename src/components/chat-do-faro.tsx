@@ -8,7 +8,7 @@ import { PergunteAoFaro } from "@/components/pergunte-ao-faro";
  * Escolher de quem se fala, e então perguntar.
  *
  * A pergunta é sempre **sobre um perfil**: o dossiê que sustenta a resposta é
- * o que o Faro AI juntou daquele perfil ao longo do tempo. Sem escolher,
+ * o que o FarejAI juntou daquele perfil ao longo do tempo. Sem escolher,
  * não há sobre o que responder — por isso o primeiro da lista já vem
  * escolhido, em vez de uma tela em branco pedindo um clique.
  */

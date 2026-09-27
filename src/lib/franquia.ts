@@ -27,7 +27,7 @@ export type Tipo =
   | "analise" // análise completa nova
   | "perfil" // perfil que entrou no acompanhamento neste ciclo
   | "coleta" // passagem do acompanhamento (a primeira conta)
-  | "pergunta" // Pergunte ao Faro AI / Chat
+  | "pergunta" // Pergunte ao FarejAI / Chat
   | "resumo" // story processado pela IA pela primeira vez
   | "alerta" // avaliação de um evento contra o "Me avise quando…"
   | "sugestao" // busca de sugestões que chegou ao provedor

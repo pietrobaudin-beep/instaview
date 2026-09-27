@@ -45,11 +45,11 @@ export async function trackProfile(user: User, rawUsername: string): Promise<Tra
     throw new PlanLimitError(`O ${plan.name} não acompanha perfis. O acompanhamento é do Faro de Cão e do Faro de Detetive.`, "sem_faro");
   }
 
-  // Quantos estão no Faro AI agora.
+  // Quantos estão no FarejAI agora.
   const count = await prisma.trackedProfile.count({ where: { userId: user.id } });
   if (count >= plan.maxProfiles) {
     throw new PlanLimitError(
-      `Seu Faro AI está cheio. O ${plan.name} acompanha ${plan.maxProfiles} ` +
+      `Seu FarejAI está cheio. O ${plan.name} acompanha ${plan.maxProfiles} ` +
         `perfil${plan.maxProfiles === 1 ? "" : "s"} por vez.`,
     );
   }
@@ -90,9 +90,9 @@ export async function trackProfile(user: User, rawUsername: string): Promise<Tra
            * A primeira leitura é JÁ — na próxima volta do cron de hora em hora.
            *
            * Estava `agora + intervalo`: com o PRO lido de 24 em 24 horas, o
-           * perfil recém-colocado no Faro AI só era lido no dia seguinte. Em
+           * perfil recém-colocado no FarejAI só era lido no dia seguinte. Em
            * 24/09 isso escondeu 28 stories da @crespadai: a pessoa acabara de
-           * vê-los na análise, colocou o perfil no Faro AI, e o painel dizia
+           * vê-los na análise, colocou o perfil no FarejAI, e o painel dizia
            * "nenhum story guardado ainda". Story dura 24 horas — esperar um
            * intervalo inteiro antes de começar é perder justamente os que
            * trouxeram a pessoa até aqui.
@@ -107,7 +107,7 @@ export async function trackProfile(user: User, rawUsername: string): Promise<Tra
 
   // No provider call here. The baseline is taken from the "following" page the
   // analysis already fetched and cached (see /api/following-preview), so
-  // putting a profile no Faro AI costs nothing. Collecting here used to fetch the
+  // putting a profile no FarejAI costs nothing. Collecting here used to fetch the
   // FOLLOWERS list — several paid requests for data this product never shows.
   return profile;
 }

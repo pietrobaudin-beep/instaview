@@ -1,7 +1,7 @@
 /**
  * "O que mudou desde a sua última visita."
  *
- * O Farejo já sabia dizer o que mudou **desde a última leitura do Faro AI** —
+ * O Farejo já sabia dizer o que mudou **desde a última leitura do FarejAI** —
  * mas isso é o relógio do robô, não o de quem está olhando. Quem passou uma
  * semana fora não quer saber das últimas 24 horas: quer saber da semana.
  *

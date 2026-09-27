@@ -1,10 +1,10 @@
 /**
- * The daily Faro AI: once a day, every profile a PRO user put "no Faro AI" is read
+ * The daily FarejAI: once a day, every profile a PRO user put "no FarejAI" is read
  * again and only what is NEW is kept as news — new posts, reels, stories and
  * places it was tagged, plus the follow changes the existing tracker finds.
  *
  * - The first reading of each kind becomes the baseline (stored, never shown),
- *   so the Faro AI reports only what appears from then on.
+ *   so the FarejAI reports only what appears from then on.
  * - Reads go through the Raio-X cache with a max age of ~20h, so a section
  *   someone opened today isn't paid for again, and yesterday's copy never
  *   hides today's posts.
@@ -29,20 +29,20 @@ import type { PostItem, StoryItem } from "@/lib/providers/types";
 const log = logger.scope("faro-watch");
 
 /**
- * O que o Faro AI relê todo dia em cada perfil. **Cada linha é uma requisição
+ * O que o FarejAI relê todo dia em cada perfil. **Cada linha é uma requisição
  * paga por perfil por dia.**
  *
  * Reels saiu em 21/09 junto com a aba: pouca gente abria, e era 25% do custo
- * diário de cada perfil no Faro AI. Com 15 perfis, isso sozinho era ~R$ 30/ano.
+ * diário de cada perfil no FarejAI. Com 15 perfis, isso sozinho era ~R$ 30/ano.
  */
 /**
- * O que o Faro AI lê em cada passagem, e por quanto tempo uma leitura serve.
+ * O que o FarejAI lê em cada passagem, e por quanto tempo uma leitura serve.
  *
- * O prazo precisa ser menor do que a vida do conteúdo — senão o Faro AI olha
+ * O prazo precisa ser menor do que a vida do conteúdo — senão o FarejAI olha
  * para um retrato velho e jura que não há nada.
  *
  * Post e marcação não somem: 20h de reaproveitamento economiza requisição sem
- * perder nada. **Story vive 24h**, e com os mesmos 20h o Faro AI perdia story de
+ * perder nada. **Story vive 24h**, e com os mesmos 20h o FarejAI perdia story de
  * verdade: bastava alguém apertar "Atualizar agora" num momento sem story
  * para o "não tem nada" valer até quase o dia seguinte. E no Faro Detetive,
  * que passa de 6 em 6 horas, as três passagens seguintes reusavam a primeira
@@ -53,7 +53,7 @@ const log = logger.scope("faro-watch");
  * duas vezes.
  */
 /*
- * O que o Faro AI olha todo dia — e o que ele deixou de olhar em 24/09.
+ * O que o FarejAI olha todo dia — e o que ele deixou de olhar em 24/09.
  *
  * Cada linha aqui é **uma requisição paga por passagem**, e a requisição da
  * HikerAPI custa US$ 0,02 (confirmado no saldo deles e na queda diária real).
@@ -118,10 +118,10 @@ function summarize(kind: string, x: PostItem | StoryItem): EventData {
 /**
  * Guarda stories que JÁ foram lidos por outro caminho — de graça.
  *
- * Quem abre a análise de um perfil que está no seu Faro AI dispara a leitura
+ * Quem abre a análise de um perfil que está no seu FarejAI dispara a leitura
  * dos stories (a aba Raio-X). Essa leitura já foi paga; não guardar o que
  * voltou dela era jogar fora o que a pessoa acabou de ver. Em 24/09 foram 28
- * stories da @crespadai: visíveis na análise, ausentes no painel do Faro AI.
+ * stories da @crespadai: visíveis na análise, ausentes no painel do FarejAI.
  *
  * Não chama provedor. Só grava o que chegou, com o mesmo formato e a mesma
  * regra de "já vi, não repete" (`skipDuplicates`) da coleta.
@@ -154,7 +154,7 @@ export interface WatchReport {
 }
 
 /**
- * Uma passagem do Faro AI.
+ * Uma passagem do FarejAI.
  *
  * `modo` decide o que é lido, e isso é dinheiro:
  *
@@ -235,7 +235,7 @@ export async function watchProfile(
       }
     }
 
-    // Story expira em 24h no Instagram. Como o perfil está no Faro AI, a
+    // Story expira em 24h no Instagram. Como o perfil está no FarejAI, a
     // miniatura é guardada AGORA — é ela que vai sustentar a tela depois,
     // dentro do prazo do plano. Sem custo de provedor: é só baixar a imagem.
     if (section === "stories") {

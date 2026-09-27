@@ -64,7 +64,7 @@ export async function GET(req: Request) {
   }
 
   // Vai ao provedor: conta na franquia. Quem já tem acesso revelado a este @
-  // (Farejador, Faro AI, Admin) não gasta cartão — a coleta dele já está paga.
+  // (Farejador, FarejAI, Admin) não gasta cartão — a coleta dele já está paga.
   const d = direitosDe(user);
   let reserva: Reserva | null = null;
   // Conta grátis presa ao perfil da revelação: cartão novo de outro @ não.

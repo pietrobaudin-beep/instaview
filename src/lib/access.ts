@@ -1,7 +1,7 @@
 /**
  * O que uma pessoa pode ver de UM perfil.
  *
- * - "pro"    — análise revelada, com as ferramentas do plano (Faro AI etc.).
+ * - "pro"    — análise revelada, com as ferramentas do plano (FarejAI etc.).
  * - "single" — Farejador: análise revelada daquele perfil, por 7 dias, sem
  *              acompanhamento nem IA interativa.
  * - "free"   — prévia borrada. Inclui quem assina mas ainda não gastou uma
@@ -21,7 +21,7 @@ export type Access = "free" | "single" | "pro";
 export interface Acesso {
   access: Access;
   salva: Salva | null;
-  /** O perfil está no Faro AI desta conta. */
+  /** O perfil está no FarejAI desta conta. */
   noFaro: boolean;
   /** Farejador comprado para este @ e ainda válido, com ou sem coleta feita. */
   avulso: { id: string; expiresAt: Date | null } | null;
@@ -61,7 +61,7 @@ export async function acessoA(user: User | null, username: string): Promise<Aces
   const base = { salva, noFaro, avulso, jaConsultadoAntes: !!antes };
 
   if (d.admin) return { ...base, access: "pro" };
-  // Perfil no Faro AI de quem tem Faro: o painel é dele.
+  // Perfil no FarejAI de quem tem Faro: o painel é dele.
   if (noFaro && temFaro) return { ...base, access: "pro" };
   if (salva) {
     if (salva.data.origem === "revelacao") return { ...base, access: "free" };

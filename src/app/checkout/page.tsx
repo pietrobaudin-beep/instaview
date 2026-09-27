@@ -79,7 +79,7 @@ export default async function CheckoutPage({
             itens:
               produto === "CAO"
                 ? ["1 perfil acompanhado", "Quem começou e deixou de seguir", "Cancele quando quiser"]
-                : ["1 perfil acompanhado todo dia", "Alertas e Faro AI completo", "Cancele quando quiser"],
+                : ["1 perfil acompanhado todo dia", "Alertas e FarejAI completo", "Cancele quando quiser"],
             depois: "/rastros?upgraded=1",
           };
 

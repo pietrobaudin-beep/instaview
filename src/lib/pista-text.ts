@@ -15,7 +15,7 @@ export function describe(kind: string, type: "FOLLOW" | "UNFOLLOW"): Notificatio
  * "Por que esta pista apareceu?" — e, principalmente, o que ela NÃO diz.
  *
  * Isto é texto fixo, não modelo de IA, e de propósito. A explicação é
- * mecânica: o Faro AI compara duas leituras e conta a diferença. Pedir a um
+ * mecânica: o FarejAI compara duas leituras e conta a diferença. Pedir a um
  * modelo para escrever isso seria pagar para ele parafrasear um fato — e abrir
  * a porta para ele inventar intenção, que é exatamente o que não pode
  * acontecer quando se fala de gente de verdade.

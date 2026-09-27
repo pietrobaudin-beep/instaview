@@ -165,8 +165,8 @@ function Linha({ n, compacta = false }: { n: Notification; compacta?: boolean })
           setExplicando((x) => !x);
         }}
         aria-expanded={explicando}
-        aria-label="Como o Faro AI soube disto?"
-        title="Como o Faro AI soube disto?"
+        aria-label="Como o FarejAI soube disto?"
+        title="Como o FarejAI soube disto?"
         className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-xl text-[13px] font-bold transition ${
           explicando ? "bg-muted text-foreground" : "text-muted-foreground/60 hover:bg-muted hover:text-foreground"
         }`}
@@ -198,7 +198,7 @@ function Vazio({ texto }: { texto: string }) {
     <Panel className="mt-5">
       <div className="flex flex-col items-center gap-2 py-8 text-center">
         <Mascot pose="dormindo" className="h-20 text-vinho" bob />
-        <p className="font-bold">😴 Faro AI pode descansar.</p>
+        <p className="font-bold">😴 FarejAI pode descansar.</p>
         <p className="text-sm text-muted-foreground">{texto}</p>
       </div>
     </Panel>
@@ -211,7 +211,7 @@ export function NotificationsFeed({
 }: {
   items: Notification[];
   /**
-   * Os perfis do Faro AI. Quando vêm, a tela pede **primeiro de quem** se quer
+   * Os perfis do FarejAI. Quando vêm, a tela pede **primeiro de quem** se quer
    * ver as pistas e só depois o tipo — na visão geral, misturar os perfis
    * numa lista só era o que fazia perder a pista do que importa.
    */
@@ -279,7 +279,7 @@ export function NotificationsFeed({
            últimas de cada um. Quem quiser a lista inteira entra na aba. */
         <div className="mt-5 space-y-4">
           {porCategoria
-            // Interações vazias somem: o Faro AI parou de colher curtidas e
+            // Interações vazias somem: o FarejAI parou de colher curtidas e
             // comentários em 24/09 (custava um terço do perfil). Uma caixa
             // "Nada por aqui ainda" para sempre parecia defeito. Quem tem
             // interações antigas continua vendo as dele.

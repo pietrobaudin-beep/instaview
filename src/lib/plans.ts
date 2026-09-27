@@ -150,7 +150,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     ],
     avisos: [
       "Uma informação por conta, no perfil que você escolher",
-      "Sem stories, sem acompanhamento e sem o Faro AI",
+      "Sem stories, sem acompanhamento e sem o FarejAI",
     ],
   },
 
@@ -222,7 +222,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
       "1 análise completa nova por mês",
       "Quem ele começou a seguir e quem deixou, entre uma coleta e outra",
       "Stories capturados visíveis por 3 dias, e até 5 favoritos",
-      "5 perguntas e 5 resumos de stories com o Faro AI por mês",
+      "5 perguntas e 5 resumos de stories com o FarejAI por mês",
       "Painel, Rastros, Pistas, histórico e \"Desde a sua última visita\"",
       "Alertas dentro do app",
     ],
@@ -236,7 +236,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
   DETETIVE: {
     id: "DETETIVE",
     name: "Faro de Detetive",
-    para: "Acompanhamento diário e todas as ferramentas do Faro AI.",
+    para: "Acompanhamento diário e todas as ferramentas do FarejAI.",
     billing: "monthly",
     priceMonthly: 59.9,
     ciclo: "mes",
@@ -268,7 +268,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
       "1 perfil acompanhado todo dia (até 30 coletas por mês)",
       "3 análises completas novas por mês",
       "Stories capturados visíveis por 7 dias, e até 20 favoritos",
-      "30 perguntas e 30 resumos de stories com o Faro AI por mês",
+      "30 perguntas e 30 resumos de stories com o FarejAI por mês",
       "Busca por assunto nos stories já lidos",
       "1 alerta \"Me avise quando…\", com até 150 avaliações por mês",
       "\"Atualizar agora\": antecipa uma coleta, com 24 horas entre elas",
@@ -404,13 +404,13 @@ export const SINGLE_UNLOCK = {
     "Stories disponíveis no momento da coleta",
     "Resultado aberto por 7 dias, com a data da coleta",
   ],
-  avisos: ["Sem acompanhamento, atualização, alertas ou ferramentas do Faro AI"],
+  avisos: ["Sem acompanhamento, atualização, alertas ou ferramentas do FarejAI"],
 } as const;
 
 /** A ordem da vitrine, do grátis ao topo. Os antigos ficam de fora. */
 export const VITRINE: Plan[] = ["FREE", "FAREJADOR_MAIS", "CAO", "DETETIVE"];
 
-/** Planos que acompanham perfis (têm Faro AI). */
+/** Planos que acompanham perfis (têm FarejAI). */
 export function temFaro(plan: Plan): boolean {
   return PLANS[plan].maxProfiles > 0;
 }

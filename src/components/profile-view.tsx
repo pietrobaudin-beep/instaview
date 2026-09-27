@@ -42,10 +42,10 @@ interface RecentItem extends Person {
   detectedAt: string;
 }
 
-// Faro AI's loading lines. They cycle while the provider answers — the sequence
+// FarejAI's loading lines. They cycle while the provider answers — the sequence
 // ends when the profile arrives, not on a clock.
 const STEPS = LOADING_LINES;
-/** One line every ~2.4s while Faro AI searches. */
+/** One line every ~2.4s while FarejAI searches. */
 const STEP_MS = 2400;
 /**
  * O mínimo que a cena de busca ocupa a tela.
@@ -105,7 +105,7 @@ const TABS = [
   // Instagram. A seção continua existindo na API, só não tem entrada aqui.
   //
   // Posts saiu da tela em 23/09, junto com Reels (21/09): as duas eram mais
-  // uma leitura paga por dia em cada perfil do Faro AI, e o que a pessoa vem ver
+  // uma leitura paga por dia em cada perfil do FarejAI, e o que a pessoa vem ver
   // aqui é o movimento — quem entrou, quem saiu, com quem anda. As seções
   // continuam existindo na API.
   { value: "seguindo", label: "Seguindo" },
@@ -267,7 +267,7 @@ function GenderBadge({ gender }: { gender?: "f" | "m" | "u" }) {
   return null;
 }
 
-/** Quem entrou e quem saiu da lista, pelas coletas do Faro AI. */
+/** Quem entrou e quem saiu da lista, pelas coletas do FarejAI. */
 function MudancasDoFaro({
   username,
   recent,
@@ -296,7 +296,7 @@ function MudancasDoFaro({
   );
   return (
     <Panel
-      title="No seu Faro AI"
+      title="No seu FarejAI"
       action={
         <Link
           href={`/rastros/${encodeURIComponent(username)}`}
@@ -470,7 +470,7 @@ function Oferta({
         )}
         {(jaRevelou || revelacao.kind === "usada") && (
           <p className="max-w-sm text-sm text-muted-foreground">
-            Veja o perfil inteiro com o Farejador, ou acompanhe com o Faro AI.
+            Veja o perfil inteiro com o Farejador, ou acompanhe com o FarejAI.
           </p>
         )}
       </>
@@ -602,8 +602,8 @@ function UpgradeCard({ username, planoPro = false }: { username: string; planoPr
       <ul className="mx-auto mt-4 max-w-sm space-y-2 text-left text-sm">
         {[
           "📌 Faro de Cão: um perfil acompanhado a cada 3 dias",
-          "🐾 Faro de Detetive: acompanhamento diário e todo o Faro AI",
-          "🔔 Pistas quando o Faro AI detectar uma mudança",
+          "🐾 Faro de Detetive: acompanhamento diário e todo o FarejAI",
+          "🔔 Pistas quando o FarejAI detectar uma mudança",
         ].map((b) => (
           <li key={b} className="flex items-start gap-2">
             <span className="text-foreground/80">{b}</span>
@@ -726,7 +726,7 @@ export function ProfileView({
   const [tracking, setTracking] = React.useState({ saved: false, busy: false });
   const [upsell, setUpsell] = React.useState(false);
   /**
-   * "O Faro AI está cheio" — que NÃO é "você não tem plano".
+   * "O FarejAI está cheio" — que NÃO é "você não tem plano".
    *
    * A rota devolve 402 nos dois casos: sem PRO (`code: "pro_required"`) e com
    * PRO mas sem vaga. A tela tratava os dois como falta de plano e abria o
@@ -736,7 +736,7 @@ export function ProfileView({
   const [faroCheio, setFaroCheio] = React.useState<string | null>(null);
   const [justPinned, setJustPinned] = React.useState(false);
 
-  // Is this profile already in the user's Faro AI? DB read only — no provider call.
+  // Is this profile already in the user's FarejAI? DB read only — no provider call.
   // The answer also decides whether the search scene plays: a profile you
   // already follow is not a new discovery, so it opens straight away.
   const [inFaro, setInFaro] = React.useState<boolean | null>(loggedIn ? null : false);
@@ -772,8 +772,8 @@ export function ProfileView({
       setIntro("skip");
       return;
     }
-    // Profiles in the Faro AI open straight away — you already farejou this one,
-    // and the Faro AI reads it every day anyway.
+    // Profiles in the FarejAI open straight away — you already farejou this one,
+    // and the FarejAI reads it every day anyway.
     if (inFaro === true) {
       setIntro("skip");
       return;
@@ -822,7 +822,7 @@ export function ProfileView({
     if (intro === "play" && !analyzing && state.kind === "ok") markSeen(username);
   }, [intro, analyzing, state.kind, username]);
 
-  // Faro AI searching: the lines cycle while the provider is still answering. The
+  // FarejAI searching: the lines cycle while the provider is still answering. The
   // scene no longer runs on a fixed clock — it ends when the profile arrives.
   React.useEffect(() => {
     if (intro !== "play") {
@@ -854,7 +854,7 @@ export function ProfileView({
    *    **depois** da cena de carregamento. Agora corre junto, e o resultado é
    *    passado pronto para o bloco: uma requisição, não duas.
    * 2. Ela não espera o `intro` virar "play". Esperava, e isso a fazia
-   *    arrancar só depois da checagem de "este perfil está no Faro AI?" — para um
+   *    arrancar só depois da checagem de "este perfil está no FarejAI?" — para um
    *    @ novo, tarde demais: a cena desistia no teto e o bloco aparecia 2,4s
    *    depois da análise, que é exatamente o que se queria evitar.
    */
@@ -917,7 +917,7 @@ export function ProfileView({
     };
   }, [intro, state.kind, username]);
 
-  // A missing @ has nothing to reveal — but Faro AI still gets his moment of
+  // A missing @ has nothing to reveal — but FarejAI still gets his moment of
   // searching before giving up, or the pink screen just blinks.
   React.useEffect(() => {
     if (state.kind === "error" && (searchedEnough || intro !== "play")) setAnalyzing(false);
@@ -1011,7 +1011,7 @@ export function ProfileView({
         let res = await fetch(`/api/following-preview?username=${encodeURIComponent(username)}`);
         if (!alive) return;
         let body = await res.json();
-        // Farejador comprado, perfil no Faro AI ou consulta de antes: a coleta
+        // Farejador comprado, perfil no FarejAI ou consulta de antes: a coleta
         // já está paga, então é pedida sem perguntar.
         if (body.coletarAgora) {
           res = await fetch(`/api/following-preview?username=${encodeURIComponent(username)}&confirmar=1`);
@@ -1075,7 +1075,7 @@ export function ProfileView({
    * Em 24/09 uma conta pública que fechou a lista de "seguindo" derrubou a
    * leitura, o `catch` devolveu `access: "free"` — e a tela concluiu que quem
    * estava olhando não tinha plano: selo "GRÁTIS", tudo borrado, e o botão
-   * "Colocar no Faro AI" abrindo o convite para assinar o que a pessoa já
+   * "Colocar no FarejAI" abrindo o convite para assinar o que a pessoa já
    * assina. Quem paga não pode depender de um perfil de terceiro responder.
    *
    * `planoPro` vem da sessão, pela página. `ready.access` refina para o caso
@@ -1180,7 +1180,7 @@ export function ProfileView({
         // Sem plano → é a hora de oferecer. Com plano e sem vaga → é recado,
         // não venda.
         if (corpo?.code === "pro_required") setUpsell(true);
-        else setFaroCheio(corpo?.error ?? "Seu Faro AI está cheio.");
+        else setFaroCheio(corpo?.error ?? "Seu FarejAI está cheio.");
         return;
       }
       setTracking({ saved: r.ok, busy: false });
@@ -1217,11 +1217,11 @@ export function ProfileView({
   return (
     <>
       {loggedIn && <AppNav />}
-      {/* Clip at the SCREEN edge, not the content column: Faro AI peeks out beside
+      {/* Clip at the SCREEN edge, not the content column: FarejAI peeks out beside
           the card, and clipping at the column cut him down to a sliver. */}
       <div className="overflow-x-clip">
       <main className={`mx-auto max-w-5xl px-6 py-8 ${loggedIn ? "md:pl-[15.5rem]" : ""}`}>
-        {/* Tighter when the profile shows: Faro AI's peeking area sits just below. */}
+        {/* Tighter when the profile shows: FarejAI's peeking area sits just below. */}
         <div
           className={`flex items-center justify-between ${
             !analyzing && state.kind === "ok" ? "mb-2" : "mb-8"
@@ -1320,7 +1320,7 @@ export function ProfileView({
                     className="w-full max-w-xs"
                   >
                     <Button variant="outline" size="lg" className="w-full">
-                      {planoPro ? "Ir para o meu Faro AI" : "Conhecer os planos"}{" "}
+                      {planoPro ? "Ir para o meu FarejAI" : "Conhecer os planos"}{" "}
                       <ArrowRight className="h-4 w-4" />
                     </Button>
                   </Link>
@@ -1351,7 +1351,7 @@ export function ProfileView({
               Não achei esse perfil. Confere o @ e tenta de novo.
             </p>
             <p className="text-sm text-muted-foreground">
-              O Faro AI procurou, mas não existe nenhuma conta com o @{username}.
+              O FarejAI procurou, mas não existe nenhuma conta com o @{username}.
             </p>
             <Link href="/">
               <Button variant="outline" size="sm">
@@ -1363,7 +1363,7 @@ export function ProfileView({
 
         {!analyzing && state.kind === "ok" && (
           <>
-            {/* O Faro AI não fica mais aparecendo e sumindo em volta do cartão:
+            {/* O FarejAI não fica mais aparecendo e sumindo em volta do cartão:
                 no perfil, o que interessa é o perfil. Ele corre no topo das
                 telas de entrada, onde há espaço para brincar. */}
             <div>
@@ -1399,24 +1399,24 @@ export function ProfileView({
               />
             )}
 
-            {/* Faro AI cheio: recado com a saída, não convite para comprar o
+            {/* FarejAI cheio: recado com a saída, não convite para comprar o
                 que a pessoa já tem. */}
             {faroCheio && (
               <NoteBox className="mt-4" icon={<PawPrint className="h-4 w-4" />}>
-                <p className="font-bold">Seu Faro AI está cheio.</p>
+                <p className="font-bold">Seu FarejAI está cheio.</p>
                 <p className="mt-0.5 text-sm opacity-80">{faroCheio}</p>
                 <Link
                   href="/rastros"
                   className="mt-2 inline-flex items-center gap-1 text-sm font-bold text-accent hover:underline"
                 >
-                  Ver quem está no meu Faro AI <ArrowRight className="h-3.5 w-3.5" />
+                  Ver quem está no meu FarejAI <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </NoteBox>
             )}
 
             {justPinned && (
               <NoteBox className="mt-4 items-center" icon={<Mascot pose="feliz" className="h-10 text-ink" decorative />}>
-                <p className="font-bold">@{state.data.username} está no seu Faro AI. 🐶</p>
+                <p className="font-bold">@{state.data.username} está no seu FarejAI. 🐶</p>
                 <p className="text-sm opacity-80">
                   A partir de agora você receberá alertas sobre as mudanças disponíveis nesse
                   perfil.
@@ -1428,7 +1428,7 @@ export function ProfileView({
 
             {following.kind === "private" ? (
               <>
-                {/* Uma barra no meio: o Faro AI de um lado, o recado do outro.
+                {/* Uma barra no meio: o FarejAI de um lado, o recado do outro.
                     Ela separa o perfil, acima, das outras redes, abaixo. */}
                 <div className="mt-4 flex items-center gap-4 rounded-3xl border border-border bg-card p-4">
                   <Mascot pose="duvida" className="h-16 shrink-0 text-vinho" decorative />
@@ -1564,7 +1564,7 @@ export function ProfileView({
                       <OtherInteractions people={others} locked={locked} username={state.data.username} />
                     )}
 
-                    {/* Perfil no Faro AI: o que ele detectou entre uma coleta e
+                    {/* Perfil no FarejAI: o que ele detectou entre uma coleta e
                         outra, aqui mesmo — antes só aparecia na aba Interações. */}
                     {!locked && ready?.recent &&
                       (ready.recent.started.length > 0 || ready.recent.stopped.length > 0) && (
@@ -1596,13 +1596,13 @@ export function ProfileView({
                         lê UMA página da lista, na ordem que o Instagram entrega
                         — em geral as mais recentes primeiro, sem garantia. O
                         que é novo de verdade sai da comparação entre coletas
-                        do Faro AI. */}
+                        do FarejAI. */}
                     <Panel title="Quem segue — amostra">
                       <p className="-mt-1 mb-3 text-[11px] text-muted-foreground">
                         Até {MAX_SEGUINDO} contas que @{state.data.username} segue, na ordem em que o
                         Instagram entrega a lista (em geral, as mais recentes primeiro — a ordem não é
                         garantida). Contas verificadas ficam de fora. Para saber quem entrou e quem
-                        saiu, o Faro AI compara uma coleta com a outra.
+                        saiu, o FarejAI compara uma coleta com a outra.
                       </p>
                       {following.kind === "loading" ? (
                         <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">

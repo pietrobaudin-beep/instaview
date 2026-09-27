@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 /**
- * POST /api/pergunte — "Pergunte ao Faro AI".
+ * POST /api/pergunte — "Pergunte ao FarejAI".
  *
  * Só sobre perfil que ESTÁ no Faro de quem pergunta: o dossiê é feito do que
  * o Farejo acompanhou ao longo do tempo, e isso só existe para quem colocou

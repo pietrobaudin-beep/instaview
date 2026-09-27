@@ -5,7 +5,7 @@ import { PawPrint } from "lucide-react";
 import { Mascot, POSES, type Pose } from "@/components/ui/mascot";
 
 /**
- * The loading screen's little story: Faro AI actually searching. He runs (leaving
+ * The loading screen's little story: FarejAI actually searching. He runs (leaving
  * paw prints), stops to sniff the ground, checks with the magnifier, turns
  * round, perks up at a clue, wonders — and, when the analysis is done, shows
  * up with the bone in his mouth.
@@ -38,7 +38,7 @@ const BEATS: Beat[] = [
   // Turns and comes right up to the camera…
   { pose: "correndo", move: "run", to: 0.46, dir: -1, z: 1, ms: 1500 },
   { pose: "alerta", move: "perk", ms: 1100 },
-  { pose: "duvida", move: "tilt", ms: 1400 },
+  { pose: "pensando", move: "tilt", ms: 1400 },
   // …then heads back into the distance.
   { pose: "correndo", move: "run", to: 0.3, dir: -1, z: 0, ms: 1500 },
   { pose: "cheirando", move: "sniff", ms: 1600 },
@@ -47,7 +47,7 @@ const BEATS: Beat[] = [
 
 const START_X = 0.26;
 const START_Z = 0.5;
-const SPRITE_H = 76; // px, at mid depth
+const SPRITE_H = 96; // px, at mid depth
 
 // Depth → how big and how high on screen. Far is small and up the "floor";
 // near is big and down at the front.
@@ -148,7 +148,7 @@ export function LoadingScene({
   const facing = NO_FLIP.includes(pose) ? 1 : dir;
 
   return (
-    <div className="relative mx-auto h-[148px] w-full max-w-[340px]" aria-hidden>
+    <div className="relative mx-auto h-[176px] w-full max-w-[380px]" aria-hidden>
       {/* Paw prints left behind on each run, fading as they go. */}
       {trail && !done && (
         <div key={trail.id} className="absolute inset-0">
@@ -180,7 +180,7 @@ export function LoadingScene({
         </div>
       )}
 
-      {/* Faro AI, anchored to the ground, sliding along x on runs. */}
+      {/* FarejAI, anchored to the ground, sliding along x on runs. */}
       <div
         className="scene-sprite absolute"
         style={{
@@ -208,8 +208,13 @@ export function LoadingScene({
           {/* Two layers: the swap "pop" and the pose's own gesture are separate
               animations, and on one element the second would cancel the first. */}
           <div key={pose} className="scene-pop h-full">
-            <div className={`h-full ${move ? `scene-${move}` : ""}`}>
-              <Mascot pose={pose} className="h-full text-ink" decorative />
+            <div className={`h-full ${move && move !== "run" && move !== "sniff" ? `scene-${move}` : ""}`}>
+              <Mascot
+                pose={pose}
+                className="h-full text-ink"
+                decorative
+                acao={move === "run" ? "andar" : move === "sniff" ? "cavar" : undefined}
+              />
             </div>
           </div>
         </div>

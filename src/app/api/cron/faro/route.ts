@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60; // seconds (Vercel)
 
 /**
- * The daily Faro AI (see lib/faro-watch). Scheduled in vercel.json; protected by
+ * The daily FarejAI (see lib/faro-watch). Scheduled in vercel.json; protected by
  * CRON_SECRET, and refused on the live site until a real secret is set.
  */
 async function handle(req: Request) {

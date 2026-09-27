@@ -3,7 +3,7 @@ import type { ResumoFranquia } from "@/lib/franquia";
 /**
  * O que a pessoa já usou do plano neste ciclo, dito em frase.
  *
- * Aparece no topo do Faro AI e na conta, porque limite que só aparece quando
+ * Aparece no topo do FarejAI e na conta, porque limite que só aparece quando
  * estoura vira surpresa desagradável. Os números vêm do servidor
  * (`resumoDaFranquia`), dos mesmos contadores que as rotas conferem.
  */
